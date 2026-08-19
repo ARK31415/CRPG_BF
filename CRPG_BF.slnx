@@ -1,8 +1,8 @@
 ﻿<Solution>
   <Project Path="MCPForUnity.Runtime.csproj" />
   <Project Path="MCPForUnity.Editor.csproj" />
+  <Project Path="EventBus.Core.csproj" />
   <Project Path="EventBus.Tests.csproj" />
   <Project Path="EventBus.UnityAdapter.csproj" />
-  <Project Path="EventBus.Core.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
 </Solution>
