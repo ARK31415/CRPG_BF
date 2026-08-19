@@ -1,0 +1,16 @@
+{
+    "name": "EventBus.UnityAdapter",
+    "rootNamespace": "",
+    "references": [
+        "EventBus.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
