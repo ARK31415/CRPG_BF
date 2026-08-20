@@ -99,6 +99,16 @@ public class BF_BoardManager : MonoBehaviour {
             + new Vector3(_cellSize.x * 0.5f, _cellSize.y * 0.5f, 0f);
     }
 
+    /// <summary>
+    /// 将世界位置换算为逻辑格坐标；调用方仍需用 IsInside 判断格子是否存在。
+    /// </summary>
+    public Vector2Int WorldToGrid(Vector3 worldPos) {
+        Vector3 localPos = worldPos - transform.position;
+        return new Vector2Int(
+            Mathf.FloorToInt(localPos.x / _cellSize.x),
+            Mathf.FloorToInt(localPos.y / _cellSize.y));
+    }
+
     private void InitBoard() {
         if (_levelConfig == null || _cellPrefab == null) {
             Debug.LogError("Board config or cell prefab is missing.", this);

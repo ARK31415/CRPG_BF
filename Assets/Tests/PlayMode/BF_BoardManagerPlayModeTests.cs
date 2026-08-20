@@ -47,6 +47,9 @@ public class BF_BoardManagerPlayModeTests
 
         Vector3 worldPos = Invoke<Vector3>(manager, "GridToWorld", new object[] { new Vector2Int(2, 1) });
         Assert.That(worldPos, Is.EqualTo(new Vector3(15f, 24.5f, 0f)));
+        Assert.That(
+            Invoke<Vector2Int>(manager, "WorldToGrid", new object[] { worldPos }),
+            Is.EqualTo(new Vector2Int(2, 1)));
     }
 
     [Test]
