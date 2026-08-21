@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// 处理测试单位的选择、可达高亮、路径预览和点击移动。
@@ -10,7 +9,6 @@ public class BF_UnitMoveController : MonoBehaviour {
     [SerializeField]
     private BF_BoardManager _board;
 
-    [SerializeField]
     private BF_BattleUnit _unit;
 
     [SerializeField]
@@ -21,6 +19,7 @@ public class BF_UnitMoveController : MonoBehaviour {
     private List<Vector2Int> _path = new();
     private Camera _camera;
     private Material _pathMaterial;
+    private BF_BattleController _battleController;
     private BF_BoardCell _targetCell;
     private Vector2Int _hoverPos;
     private bool _isSelected;
@@ -42,31 +41,67 @@ public class BF_UnitMoveController : MonoBehaviour {
     }
 
     private void Update() {
-        if (_camera == null || Mouse.current == null || _unit == null || _unit.IsMoving) {
+        if (_camera == null
+            || BF_InputManager.Instance == null) {
             return;
         }
 
-        Vector3 mousePos = Mouse.current.position.ReadValue();
+        if (_unit != null && _unit.IsMoving) {
+            return;
+        }
+
+        Vector3 mousePos = BF_InputManager.Instance.Point;
         Vector3 worldPos = _camera.ScreenToWorldPoint(mousePos);
         Vector2Int gridPos = _board.WorldToGrid(worldPos);
 
-        if (!_isSelected) {
-            if (Mouse.current.leftButton.wasPressedThisFrame
-                && _board.TryGetOccupant(gridPos, out GameObject occupant)
-                && occupant == _unit.gameObject) {
-                SelectUnit();
-            }
+        if (_unit != null && _isSelected) {
+            UpdatePath(gridPos);
+        }
 
+        if (!BF_InputManager.Instance.ClickPressed) {
             return;
         }
 
-        UpdatePath(gridPos);
+        if (_board.TryGetOccupant(gridPos, out GameObject occupant)
+            && occupant.TryGetComponent(out BF_BattleUnit unit)) {
+            _battleController.TrySelectPlayerUnit(unit);
+            return;
+        }
 
-        if (Mouse.current.leftButton.wasPressedThisFrame && _path.Count > 0) {
+        if (_unit == null) {
+            return;
+        }
+
+        if (_isSelected && _path.Count > 0) {
             List<Vector2Int> movePath = new(_path);
             ClearSelection();
             StartCoroutine(MoveUnit(movePath));
         }
+    }
+
+    public void SetBattleController(BF_BattleController battleController) {
+        _battleController = battleController;
+    }
+
+    public void SetUnit(BF_BattleUnit unit) {
+        if (_unit == unit) {
+            return;
+        }
+
+        ClearSelection();
+        _unit = unit;
+        ActionDone = false;
+        _hasHoverPos = false;
+
+        if (_unit != null) {
+            SelectUnit();
+        }
+    }
+
+    public void ClearUnit() {
+        ClearSelection();
+        _unit = null;
+        ActionDone = false;
     }
 
     private void SelectUnit() {
@@ -178,23 +213,9 @@ public class BF_UnitMoveController : MonoBehaviour {
     }
 
     private IEnumerator MoveUnit(List<Vector2Int> path) {
-        yield return _unit.Move(path);
+        BF_BattleUnit unit = _unit;
+        yield return unit.Move(path);
         ActionDone = true;
-    }
-
-    public void SetUnit(BF_BattleUnit unit) {
-        if (_unit != unit) {
-            ClearSelection();
-        }
-
-        _unit = unit;
-        ActionDone = false;
-        _hasHoverPos = false;
-    }
-
-    public void ClearUnit() {
-        ClearSelection();
-        _unit = null;
-        ActionDone = false;
+        _battleController.FinishUnit(unit);
     }
 }

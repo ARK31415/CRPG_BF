@@ -2149,7 +2149,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CRPG_BF.Runtime::BF_UnitMoveController
   _board: {fileID: 1939430160}
-  _unit: {fileID: 9222108674157333241}
   _pathLine: {fileID: 1141498823}
 --- !u!1 &1200178353
 GameObject:

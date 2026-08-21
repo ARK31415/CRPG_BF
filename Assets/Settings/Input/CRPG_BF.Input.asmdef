@@ -1,8 +1,7 @@
 {
-    "name": "CRPG_BF.Runtime",
+    "name": "CRPG_BF.Input",
     "rootNamespace": "",
     "references": [
-        "CRPG_BF.Input",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],

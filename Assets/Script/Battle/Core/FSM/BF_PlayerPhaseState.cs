@@ -8,22 +8,19 @@ public class BF_PlayerPhaseState : BF_BattleState {
     public override IEnumerator Enter() {
         controller.StartPlayerRound();
         Debug.Log($"[BF] Player Phase Start - Round {controller.Round}");
+        controller.SelectFirstPlayerUnit();
         yield return null;
     }
 
     public override IEnumerator Execute() {
-        while (controller.TryGetNextUnit(BF_UnitTeam.Player, out BF_BattleUnit unit)) {
-            controller.CurrentUnit = unit;
-            controller.MoveController.SetUnit(unit);
-            Debug.Log($"[BF] Player Unit Selected: {unit.DisplayName}");
+        while (!controller.PlayerPhaseEnded) {
+            if (controller.AreAllUnitsDone(BF_UnitTeam.Player)) {
+                controller.EndPlayerPhase();
+            }
 
-            yield return new WaitUntil(() => controller.MoveController.ActionDone);
-
-            unit.FinishTurn();
-            Debug.Log($"[BF] Player Unit Acted: {unit.DisplayName}");
+            yield return null;
         }
 
-        controller.MoveController.ClearUnit();
         Debug.Log($"[BF] Player Phase End - Round {controller.Round}");
         controller.SetState(new BF_EnemyPhaseState(controller));
     }
