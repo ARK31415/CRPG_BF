@@ -22,6 +22,7 @@ public class BF_BattleController : MonoBehaviour {
     public bool PlayerPhaseEnded => _playerPhaseEnded;
 
     private void Start() {
+        BF_CameraManager.Instance?.BindBounds();
         _moveController.SetBattleController(this);
         StartCoroutine(StartBattle());
     }
@@ -181,6 +182,7 @@ public class BF_BattleController : MonoBehaviour {
     }
 
     private void OnDestroy() {
+        BF_CameraManager.Instance?.ClearBounds();
         _running = false;
 
         if (_battleLoop != null) {

@@ -7,13 +7,22 @@
             "id": "df70fa95-8a34-4494-b137-73ab6b9c7d37",
             "actions": [
                 {
-                    "name": "Move",
+                    "name": "CameraMove",
                     "type": "Value",
                     "id": "351f2ccd-1f9f-44bf-9bec-d62ac5c5f408",
                     "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "CameraZoom",
+                    "type": "PassThrough",
+                    "id": "3e30bc5e-9f4b-4c79-a1bb-1a3f7c86002d",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 },
                 {
                     "name": "Look",
@@ -136,12 +145,23 @@
             "bindings": [
                 {
                     "name": "",
+                    "id": "a9f0fd78-8c1f-4e95-b7b0-c93b68a4d8a2",
+                    "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "CameraZoom",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "978bfe49-cc26-4a3d-ab7b-7d7a29327403",
                     "path": "<Gamepad>/leftStick",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -152,7 +172,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": true,
                     "isPartOfComposite": false
                 },
@@ -163,7 +183,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -174,7 +194,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -185,7 +205,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -196,7 +216,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -207,7 +227,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -218,7 +238,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -229,7 +249,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -240,7 +260,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -251,7 +271,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "XR",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -262,7 +282,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Joystick",
-                    "action": "Move",
+                    "action": "CameraMove",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
