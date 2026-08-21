@@ -15,28 +15,45 @@ public class BF_BattleUnit : MonoBehaviour {
     private BF_BoardManager _board;
 
     [SerializeField]
+    private BF_UnitConfigSO _config;
+
+    [SerializeField]
+    private Animator _animator;
+
+    [SerializeField]
     private Vector2Int _startPos = new(1, 1);
 
     [SerializeField]
     private BF_UnitTeam _team = BF_UnitTeam.Player;
 
-    [SerializeField]
-    [Min(1)]
-    private int _moveRange = 4;
-
-    [SerializeField]
-    [Min(0.1f)]
-    private float _moveSpeed = 4f;
-
     public Vector2Int GridPos { get; private set; }
     public BF_UnitTeam Team => _team;
-    public int MoveRange => _moveRange;
+    public BF_UnitConfigSO Config => _config;
+    public string UnitId => _config != null ? _config.Id : string.Empty;
+    public string DisplayName => _config != null && !string.IsNullOrEmpty(_config.DisplayName)
+        ? _config.DisplayName
+        : gameObject.name;
+    public int MoveRange => _config != null ? _config.MoveRange : 0;
     public bool IsMoving { get; private set; }
     public bool HasActed { get; private set; }
 
     private void Start() {
         GridPos = _startPos;
         HasActed = false;
+
+        if (_config == null) {
+            Debug.LogError("Unit config is missing.", this);
+            return;
+        }
+
+        if (_animator == null) {
+            _animator = GetComponent<Animator>();
+        }
+
+        if (_animator != null && _config.AnimatorController != null) {
+            _animator.runtimeAnimatorController = _config.AnimatorController;
+            _animator.SetBool("IsMoving", false);
+        }
 
         if (_board == null || !_board.IsInitialized || !_board.TryOccupy(GridPos, gameObject)) {
             Debug.LogError($"Cannot place battle unit at {GridPos}.", this);
@@ -58,12 +75,17 @@ public class BF_BattleUnit : MonoBehaviour {
     /// 沿不包含起点的逻辑路径逐格移动，完成后提交棋盘占用。
     /// </summary>
     public IEnumerator Move(IReadOnlyList<Vector2Int> path) {
-        if (IsMoving || path == null || path.Count == 0) {
+        if (IsMoving || path == null || path.Count == 0 || _board == null || _config == null) {
             yield break;
         }
 
         IsMoving = true;
+        if (_animator != null) {
+            _animator.SetBool("IsMoving", true);
+        }
+
         Vector2Int from = GridPos;
+        float speed = _config.MoveSpeed;
 
         for (int i = 0; i < path.Count; i++) {
             Vector3 target = _board.GridToWorld(path[i]);
@@ -72,7 +94,7 @@ public class BF_BattleUnit : MonoBehaviour {
                 transform.position = Vector3.MoveTowards(
                     transform.position,
                     target,
-                    _moveSpeed * Time.deltaTime);
+                    speed * Time.deltaTime);
                 yield return null;
             }
         }
@@ -85,5 +107,8 @@ public class BF_BattleUnit : MonoBehaviour {
         }
 
         IsMoving = false;
+        if (_animator != null) {
+            _animator.SetBool("IsMoving", false);
+        }
     }
 }

@@ -13,7 +13,7 @@ public class BF_EnemyPhaseState : BF_BattleState {
     public override IEnumerator Execute() {
         while (controller.TryGetNextUnit(BF_UnitTeam.Enemy, out BF_BattleUnit unit)) {
             unit.FinishTurn();
-            Debug.Log($"[BF] Enemy Unit Auto Pass: {unit.name}");
+            Debug.Log($"[BF] Enemy Unit Auto Pass: {unit.DisplayName}");
             yield return null;
         }
 

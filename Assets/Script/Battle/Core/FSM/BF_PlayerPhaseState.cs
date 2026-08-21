@@ -15,12 +15,12 @@ public class BF_PlayerPhaseState : BF_BattleState {
         while (controller.TryGetNextUnit(BF_UnitTeam.Player, out BF_BattleUnit unit)) {
             controller.CurrentUnit = unit;
             controller.MoveController.SetUnit(unit);
-            Debug.Log($"[BF] Player Unit Selected: {unit.name}");
+            Debug.Log($"[BF] Player Unit Selected: {unit.DisplayName}");
 
             yield return new WaitUntil(() => controller.MoveController.ActionDone);
 
             unit.FinishTurn();
-            Debug.Log($"[BF] Player Unit Acted: {unit.name}");
+            Debug.Log($"[BF] Player Unit Acted: {unit.DisplayName}");
         }
 
         controller.MoveController.ClearUnit();

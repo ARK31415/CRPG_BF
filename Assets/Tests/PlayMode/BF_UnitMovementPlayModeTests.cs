@@ -61,9 +61,11 @@ public class BF_UnitMovementPlayModeTests {
         GameObject unitObject = Track(new GameObject("TestUnit"));
         unitObject.SetActive(false);
         BF_BattleUnit unit = unitObject.AddComponent<BF_BattleUnit>();
+        BF_UnitConfigSO config = Track(ScriptableObject.CreateInstance<BF_UnitConfigSO>());
+        SetField(config, "_moveSpeed", 1000f);
         SetField(unit, "_board", board);
+        SetField(unit, "_config", config);
         SetField(unit, "_startPos", Vector2Int.zero);
-        SetField(unit, "_moveSpeed", 1000f);
         unitObject.SetActive(true);
         yield return null;
 
