@@ -26,6 +26,9 @@ public class BF_UnitMoveController : MonoBehaviour {
     private bool _isSelected;
     private bool _hasHoverPos;
 
+    public BF_BattleUnit Unit => _unit;
+    public bool ActionDone { get; private set; }
+
     private void Start() {
         _camera = Camera.main;
         SetupPathLine();
@@ -39,7 +42,7 @@ public class BF_UnitMoveController : MonoBehaviour {
     }
 
     private void Update() {
-        if (_camera == null || Mouse.current == null || _unit.IsMoving) {
+        if (_camera == null || Mouse.current == null || _unit == null || _unit.IsMoving) {
             return;
         }
 
@@ -155,7 +158,7 @@ public class BF_UnitMoveController : MonoBehaviour {
             }
         }
 
-        if (_board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell)) {
+        if (_unit != null && _board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell)) {
             unitCell.SetSelected(false);
         }
 
@@ -176,5 +179,22 @@ public class BF_UnitMoveController : MonoBehaviour {
 
     private IEnumerator MoveUnit(List<Vector2Int> path) {
         yield return _unit.Move(path);
+        ActionDone = true;
+    }
+
+    public void SetUnit(BF_BattleUnit unit) {
+        if (_unit != unit) {
+            ClearSelection();
+        }
+
+        _unit = unit;
+        ActionDone = false;
+        _hasHoverPos = false;
+    }
+
+    public void ClearUnit() {
+        ClearSelection();
+        _unit = null;
+        ActionDone = false;
     }
 }

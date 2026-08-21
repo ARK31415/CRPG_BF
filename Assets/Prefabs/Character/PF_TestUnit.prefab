@@ -82,7 +82,7 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 5
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -5711848221618334454, guid: 6b1e0306a66e4e5488dbd5bd8397a0a9, type: 3}
+  m_Sprite: {fileID: -3858063850402955622, guid: 154d8ea5265de834284f783d0ff85680, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -106,5 +106,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: CRPG_BF.Runtime::BF_BattleUnit
   _board: {fileID: 0}
   _startPos: {x: 1, y: 1}
+  _team: 0
   _moveRange: 4
   _moveSpeed: 4

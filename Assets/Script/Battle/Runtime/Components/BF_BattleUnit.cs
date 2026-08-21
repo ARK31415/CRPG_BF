@@ -2,6 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum BF_UnitTeam {
+    Player = 0,
+    Enemy = 1,
+}
+
 /// <summary>
 /// 单个战棋单位的逻辑格位置和逐格移动表现。
 /// </summary>
@@ -13,6 +18,9 @@ public class BF_BattleUnit : MonoBehaviour {
     private Vector2Int _startPos = new(1, 1);
 
     [SerializeField]
+    private BF_UnitTeam _team = BF_UnitTeam.Player;
+
+    [SerializeField]
     [Min(1)]
     private int _moveRange = 4;
 
@@ -21,11 +29,14 @@ public class BF_BattleUnit : MonoBehaviour {
     private float _moveSpeed = 4f;
 
     public Vector2Int GridPos { get; private set; }
+    public BF_UnitTeam Team => _team;
     public int MoveRange => _moveRange;
     public bool IsMoving { get; private set; }
+    public bool HasActed { get; private set; }
 
     private void Start() {
         GridPos = _startPos;
+        HasActed = false;
 
         if (_board == null || !_board.IsInitialized || !_board.TryOccupy(GridPos, gameObject)) {
             Debug.LogError($"Cannot place battle unit at {GridPos}.", this);
@@ -33,6 +44,14 @@ public class BF_BattleUnit : MonoBehaviour {
         }
 
         transform.position = _board.GridToWorld(GridPos);
+    }
+
+    public void ResetTurn() {
+        HasActed = false;
+    }
+
+    public void FinishTurn() {
+        HasActed = true;
     }
 
     /// <summary>
