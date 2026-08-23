@@ -17,6 +17,9 @@ public class BF_BattleUnit : MonoBehaviour
     private Animator _animator;
 
     [SerializeField]
+    private SpriteRenderer _sprite;
+
+    [SerializeField]
     private Vector2Int _startPos = new(1, 1);
 
     [SerializeField]
@@ -41,6 +44,12 @@ public class BF_BattleUnit : MonoBehaviour
             Debug.LogError("Unit config is missing.", this);
             return;
         }
+
+        if(_sprite == null)
+        {
+            _sprite = GetComponent<SpriteRenderer>();
+        }
+        SetFacing(_team == BF_UnitTeam.Player);
 
         if (_animator == null)
         {
@@ -93,6 +102,11 @@ public class BF_BattleUnit : MonoBehaviour
 
         for (int i = 0; i < path.Count; i++)
         {
+            Vector2Int prev = i == 0 ? GridPos : path[i - 1];
+            Vector2Int step = path[i] - prev;
+
+            UpdateFacing(step.x);
+
             Vector3 target = _board.GridToWorld(path[i]);
 
             while (transform.position != target)
@@ -119,6 +133,23 @@ public class BF_BattleUnit : MonoBehaviour
         if (_animator != null)
         {
             _animator.SetBool("IsMoving", false);
+        }
+    }
+
+    private void SetFacing(bool faceRight)
+    {
+        _sprite.flipX = !faceRight;
+    }
+
+    private void UpdateFacing(int x)
+    {
+        if(x > 0)
+        {
+            SetFacing(true);
+        }
+        else if(x < 0)
+        {
+            SetFacing(false);
         }
     }
 }
