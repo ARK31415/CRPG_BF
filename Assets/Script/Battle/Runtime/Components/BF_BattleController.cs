@@ -19,8 +19,14 @@ public class BF_BattleController : MonoBehaviour
     public IReadOnlyList<BF_BattleUnit> Units => _units;
     public BF_UnitMoveController MoveController => _moveController;
     public BF_BattleUnit CurrentUnit { get; private set; }
+    public BF_BattlePhase CurrentPhase {get; private set; } = BF_BattlePhase.None;
     public int Round { get; private set; }
     public bool PlayerPhaseEnded => _playerPhaseEnded;
+
+    private void Awake()
+    {
+        GameEventBus.Instance?.Subscribe<BF_EndPlayerPhaseRequestEvent>(OnEndPlayerPhaseRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
+    }
 
     private void Start()
     {
@@ -71,6 +77,19 @@ public class BF_BattleController : MonoBehaviour
         _state = nextState;
     }
 
+    public void SetPhase(BF_BattlePhase phase)
+    {
+        if (CurrentPhase == phase)
+        {
+            return;
+        }
+
+        CurrentPhase = phase;
+        Debug.Log($"[BF] Battle Phase Changed: {CurrentPhase }");
+
+        GameEventBus.Instance?.Publish(new BF_BattlePhaseChangeEvent(CurrentPhase, Round));
+    }
+
     public void CacheUnits()
     {
         _units.Clear();
@@ -109,7 +128,7 @@ public class BF_BattleController : MonoBehaviour
 
         CurrentUnit = unit;
         _moveController.SetUnit(unit);
-        BF_CameraManager.Instance?.Focus(unit);
+        BF_CameraManager.Instance?.Focus(unit.transform);
         Debug.Log($"[BF] Player Unit Selected: {unit.DisplayName}");
         return true;
     }
@@ -222,5 +241,10 @@ public class BF_BattleController : MonoBehaviour
         {
             StopCoroutine(_battleLoop);
         }
+    }
+
+    private void OnEndPlayerPhaseRequested(BF_EndPlayerPhaseRequestEvent requestEvent)
+    {
+        EndPlayerPhase();
     }
 }

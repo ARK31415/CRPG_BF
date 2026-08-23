@@ -9,6 +9,8 @@ public class BF_EnemyPhaseState : BF_BattleState
 
     public override IEnumerator Enter()
     {
+        controller.SetPhase(BF_BattlePhase.EnemyPhase);
+
         Debug.Log($"[BF] Enemy Phase Start - Round {controller.Round}");
         yield return null;
     }

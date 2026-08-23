@@ -2,7 +2,7 @@
     "name": "CRPG_BF.Board.PlayModeTests",
     "rootNamespace": "",
     "references": [
-        "CRPG_BF.Runtime"
+        "BF.Battle"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

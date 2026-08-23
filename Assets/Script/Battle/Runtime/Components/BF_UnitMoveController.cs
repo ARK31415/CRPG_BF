@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// 处理测试单位的选择、可达高亮、路径预览和点击移动。
@@ -54,6 +55,16 @@ public class BF_UnitMoveController : MonoBehaviour
 
         if (_unit != null && _unit.IsMoving)
         {
+            return;
+        }
+
+        if(EventSystem.current != null
+            && EventSystem.current.IsPointerOverGameObject())
+        {
+            _hasHoverPos = false;
+            ClearTarget();
+            _path.Clear();
+            HidePath();
             return;
         }
 

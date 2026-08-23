@@ -43,14 +43,14 @@ public class BF_CameraManager : Singleton<BF_CameraManager>
         }
     }
 
-    public void Focus(BF_BattleUnit unit)
+    public void Focus(Transform target)
     {
-        if (_battleCamera == null || unit == null)
+        if (_battleCamera == null || target == null)
         {
             return;
         }
 
-        Vector3 pos = unit.transform.position;
+        Vector3 pos = target.position;
         pos.z = _battleCamera.transform.position.z;
         _battleCamera.transform.position = pos;
         _battleCamera.ForceCameraPosition(pos, _battleCamera.transform.rotation);

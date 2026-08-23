@@ -131,7 +131,7 @@ public class BF_BoardManagerPlayModeTests
 
     private static Type RequireRuntimeType(string typeName)
     {
-        Type type = Type.GetType($"{typeName}, CRPG_BF.Runtime");
+        Type type = Type.GetType($"{typeName}, BF.Battle");
         Assert.That(type, Is.Not.Null, $"Runtime type {typeName} was not found.");
         return type;
     }

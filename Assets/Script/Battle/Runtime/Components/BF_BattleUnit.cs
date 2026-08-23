@@ -2,12 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum BF_UnitTeam
-{
-    Player = 0,
-    Enemy = 1,
-}
-
 /// <summary>
 /// 单个战棋单位的逻辑格位置和逐格移动表现。
 /// </summary>

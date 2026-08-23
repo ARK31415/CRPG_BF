@@ -1,0 +1,21 @@
+{
+    "name": "BF.Game",
+    "rootNamespace": "",
+    "references": [
+        "CRPG_BF.Input",
+        "Singleton",
+        "Unity.InputSystem",
+        "Unity.Cinemachine",
+        "EventBus.Core",
+        "CRPG_BF.Shared"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

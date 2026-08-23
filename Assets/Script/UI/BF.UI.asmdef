@@ -1,0 +1,21 @@
+{
+    "name": "BF.UI",
+    "rootNamespace": "",
+    "references": [
+        "BF.Game",
+        "BF.Battle",
+        "EventBus.Core",
+        "EventBus.UnityAdapter",
+        "CRPG_BF.Shared",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -10,7 +10,10 @@ public class BF_PlayerPhaseState : BF_BattleState
     public override IEnumerator Enter()
     {
         controller.StartPlayerRound();
+        controller.SetPhase(BF_BattlePhase.PlayerPhase);
+
         Debug.Log($"[BF] Player Phase Start - Round {controller.Round}");
+
         controller.SelectFirstPlayerUnit();
         yield return null;
     }
