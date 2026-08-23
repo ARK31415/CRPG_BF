@@ -3,7 +3,8 @@ using UnityEngine;
 /// <summary>
 /// 当前关卡的棋盘管理器，负责生成格子、查询阻挡和维护单位占用。
 /// </summary>
-public class BF_BoardManager : MonoBehaviour {
+public class BF_BoardManager : MonoBehaviour
+{
     [SerializeField] private BF_LevelConfigSO _levelConfig;
     [SerializeField] private BF_BoardCell _cellPrefab;
     [SerializeField] private Vector2 _cellSize = Vector2.one;
@@ -12,11 +13,13 @@ public class BF_BoardManager : MonoBehaviour {
 
     public bool IsInitialized { get; private set; }
 
-    private void Awake() {
+    private void Awake()
+    {
         InitBoard();
     }
 
-    public bool IsInside(Vector2Int pos) {
+    public bool IsInside(Vector2Int pos)
+    {
         return IsInitialized
             && pos.x >= 0
             && pos.y >= 0
@@ -24,8 +27,10 @@ public class BF_BoardManager : MonoBehaviour {
             && pos.y < _cells.GetLength(1);
     }
 
-    public bool TryGetCell(Vector2Int pos, out BF_BoardCell cell) {
-        if (!IsInside(pos)) {
+    public bool TryGetCell(Vector2Int pos, out BF_BoardCell cell)
+    {
+        if (!IsInside(pos))
+        {
             cell = null;
             return false;
         }
@@ -34,17 +39,21 @@ public class BF_BoardManager : MonoBehaviour {
         return true;
     }
 
-    public bool IsBlocked(Vector2Int pos) {
+    public bool IsBlocked(Vector2Int pos)
+    {
         return TryGetCell(pos, out BF_BoardCell cell)
             && cell.TerrainType == TerrainType.Blocked;
     }
 
-    public bool IsOccupied(Vector2Int pos) {
+    public bool IsOccupied(Vector2Int pos)
+    {
         return TryGetCell(pos, out BF_BoardCell cell) && cell.IsOccupied;
     }
 
-    public bool TryGetOccupant(Vector2Int pos, out GameObject occupant) {
-        if (!TryGetCell(pos, out BF_BoardCell cell) || !cell.IsOccupied) {
+    public bool TryGetOccupant(Vector2Int pos, out GameObject occupant)
+    {
+        if (!TryGetCell(pos, out BF_BoardCell cell) || !cell.IsOccupied)
+        {
             occupant = null;
             return false;
         }
@@ -53,12 +62,15 @@ public class BF_BoardManager : MonoBehaviour {
         return true;
     }
 
-    public bool CanEnter(Vector2Int pos) {
+    public bool CanEnter(Vector2Int pos)
+    {
         return TryGetCell(pos, out BF_BoardCell cell) && cell.CanEnter;
     }
 
-    public bool TryOccupy(Vector2Int pos, GameObject occupant) {
-        if (occupant == null || !TryGetCell(pos, out BF_BoardCell cell) || !cell.CanEnter) {
+    public bool TryOccupy(Vector2Int pos, GameObject occupant)
+    {
+        if (occupant == null || !TryGetCell(pos, out BF_BoardCell cell) || !cell.CanEnter)
+        {
             return false;
         }
 
@@ -66,10 +78,12 @@ public class BF_BoardManager : MonoBehaviour {
         return true;
     }
 
-    public bool TryVacate(Vector2Int pos, GameObject occupant) {
+    public bool TryVacate(Vector2Int pos, GameObject occupant)
+    {
         if (occupant == null
             || !TryGetCell(pos, out BF_BoardCell cell)
-            || cell.Occupant != occupant) {
+            || cell.Occupant != occupant)
+        {
             return false;
         }
 
@@ -77,15 +91,18 @@ public class BF_BoardManager : MonoBehaviour {
         return true;
     }
 
-    public bool TryMoveOccupant(Vector2Int from, Vector2Int to, GameObject occupant) {
-        if (occupant == null || from == to) {
+    public bool TryMoveOccupant(Vector2Int from, Vector2Int to, GameObject occupant)
+    {
+        if (occupant == null || from == to)
+        {
             return false;
         }
 
         if (!TryGetCell(from, out BF_BoardCell fromCell)
             || fromCell.Occupant != occupant
             || !TryGetCell(to, out BF_BoardCell toCell)
-            || !toCell.CanEnter) {
+            || !toCell.CanEnter)
+        {
             return false;
         }
 
@@ -94,23 +111,24 @@ public class BF_BoardManager : MonoBehaviour {
         return true;
     }
 
-    public Vector3 GridToWorld(Vector2Int pos) {
-        return GridCornerToWorld(pos)
-            + new Vector3(_cellSize.x * 0.5f, _cellSize.y * 0.5f, 0f);
+    public Vector3 GridToWorld(Vector2Int pos)
+    {
+        return GridCornerToWorld(pos) + new Vector3(_cellSize.x * 0.5f, _cellSize.y * 0.5f, 0f);
     }
 
     /// <summary>
     /// 将世界位置换算为逻辑格坐标；调用方仍需用 IsInside 判断格子是否存在。
     /// </summary>
-    public Vector2Int WorldToGrid(Vector3 worldPos) {
+    public Vector2Int WorldToGrid(Vector3 worldPos)
+    {
         Vector3 localPos = worldPos - transform.position;
-        return new Vector2Int(
-            Mathf.FloorToInt(localPos.x / _cellSize.x),
-            Mathf.FloorToInt(localPos.y / _cellSize.y));
+        return new Vector2Int(Mathf.FloorToInt(localPos.x / _cellSize.x), Mathf.FloorToInt(localPos.y / _cellSize.y));
     }
 
-    private void InitBoard() {
-        if (_levelConfig == null || _cellPrefab == null) {
+    private void InitBoard()
+    {
+        if (_levelConfig == null || _cellPrefab == null)
+        {
             Debug.LogError("Board config or cell prefab is missing.", this);
             return;
         }
@@ -118,15 +136,18 @@ public class BF_BoardManager : MonoBehaviour {
         if (_levelConfig.Width <= 0
             || _levelConfig.Height <= 0
             || _cellSize.x <= 0f
-            || _cellSize.y <= 0f) {
+            || _cellSize.y <= 0f)
+        {
             Debug.LogError("Board size and cell size must be positive.", this);
             return;
         }
 
         _cells = new BF_BoardCell[_levelConfig.Width, _levelConfig.Height];
 
-        for (int x = 0; x < _levelConfig.Width; x++) {
-            for (int y = 0; y < _levelConfig.Height; y++) {
+        for (int x = 0; x < _levelConfig.Width; x++)
+        {
+            for (int y = 0; y < _levelConfig.Height; y++)
+            {
                 Vector2Int pos = new(x, y);
                 BF_BoardCell cell = Instantiate(
                     _cellPrefab,
@@ -148,27 +169,32 @@ public class BF_BoardManager : MonoBehaviour {
         IsInitialized = true;
     }
 
-    private void OnDrawGizmos() {
-        if (_levelConfig == null || _cellSize.x <= 0f || _cellSize.y <= 0f) {
+    private void OnDrawGizmos()
+    {
+        if (_levelConfig == null || _cellSize.x <= 0f || _cellSize.y <= 0f)
+        {
             return;
         }
 
         Gizmos.color = Color.cyan;
 
-        for (int x = 0; x <= _levelConfig.Width; x++) {
+        for (int x = 0; x <= _levelConfig.Width; x++)
+        {
             Gizmos.DrawLine(
                 GridCornerToWorld(new Vector2Int(x, 0)),
                 GridCornerToWorld(new Vector2Int(x, _levelConfig.Height)));
         }
 
-        for (int y = 0; y <= _levelConfig.Height; y++) {
+        for (int y = 0; y <= _levelConfig.Height; y++)
+        {
             Gizmos.DrawLine(
                 GridCornerToWorld(new Vector2Int(0, y)),
                 GridCornerToWorld(new Vector2Int(_levelConfig.Width, y)));
         }
     }
 
-    private Vector3 GridCornerToWorld(Vector2Int pos) {
+    private Vector3 GridCornerToWorld(Vector2Int pos)
+    {
         return transform.position + new Vector3(
             pos.x * _cellSize.x,
             pos.y * _cellSize.y,

@@ -5,7 +5,8 @@ using UnityEngine;
 /// <summary>
 /// 控制敌我阶段和回合切换，不处理棋盘细节或单位移动规则。
 /// </summary>
-public class BF_BattleController : MonoBehaviour {
+public class BF_BattleController : MonoBehaviour
+{
     [SerializeField]
     private BF_UnitMoveController _moveController;
 
@@ -21,36 +22,43 @@ public class BF_BattleController : MonoBehaviour {
     public int Round { get; private set; }
     public bool PlayerPhaseEnded => _playerPhaseEnded;
 
-    private void Start() {
+    private void Start()
+    {
         BF_CameraManager.Instance?.BindBounds();
         _moveController.SetBattleController(this);
         StartCoroutine(StartBattle());
     }
 
-    private void Update() {
+    private void Update()
+    {
         if (_playerPhaseEnded
             || _state is not BF_PlayerPhaseState
             || BF_InputManager.Instance == null
-            || (CurrentUnit != null && CurrentUnit.IsMoving)) {
+            || (CurrentUnit != null && CurrentUnit.IsMoving))
+        {
             return;
         }
 
-        if (BF_InputManager.Instance.EndPlayerPhasePressed) {
+        if (BF_InputManager.Instance.EndPlayerPhasePressed)
+        {
             EndPlayerPhase();
             return;
         }
 
-        if (BF_InputManager.Instance.CancelSelectionPressed) {
+        if (BF_InputManager.Instance.CancelSelectionPressed)
+        {
             CancelSelection();
             return;
         }
 
-        if (BF_InputManager.Instance.NextUnitPressed) {
+        if (BF_InputManager.Instance.NextUnitPressed)
+        {
             SelectNextPlayerUnit();
         }
     }
 
-    private IEnumerator StartBattle() {
+    private IEnumerator StartBattle()
+    {
         yield return null;
 
         SetState(new BF_BattleSetupState(this));
@@ -58,37 +66,44 @@ public class BF_BattleController : MonoBehaviour {
         _battleLoop = StartCoroutine(BattleLoopRoutine());
     }
 
-    public void SetState(BF_BattleState nextState) {
+    public void SetState(BF_BattleState nextState)
+    {
         _state = nextState;
     }
 
-    public void CacheUnits() {
+    public void CacheUnits()
+    {
         _units.Clear();
         _units.AddRange(FindObjectsByType<BF_BattleUnit>(FindObjectsSortMode.None));
         _units.Sort((a, b) => string.CompareOrdinal(a.gameObject.name, b.gameObject.name));
     }
 
-    public void StartPlayerRound() {
+    public void StartPlayerRound()
+    {
         Round++;
         _playerPhaseEnded = false;
 
-        foreach (BF_BattleUnit unit in _units) {
+        foreach (BF_BattleUnit unit in _units)
+        {
             unit.ResetTurn();
         }
     }
 
-    public bool SelectFirstPlayerUnit() {
+    public bool SelectFirstPlayerUnit()
+    {
         return TryGetNextUnit(BF_UnitTeam.Player, out BF_BattleUnit unit)
             && TrySelectPlayerUnit(unit);
     }
 
-    public bool TrySelectPlayerUnit(BF_BattleUnit unit) {
+    public bool TrySelectPlayerUnit(BF_BattleUnit unit)
+    {
         if (_state is not BF_PlayerPhaseState
             || _playerPhaseEnded
             || unit == null
             || unit.Team != BF_UnitTeam.Player
             || unit.HasActed
-            || (CurrentUnit != null && CurrentUnit.IsMoving)) {
+            || (CurrentUnit != null && CurrentUnit.IsMoving))
+        {
             return false;
         }
 
@@ -99,20 +114,25 @@ public class BF_BattleController : MonoBehaviour {
         return true;
     }
 
-    public void SelectNextPlayerUnit() {
+    public void SelectNextPlayerUnit()
+    {
         int start = CurrentUnit == null ? -1 : _units.IndexOf(CurrentUnit);
 
-        for (int offset = 1; offset <= _units.Count; offset++) {
+        for (int offset = 1; offset <= _units.Count; offset++)
+        {
             BF_BattleUnit unit = _units[(start + offset) % _units.Count];
-            if (unit.Team == BF_UnitTeam.Player && !unit.HasActed) {
+            if (unit.Team == BF_UnitTeam.Player && !unit.HasActed)
+            {
                 TrySelectPlayerUnit(unit);
                 return;
             }
         }
     }
 
-    public void FinishUnit(BF_BattleUnit unit) {
-        if (unit == null || unit != CurrentUnit) {
+    public void FinishUnit(BF_BattleUnit unit)
+    {
+        if (unit == null || unit != CurrentUnit)
+        {
             return;
         }
 
@@ -121,13 +141,16 @@ public class BF_BattleController : MonoBehaviour {
         ClearCurrentUnit();
     }
 
-    public bool AreAllUnitsDone(BF_UnitTeam team) {
+    public bool AreAllUnitsDone(BF_UnitTeam team)
+    {
         return !TryGetNextUnit(team, out _);
     }
 
-    public void EndPlayerPhase() {
+    public void EndPlayerPhase()
+    {
         if (_state is not BF_PlayerPhaseState
-            || (CurrentUnit != null && CurrentUnit.IsMoving)) {
+            || (CurrentUnit != null && CurrentUnit.IsMoving))
+        {
             return;
         }
 
@@ -135,10 +158,12 @@ public class BF_BattleController : MonoBehaviour {
         _playerPhaseEnded = true;
     }
 
-    public void CancelSelection() {
+    public void CancelSelection()
+    {
         if (_state is not BF_PlayerPhaseState
             || CurrentUnit == null
-            || CurrentUnit.IsMoving) {
+            || CurrentUnit.IsMoving)
+        {
             return;
         }
 
@@ -146,15 +171,19 @@ public class BF_BattleController : MonoBehaviour {
         ClearCurrentUnit();
     }
 
-    public void ClearCurrentUnit() {
+    public void ClearCurrentUnit()
+    {
         _moveController.ClearUnit();
         CurrentUnit = null;
     }
 
-    public bool TryGetNextUnit(BF_UnitTeam team, out BF_BattleUnit unit) {
-        for (int i = 0; i < _units.Count; i++) {
+    public bool TryGetNextUnit(BF_UnitTeam team, out BF_BattleUnit unit)
+    {
+        for (int i = 0; i < _units.Count; i++)
+        {
             BF_BattleUnit next = _units[i];
-            if (next.Team == team && !next.HasActed) {
+            if (next.Team == team && !next.HasActed)
+            {
                 unit = next;
                 return true;
             }
@@ -164,12 +193,15 @@ public class BF_BattleController : MonoBehaviour {
         return false;
     }
 
-    private IEnumerator BattleLoopRoutine() {
-        while (_running && _state != null) {
+    private IEnumerator BattleLoopRoutine()
+    {
+        while (_running && _state != null)
+        {
             BF_BattleState state = _state;
 
             yield return StartCoroutine(state.Enter());
-            if (state != _state) {
+            if (state != _state)
+            {
                 yield return StartCoroutine(state.Exit());
                 continue;
             }
@@ -181,11 +213,13 @@ public class BF_BattleController : MonoBehaviour {
         _battleLoop = null;
     }
 
-    private void OnDestroy() {
+    private void OnDestroy()
+    {
         BF_CameraManager.Instance?.ClearBounds();
         _running = false;
 
-        if (_battleLoop != null) {
+        if (_battleLoop != null)
+        {
             StopCoroutine(_battleLoop);
         }
     }

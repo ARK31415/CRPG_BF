@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "SO_BF_LevelConfig", menuName = "CRPG BF/Battle/Level Config")]
-public class BF_LevelConfigSO : ScriptableObject {
+public class BF_LevelConfigSO : ScriptableObject
+{
     [Min(1)]
     [SerializeField]
     private int _width = 1;

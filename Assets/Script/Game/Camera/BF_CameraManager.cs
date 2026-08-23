@@ -4,7 +4,8 @@ using Unity.Cinemachine;
 /// <summary>
 /// Persistent 场景中的摄像头表现入口。
 /// </summary>
-public class BF_CameraManager : Singleton<BF_CameraManager> {
+public class BF_CameraManager : Singleton<BF_CameraManager>
+{
     [SerializeField]
     private CinemachineCamera _battleCamera;
 
@@ -27,11 +28,14 @@ public class BF_CameraManager : Singleton<BF_CameraManager> {
     private float _maxZoom = 5f;
 
     private float _zoomTarget;
-    protected override void Awake() {
+    protected override void Awake()
+    {
         base.Awake();
 
-        if (_battleCamera != null) {
-            if (_confiner == null) {
+        if (_battleCamera != null)
+        {
+            if (_confiner == null)
+            {
                 _confiner = _battleCamera.GetComponent<CinemachineConfiner2D>();
             }
 
@@ -39,8 +43,10 @@ public class BF_CameraManager : Singleton<BF_CameraManager> {
         }
     }
 
-    public void Focus(BF_BattleUnit unit) {
-        if (_battleCamera == null || unit == null) {
+    public void Focus(BF_BattleUnit unit)
+    {
+        if (_battleCamera == null || unit == null)
+        {
             return;
         }
 
@@ -50,19 +56,23 @@ public class BF_CameraManager : Singleton<BF_CameraManager> {
         _battleCamera.ForceCameraPosition(pos, _battleCamera.transform.rotation);
     }
 
-    private void Update() {
-        if (_battleCamera == null || BF_InputManager.Instance == null) {
+    private void Update()
+    {
+        if (_battleCamera == null || BF_InputManager.Instance == null)
+        {
             return;
         }
 
         Vector2 input = BF_InputManager.Instance.CameraMove;
-        if (input.sqrMagnitude > 0f) {
+        if (input.sqrMagnitude > 0f)
+        {
             Vector3 move = new Vector3(input.x, input.y, 0f).normalized;
             _battleCamera.transform.position += move * (_moveSpeed * Time.deltaTime);
         }
 
         float zoom = BF_InputManager.Instance.CameraZoom;
-        if (Mathf.Abs(zoom) > 0.01f) {
+        if (Mathf.Abs(zoom) > 0.01f)
+        {
             _zoomTarget = Mathf.Clamp(
                 _zoomTarget - Mathf.Sign(zoom) * _zoomStep,
                 _minZoom,
@@ -75,7 +85,8 @@ public class BF_CameraManager : Singleton<BF_CameraManager> {
             _zoomTarget,
             _zoomSpeed * Time.deltaTime);
 
-        if (Mathf.Approximately(lens.OrthographicSize, size)) {
+        if (Mathf.Approximately(lens.OrthographicSize, size))
+        {
             return;
         }
 
@@ -84,13 +95,16 @@ public class BF_CameraManager : Singleton<BF_CameraManager> {
         _confiner?.InvalidateLensCache();
     }
 
-    public void BindBounds() {
+    public void BindBounds()
+    {
         GameObject bounds = GameObject.FindGameObjectWithTag("Bounds");
         SetBounds(bounds == null ? null : bounds.GetComponent<Collider2D>());
     }
 
-    public void SetBounds(Collider2D bounds) {
-        if (_confiner == null) {
+    public void SetBounds(Collider2D bounds)
+    {
+        if (_confiner == null)
+        {
             return;
         }
 
@@ -99,7 +113,8 @@ public class BF_CameraManager : Singleton<BF_CameraManager> {
         _confiner.InvalidateLensCache();
     }
 
-    public void ClearBounds() {
+    public void ClearBounds()
+    {
         SetBounds(null);
     }
 

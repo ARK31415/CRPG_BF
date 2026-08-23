@@ -5,7 +5,8 @@ using UnityEngine;
 /// <summary>
 /// 处理测试单位的选择、可达高亮、路径预览和点击移动。
 /// </summary>
-public class BF_UnitMoveController : MonoBehaviour {
+public class BF_UnitMoveController : MonoBehaviour
+{
     [SerializeField]
     private BF_BoardManager _board;
 
@@ -28,25 +29,31 @@ public class BF_UnitMoveController : MonoBehaviour {
     public BF_BattleUnit Unit => _unit;
     public bool ActionDone { get; private set; }
 
-    private void Start() {
+    private void Start()
+    {
         _camera = Camera.main;
         SetupPathLine();
         HidePath();
     }
 
-    private void OnDestroy() {
-        if (_pathMaterial != null) {
+    private void OnDestroy()
+    {
+        if (_pathMaterial != null)
+        {
             Destroy(_pathMaterial);
         }
     }
 
-    private void Update() {
+    private void Update()
+    {
         if (_camera == null
-            || BF_InputManager.Instance == null) {
+            || BF_InputManager.Instance == null)
+        {
             return;
         }
 
-        if (_unit != null && _unit.IsMoving) {
+        if (_unit != null && _unit.IsMoving)
+        {
             return;
         }
 
@@ -54,37 +61,45 @@ public class BF_UnitMoveController : MonoBehaviour {
         Vector3 worldPos = _camera.ScreenToWorldPoint(mousePos);
         Vector2Int gridPos = _board.WorldToGrid(worldPos);
 
-        if (_unit != null && _isSelected) {
+        if (_unit != null && _isSelected)
+        {
             UpdatePath(gridPos);
         }
 
-        if (!BF_InputManager.Instance.ClickPressed) {
+        if (!BF_InputManager.Instance.ClickPressed)
+        {
             return;
         }
 
         if (_board.TryGetOccupant(gridPos, out GameObject occupant)
-            && occupant.TryGetComponent(out BF_BattleUnit unit)) {
+            && occupant.TryGetComponent(out BF_BattleUnit unit))
+        {
             _battleController.TrySelectPlayerUnit(unit);
             return;
         }
 
-        if (_unit == null) {
+        if (_unit == null)
+        {
             return;
         }
 
-        if (_isSelected && _path.Count > 0) {
+        if (_isSelected && _path.Count > 0)
+        {
             List<Vector2Int> movePath = new(_path);
             ClearSelection();
             StartCoroutine(MoveUnit(movePath));
         }
     }
 
-    public void SetBattleController(BF_BattleController battleController) {
+    public void SetBattleController(BF_BattleController battleController)
+    {
         _battleController = battleController;
     }
 
-    public void SetUnit(BF_BattleUnit unit) {
-        if (_unit == unit) {
+    public void SetUnit(BF_BattleUnit unit)
+    {
+        if (_unit == unit)
+        {
             return;
         }
 
@@ -93,31 +108,37 @@ public class BF_UnitMoveController : MonoBehaviour {
         ActionDone = false;
         _hasHoverPos = false;
 
-        if (_unit != null) {
+        if (_unit != null)
+        {
             SelectUnit();
         }
     }
 
-    public void ClearUnit() {
+    public void ClearUnit()
+    {
         ClearSelection();
         _unit = null;
         ActionDone = false;
     }
 
-    private void SelectUnit() {
+    private void SelectUnit()
+    {
         _reachable = BF_Pathfinder.FindReachable(
             _board,
             _unit.GridPos,
             _unit.MoveRange,
             _cameFrom);
 
-        foreach (Vector2Int pos in _reachable) {
-            if (_board.TryGetCell(pos, out BF_BoardCell cell)) {
+        foreach (Vector2Int pos in _reachable)
+        {
+            if (_board.TryGetCell(pos, out BF_BoardCell cell))
+            {
                 cell.SetReachable(true);
             }
         }
 
-        if (_board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell)) {
+        if (_board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell))
+        {
             unitCell.SetSelected(true);
         }
 
@@ -125,8 +146,10 @@ public class BF_UnitMoveController : MonoBehaviour {
         _hasHoverPos = false;
     }
 
-    private void UpdatePath(Vector2Int gridPos) {
-        if (_hasHoverPos && gridPos == _hoverPos) {
+    private void UpdatePath(Vector2Int gridPos)
+    {
+        if (_hasHoverPos && gridPos == _hoverPos)
+        {
             return;
         }
 
@@ -134,13 +157,15 @@ public class BF_UnitMoveController : MonoBehaviour {
         _hasHoverPos = true;
         ClearTarget();
 
-        if (!_reachable.Contains(gridPos)) {
+        if (!_reachable.Contains(gridPos))
+        {
             _path.Clear();
             HidePath();
             return;
         }
 
-        if (_board.TryGetCell(gridPos, out _targetCell)) {
+        if (_board.TryGetCell(gridPos, out _targetCell))
+        {
             _targetCell.SetSelected(true);
         }
 
@@ -148,18 +173,21 @@ public class BF_UnitMoveController : MonoBehaviour {
         ShowPath();
     }
 
-    private void ShowPath() {
+    private void ShowPath()
+    {
         _pathLine.positionCount = _path.Count + 1;
         _pathLine.SetPosition(0, _board.GridToWorld(_unit.GridPos));
 
-        for (int i = 0; i < _path.Count; i++) {
+        for (int i = 0; i < _path.Count; i++)
+        {
             _pathLine.SetPosition(i + 1, _board.GridToWorld(_path[i]));
         }
 
         _pathLine.enabled = true;
     }
 
-    private void SetupPathLine() {
+    private void SetupPathLine()
+    {
         _pathLine.useWorldSpace = true;
         _pathLine.startWidth = 0.08f;
         _pathLine.endWidth = 0.08f;
@@ -168,32 +196,39 @@ public class BF_UnitMoveController : MonoBehaviour {
         _pathLine.sortingLayerName = "Middle";
         _pathLine.sortingOrder = 4;
 
-        if (_pathLine.sharedMaterial != null) {
+        if (_pathLine.sharedMaterial != null)
+        {
             return;
         }
 
         Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default")
             ?? Shader.Find("Sprites/Default");
 
-        if (shader != null) {
+        if (shader != null)
+        {
             _pathMaterial = new Material(shader);
             _pathLine.sharedMaterial = _pathMaterial;
         }
     }
 
-    private void HidePath() {
+    private void HidePath()
+    {
         _pathLine.enabled = false;
         _pathLine.positionCount = 0;
     }
 
-    private void ClearSelection() {
-        foreach (Vector2Int pos in _reachable) {
-            if (_board.TryGetCell(pos, out BF_BoardCell cell)) {
+    private void ClearSelection()
+    {
+        foreach (Vector2Int pos in _reachable)
+        {
+            if (_board.TryGetCell(pos, out BF_BoardCell cell))
+            {
                 cell.SetReachable(false);
             }
         }
 
-        if (_unit != null && _board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell)) {
+        if (_unit != null && _board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell))
+        {
             unitCell.SetSelected(false);
         }
 
@@ -205,14 +240,17 @@ public class BF_UnitMoveController : MonoBehaviour {
         HidePath();
     }
 
-    private void ClearTarget() {
-        if (_targetCell != null) {
+    private void ClearTarget()
+    {
+        if (_targetCell != null)
+        {
             _targetCell.SetSelected(false);
             _targetCell = null;
         }
     }
 
-    private IEnumerator MoveUnit(List<Vector2Int> path) {
+    private IEnumerator MoveUnit(List<Vector2Int> path)
+    {
         BF_BattleUnit unit = _unit;
         yield return unit.Move(path);
         ActionDone = true;

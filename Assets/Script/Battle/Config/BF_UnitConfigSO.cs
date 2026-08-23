@@ -4,7 +4,8 @@ using UnityEngine;
 /// 单位静态描述、移动参数和基础动画控制器配置。
 /// </summary>
 [CreateAssetMenu(fileName = "SO_BF_UnitConfig", menuName = "CRPG BF/Battle/Unit Config")]
-public class BF_UnitConfigSO : ScriptableObject {
+public class BF_UnitConfigSO : ScriptableObject
+{
     [SerializeField]
     private string _id;
 
