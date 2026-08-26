@@ -7,6 +7,11 @@ using UnityEngine;
 /// </summary>
 public class BF_BattleUnit : MonoBehaviour
 {
+    private static readonly int IsMovingId = Animator.StringToHash("IsMoving");
+    private static readonly int AttackId = Animator.StringToHash("Attack");
+    private static readonly int HurtId = Animator.StringToHash("Hurt");
+    private static readonly int IsDeadId = Animator.StringToHash("IsDead");
+
     [SerializeField]
     private BF_BoardManager _board;
 
@@ -31,7 +36,14 @@ public class BF_BattleUnit : MonoBehaviour
     public string UnitId => _config != null ? _config.Id : string.Empty;
     public string DisplayName => _config != null && !string.IsNullOrEmpty(_config.DisplayName) ? _config.DisplayName : gameObject.name;
     public int MoveRange => _config != null ? _config.MoveRange : 0;
+    public int MaxHP => _config != null ? _config.MaxHP : 0;
+    public int MaxAP => _config != null ? _config.MaxAP : 0;
+    public int CurrentHP { get; private set; }
+    public int CurrentAP { get; private set; }
+    public bool IsAlive => CurrentHP > 0;
     public bool IsMoving { get; private set; }
+    public bool IsActing { get; private set; }
+    public bool IsTurnEnded { get; private set; }
     public bool HasActed { get; private set; }
 
     private void Start()
@@ -45,7 +57,11 @@ public class BF_BattleUnit : MonoBehaviour
             return;
         }
 
-        if(_sprite == null)
+        CurrentHP = _config.MaxHP;
+        CurrentAP = 0;
+        IsTurnEnded = false;
+
+        if (_sprite == null)
         {
             _sprite = GetComponent<SpriteRenderer>();
         }
@@ -59,7 +75,8 @@ public class BF_BattleUnit : MonoBehaviour
         if (_animator != null && _config.AnimatorController != null)
         {
             _animator.runtimeAnimatorController = _config.AnimatorController;
-            _animator.SetBool("IsMoving", false);
+            _animator.SetBool(IsMovingId, false);
+            _animator.SetBool(IsDeadId, false);
         }
 
         if (_board == null || !_board.IsInitialized || !_board.TryOccupy(GridPos, gameObject))
@@ -69,16 +86,51 @@ public class BF_BattleUnit : MonoBehaviour
         }
 
         transform.position = _board.GridToWorld(GridPos);
+        PublishStats();
     }
 
     public void ResetTurn()
     {
+        if (!IsAlive)
+        {
+            return;
+        }
+
+        CurrentAP = MaxAP;
+        IsTurnEnded = false;
         HasActed = false;
+        PublishStats();
     }
 
     public void FinishTurn()
     {
+        CurrentAP = 0;
+        IsTurnEnded = true;
         HasActed = true;
+        PublishStats();
+    }
+
+    public bool CanPay(int cost)
+    {
+        return IsAlive && !IsTurnEnded && !IsMoving && !IsActing && CurrentAP >= cost;
+    }
+
+    public bool SpendAP(int cost)
+    {
+        if (cost < 0 || !CanPay(cost))
+        {
+            return false;
+        }
+
+        CurrentAP -= cost;
+        if (CurrentAP == 0)
+        {
+            IsTurnEnded = true;
+            HasActed = true;
+        }
+
+        PublishStats();
+        return true;
     }
 
     /// <summary>
@@ -94,7 +146,7 @@ public class BF_BattleUnit : MonoBehaviour
         IsMoving = true;
         if (_animator != null)
         {
-            _animator.SetBool("IsMoving", true);
+            _animator.SetBool(IsMovingId, true);
         }
 
         Vector2Int from = GridPos;
@@ -132,13 +184,85 @@ public class BF_BattleUnit : MonoBehaviour
         IsMoving = false;
         if (_animator != null)
         {
-            _animator.SetBool("IsMoving", false);
+            _animator.SetBool(IsMovingId, false);
         }
+    }
+
+    public IEnumerator Attack(BF_BattleUnit target)
+    {
+        BF_SkillConfigSO skill = _config != null ? _config.BasicAttack : null;
+        if (target == null || skill == null || !CanPay(skill.APCost))
+        {
+            yield break;
+        }
+
+        SpendAP(skill.APCost);
+        IsActing = true;
+        UpdateFacing(target.GridPos.x - GridPos.x);
+
+        if (_animator != null)
+        {
+            _animator.SetTrigger(AttackId);
+        }
+
+        if (skill.HitDelay > 0f)
+        {
+            yield return new WaitForSeconds(skill.HitDelay);
+        }
+
+        if (target.IsAlive)
+        {
+            int damage = Mathf.Max(1, _config.Attack + skill.Power - target.Config.Defense);
+            target.TakeDamage(damage);
+        }
+
+        float remaining = Mathf.Max(0f, skill.Duration - skill.HitDelay);
+        if (remaining > 0f)
+        {
+            yield return new WaitForSeconds(remaining);
+        }
+
+        IsActing = false;
+        PublishStats();
+    }
+
+    public void TakeDamage(int damage)
+    {
+        if (!IsAlive)
+        {
+            return;
+        }
+
+        CurrentHP = Mathf.Max(0, CurrentHP - Mathf.Max(0, damage));
+
+        if (CurrentHP == 0)
+        {
+            Die();
+        }
+        else if (_animator != null)
+        {
+            _animator.SetTrigger(HurtId);
+        }
+
+        PublishStats();
+    }
+
+    // 迁移来的动画保留了旧事件；当前伤害时点由 SkillSO.HitDelay 统一控制。
+    public void OnAnimationAttackHit()
+    {
+    }
+
+    // Demo 保留死亡单位在场景中显示尸体，不在动画结束时销毁对象。
+    public void OnAnimationDeathFinished()
+    {
     }
 
     private void SetFacing(bool faceRight)
     {
-        _sprite.flipX = !faceRight;
+        if (_sprite != null)
+        {
+            _sprite.flipX = !faceRight;
+        }
     }
 
     private void UpdateFacing(int x)
@@ -151,5 +275,24 @@ public class BF_BattleUnit : MonoBehaviour
         {
             SetFacing(false);
         }
+    }
+
+    private void Die()
+    {
+        CurrentAP = 0;
+        IsTurnEnded = true;
+        HasActed = true;
+        _board?.TryVacate(GridPos, gameObject);
+
+        if (_animator != null)
+        {
+            _animator.SetBool(IsMovingId, false);
+            _animator.SetBool(IsDeadId, true);
+        }
+    }
+
+    private void PublishStats()
+    {
+        GameEventBus.Instance?.Publish(new BF_UnitStatsChangedEvent(this));
     }
 }

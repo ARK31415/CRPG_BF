@@ -15,6 +15,11 @@ MonoBehaviour:
   _id: Knight
   _displayName: Knight
   _description: Close-range melee fighter.
+  _maxHP: 12
+  _attack: 3
+  _defense: 1
+  _maxAP: 6
+  _basicAttack: {fileID: 11400000, guid: c55a5e673ff1607469851324481faa9a, type: 2}
   _moveRange: 4
   _moveSpeed: 4
   _animatorController: {fileID: 9100000, guid: 5211b10c6bcf897418d5041598aa12ff, type: 2}

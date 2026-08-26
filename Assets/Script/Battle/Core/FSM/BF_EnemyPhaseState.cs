@@ -9,6 +9,7 @@ public class BF_EnemyPhaseState : BF_BattleState
 
     public override IEnumerator Enter()
     {
+        controller.StartEnemyRound();
         controller.SetPhase(BF_BattlePhase.EnemyPhase);
 
         Debug.Log($"[BF] Enemy Phase Start - Round {controller.Round}");
@@ -17,11 +18,11 @@ public class BF_EnemyPhaseState : BF_BattleState
 
     public override IEnumerator Execute()
     {
-        while (controller.TryGetNextUnit(BF_UnitTeam.Enemy, out BF_BattleUnit unit))
+        yield return controller.RunEnemyPhase();
+
+        if (controller.IsBattleEnded)
         {
-            unit.FinishTurn();
-            Debug.Log($"[BF] Enemy Unit Auto Pass: {unit.DisplayName}");
-            yield return null;
+            yield break;
         }
 
         Debug.Log($"[BF] Enemy Phase End - Round {controller.Round}");

@@ -11,6 +11,7 @@ public class BF_InputManager : Singleton<BF_InputManager>
     public Vector2 CameraMove => _actions.Player.CameraMove.ReadValue<Vector2>();
     public float CameraZoom => _actions.Player.CameraZoom.ReadValue<Vector2>().y;
     public bool ClickPressed => _actions.Player.Click.WasPressedThisFrame();
+    public bool AttackPressed => _actions.Player.Attack.WasPressedThisFrame();
     public bool NextUnitPressed => _actions.Player.NextUnit.WasPressedThisFrame();
     public bool CancelSelectionPressed => _actions.Player.CancelSelection.WasPressedThisFrame();
     public bool EndPlayerPhasePressed => _actions.Player.EndPlayerPhase.WasPressedThisFrame();

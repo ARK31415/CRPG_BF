@@ -28,12 +28,14 @@ public class BF_UnitMovementPlayModeTests {
         GameObject blocker = Track(new GameObject("Blocker"));
         board.TryOccupy(new Vector2Int(1, 1), blocker);
         Dictionary<Vector2Int, Vector2Int> cameFrom = new();
+        Dictionary<Vector2Int, int> cost = new();
 
         HashSet<Vector2Int> reachable = BF_Pathfinder.FindReachable(
             board,
             new Vector2Int(0, 1),
             4,
-            cameFrom);
+            cameFrom,
+            cost);
 
         Assert.That(reachable.Contains(new Vector2Int(0, 2)), Is.False);
         Assert.That(reachable.Contains(new Vector2Int(1, 1)), Is.False);
@@ -44,10 +46,11 @@ public class BF_UnitMovementPlayModeTests {
     public void BuildPath_ReturnsShortestPathWithoutStartCell() {
         BF_BoardManager board = CreateBoard(4, 3);
         Dictionary<Vector2Int, Vector2Int> cameFrom = new();
+        Dictionary<Vector2Int, int> cost = new();
         Vector2Int start = new(0, 1);
         Vector2Int target = new(2, 1);
 
-        BF_Pathfinder.FindReachable(board, start, 2, cameFrom);
+        BF_Pathfinder.FindReachable(board, start, 2, cameFrom, cost);
         List<Vector2Int> path = BF_Pathfinder.BuildPath(start, target, cameFrom);
 
         Assert.That(path.Count, Is.EqualTo(2));

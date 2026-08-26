@@ -32,5 +32,20 @@ public enum BF_BattlePhase
     None,
     SetupPhase,
     PlayerPhase,
-    EnemyPhase
+    EnemyPhase,
+    BattleEnd
+}
+
+public enum BF_PlayerActionMode
+{
+    Move,
+    Attack,
+    Executing
+}
+
+public enum BF_BattleResult
+{
+    None,
+    Victory,
+    Defeat
 }

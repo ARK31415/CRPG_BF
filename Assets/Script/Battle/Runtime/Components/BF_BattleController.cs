@@ -22,10 +22,13 @@ public class BF_BattleController : MonoBehaviour
     public BF_BattlePhase CurrentPhase {get; private set; } = BF_BattlePhase.None;
     public int Round { get; private set; }
     public bool PlayerPhaseEnded => _playerPhaseEnded;
+    public bool IsBattleEnded { get; private set; }
 
     private void Awake()
     {
         GameEventBus.Instance?.Subscribe<BF_EndPlayerPhaseRequestEvent>(OnEndPlayerPhaseRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
+        GameEventBus.Instance?.Subscribe<BF_AttackRequestEvent>(OnAttackRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
+        GameEventBus.Instance?.Subscribe<BF_EndUnitRequestEvent>(OnEndUnitRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
     }
 
     private void Start()
@@ -37,10 +40,11 @@ public class BF_BattleController : MonoBehaviour
 
     private void Update()
     {
-        if (_playerPhaseEnded
+        if (IsBattleEnded
+            || _playerPhaseEnded
             || _state is not BF_PlayerPhaseState
             || BF_InputManager.Instance == null
-            || (CurrentUnit != null && CurrentUnit.IsMoving))
+            || (CurrentUnit != null && (CurrentUnit.IsMoving || CurrentUnit.IsActing)))
         {
             return;
         }
@@ -104,7 +108,21 @@ public class BF_BattleController : MonoBehaviour
 
         foreach (BF_BattleUnit unit in _units)
         {
-            unit.ResetTurn();
+            if (unit.Team == BF_UnitTeam.Player)
+            {
+                unit.ResetTurn();
+            }
+        }
+    }
+
+    public void StartEnemyRound()
+    {
+        foreach (BF_BattleUnit unit in _units)
+        {
+            if (unit.Team == BF_UnitTeam.Enemy)
+            {
+                unit.ResetTurn();
+            }
         }
     }
 
@@ -120,8 +138,10 @@ public class BF_BattleController : MonoBehaviour
             || _playerPhaseEnded
             || unit == null
             || unit.Team != BF_UnitTeam.Player
-            || unit.HasActed
-            || (CurrentUnit != null && CurrentUnit.IsMoving))
+            || !unit.IsAlive
+            || unit.IsTurnEnded
+            || unit.CurrentAP <= 0
+            || (CurrentUnit != null && (CurrentUnit.IsMoving || CurrentUnit.IsActing)))
         {
             return false;
         }
@@ -129,6 +149,7 @@ public class BF_BattleController : MonoBehaviour
         CurrentUnit = unit;
         _moveController.SetUnit(unit);
         BF_CameraManager.Instance?.Focus(unit.transform);
+        GameEventBus.Instance?.Publish(new BF_UnitSelectedEvent(unit));
         Debug.Log($"[BF] Player Unit Selected: {unit.DisplayName}");
         return true;
     }
@@ -140,7 +161,10 @@ public class BF_BattleController : MonoBehaviour
         for (int offset = 1; offset <= _units.Count; offset++)
         {
             BF_BattleUnit unit = _units[(start + offset) % _units.Count];
-            if (unit.Team == BF_UnitTeam.Player && !unit.HasActed)
+            if (unit.Team == BF_UnitTeam.Player
+                && unit.IsAlive
+                && !unit.IsTurnEnded
+                && unit.CurrentAP > 0)
             {
                 TrySelectPlayerUnit(unit);
                 return;
@@ -156,8 +180,29 @@ public class BF_BattleController : MonoBehaviour
         }
 
         unit.FinishTurn();
-        Debug.Log($"[BF] Player Unit Acted: {unit.DisplayName}");
+        Debug.Log($"[BF] Player Unit Ended: {unit.DisplayName}");
         ClearCurrentUnit();
+        SelectFirstPlayerUnit();
+    }
+
+    public void OnUnitActionFinished(BF_BattleUnit unit)
+    {
+        CheckBattleResult();
+        if (IsBattleEnded || unit == null || unit != CurrentUnit)
+        {
+            return;
+        }
+
+        if (unit.IsTurnEnded || unit.CurrentAP <= 0)
+        {
+            Debug.Log($"[BF] Player Unit AP Empty: {unit.DisplayName}");
+            ClearCurrentUnit();
+            SelectFirstPlayerUnit();
+            return;
+        }
+
+        _moveController.RefreshSelection();
+        GameEventBus.Instance?.Publish(new BF_UnitSelectedEvent(unit));
     }
 
     public bool AreAllUnitsDone(BF_UnitTeam team)
@@ -168,12 +213,21 @@ public class BF_BattleController : MonoBehaviour
     public void EndPlayerPhase()
     {
         if (_state is not BF_PlayerPhaseState
-            || (CurrentUnit != null && CurrentUnit.IsMoving))
+            || (CurrentUnit != null && (CurrentUnit.IsMoving || CurrentUnit.IsActing)))
         {
             return;
         }
 
         ClearCurrentUnit();
+
+        foreach (BF_BattleUnit unit in _units)
+        {
+            if (unit.Team == BF_UnitTeam.Player && unit.IsAlive && !unit.IsTurnEnded)
+            {
+                unit.FinishTurn();
+            }
+        }
+
         _playerPhaseEnded = true;
     }
 
@@ -181,7 +235,13 @@ public class BF_BattleController : MonoBehaviour
     {
         if (_state is not BF_PlayerPhaseState
             || CurrentUnit == null
-            || CurrentUnit.IsMoving)
+            || CurrentUnit.IsMoving
+            || CurrentUnit.IsActing)
+        {
+            return;
+        }
+
+        if (_moveController.CancelActionMode())
         {
             return;
         }
@@ -194,6 +254,7 @@ public class BF_BattleController : MonoBehaviour
     {
         _moveController.ClearUnit();
         CurrentUnit = null;
+        GameEventBus.Instance?.Publish(new BF_UnitSelectedEvent(null));
     }
 
     public bool TryGetNextUnit(BF_UnitTeam team, out BF_BattleUnit unit)
@@ -201,7 +262,10 @@ public class BF_BattleController : MonoBehaviour
         for (int i = 0; i < _units.Count; i++)
         {
             BF_BattleUnit next = _units[i];
-            if (next.Team == team && !next.HasActed)
+            if (next.Team == team
+                && next.IsAlive
+                && !next.IsTurnEnded
+                && next.CurrentAP > 0)
             {
                 unit = next;
                 return true;
@@ -210,6 +274,48 @@ public class BF_BattleController : MonoBehaviour
 
         unit = null;
         return false;
+    }
+
+    public IEnumerator RunEnemyPhase()
+    {
+        while (!IsBattleEnded && TryGetNextUnit(BF_UnitTeam.Enemy, out BF_BattleUnit enemy))
+        {
+            BF_SkillConfigSO skill = enemy.Config.BasicAttack;
+            BF_BattleUnit target = FindTarget(enemy, BF_UnitTeam.Player, skill != null ? skill.Range : 0);
+
+            while (skill != null
+                && target != null
+                && enemy.CanPay(skill.APCost)
+                && !IsBattleEnded)
+            {
+                Debug.Log($"[BF] Enemy Attack: {enemy.DisplayName} -> {target.DisplayName}");
+                yield return enemy.Attack(target);
+                CheckBattleResult();
+                target = FindTarget(enemy, BF_UnitTeam.Player, skill.Range);
+            }
+
+            if (enemy.IsAlive && !enemy.IsTurnEnded)
+            {
+                enemy.FinishTurn();
+            }
+
+            yield return null;
+        }
+    }
+
+    public void CheckBattleResult()
+    {
+        bool hasPlayer = HasLivingUnit(BF_UnitTeam.Player);
+        bool hasEnemy = HasLivingUnit(BF_UnitTeam.Enemy);
+
+        if (!hasEnemy)
+        {
+            EndBattle(BF_BattleResult.Victory);
+        }
+        else if (!hasPlayer)
+        {
+            EndBattle(BF_BattleResult.Defeat);
+        }
     }
 
     private IEnumerator BattleLoopRoutine()
@@ -246,5 +352,64 @@ public class BF_BattleController : MonoBehaviour
     private void OnEndPlayerPhaseRequested(BF_EndPlayerPhaseRequestEvent requestEvent)
     {
         EndPlayerPhase();
+    }
+
+    private void OnAttackRequested(BF_AttackRequestEvent requestEvent)
+    {
+        if (!IsBattleEnded && _state is BF_PlayerPhaseState && CurrentUnit != null)
+        {
+            _moveController.EnterAttackMode();
+        }
+    }
+
+    private void OnEndUnitRequested(BF_EndUnitRequestEvent requestEvent)
+    {
+        FinishUnit(CurrentUnit);
+    }
+
+    private BF_BattleUnit FindTarget(BF_BattleUnit attacker, BF_UnitTeam targetTeam, int range)
+    {
+        for (int i = 0; i < _units.Count; i++)
+        {
+            BF_BattleUnit target = _units[i];
+            int distance = Mathf.Abs(attacker.GridPos.x - target.GridPos.x)
+                + Mathf.Abs(attacker.GridPos.y - target.GridPos.y);
+
+            if (target.Team == targetTeam && target.IsAlive && distance <= range)
+            {
+                return target;
+            }
+        }
+
+        return null;
+    }
+
+    private bool HasLivingUnit(BF_UnitTeam team)
+    {
+        for (int i = 0; i < _units.Count; i++)
+        {
+            if (_units[i].Team == team && _units[i].IsAlive)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void EndBattle(BF_BattleResult result)
+    {
+        if (IsBattleEnded)
+        {
+            return;
+        }
+
+        IsBattleEnded = true;
+        _playerPhaseEnded = true;
+        ClearCurrentUnit();
+        SetPhase(BF_BattlePhase.BattleEnd);
+        GameEventBus.Instance?.Publish(new BF_BattleResultEvent(result));
+        Debug.Log($"[BF] Battle End: {result}");
+        _running = false;
     }
 }

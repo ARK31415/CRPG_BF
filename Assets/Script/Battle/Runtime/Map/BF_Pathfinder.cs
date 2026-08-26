@@ -17,20 +17,21 @@ public static class BF_Pathfinder
         BF_BoardManager board,
         Vector2Int start,
         int moveRange,
-        Dictionary<Vector2Int, Vector2Int> cameFrom)
+        Dictionary<Vector2Int, Vector2Int> cameFrom,
+        Dictionary<Vector2Int, int> cost)
     {
         HashSet<Vector2Int> reachable = new();
         Queue<Vector2Int> open = new();
-        Dictionary<Vector2Int, int> distance = new();
 
         cameFrom.Clear();
+        cost.Clear();
         open.Enqueue(start);
-        distance[start] = 0;
+        cost[start] = 0;
 
         while (open.Count > 0)
         {
             Vector2Int current = open.Dequeue();
-            int nextDistance = distance[current] + 1;
+            int nextDistance = cost[current] + 1;
 
             if (nextDistance > moveRange)
             {
@@ -41,12 +42,12 @@ public static class BF_Pathfinder
             {
                 Vector2Int next = current + Directions[i];
 
-                if (distance.ContainsKey(next) || !board.CanEnter(next))
+                if (cost.ContainsKey(next) || !board.CanEnter(next))
                 {
                     continue;
                 }
 
-                distance[next] = nextDistance;
+                cost[next] = nextDistance;
                 cameFrom[next] = current;
                 reachable.Add(next);
                 open.Enqueue(next);
