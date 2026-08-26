@@ -15,7 +15,11 @@ public class BF_LevelConfigSO : ScriptableObject
     [SerializeField]
     private List<Vector2Int> _blockedCells = new();
 
+    [SerializeField]
+    private List<BF_UnitSpawnData> _unitSpawns = new();
+
     public int Width => _width;
     public int Height => _height;
     public List<Vector2Int> BlockedCells => _blockedCells;
+    public List<BF_UnitSpawnData> UnitSpawns => _unitSpawns;
 }

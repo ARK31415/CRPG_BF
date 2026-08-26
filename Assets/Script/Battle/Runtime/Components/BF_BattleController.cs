@@ -10,6 +10,9 @@ public class BF_BattleController : MonoBehaviour
     [SerializeField]
     private BF_UnitMoveController _moveController;
 
+    [SerializeField]
+    private BF_UnitSpawner _unitSpawner;
+
     private readonly List<BF_BattleUnit> _units = new();
     private BF_BattleState _state;
     private Coroutine _battleLoop;
@@ -18,6 +21,7 @@ public class BF_BattleController : MonoBehaviour
 
     public IReadOnlyList<BF_BattleUnit> Units => _units;
     public BF_UnitMoveController MoveController => _moveController;
+    public BF_UnitSpawner UnitSpawner => _unitSpawner;
     public BF_BattleUnit CurrentUnit { get; private set; }
     public BF_BattlePhase CurrentPhase {get; private set; } = BF_BattlePhase.None;
     public int Round { get; private set; }
@@ -94,11 +98,14 @@ public class BF_BattleController : MonoBehaviour
         GameEventBus.Instance?.Publish(new BF_BattlePhaseChangeEvent(CurrentPhase, Round));
     }
 
-    public void CacheUnits()
+    public void SetUnits(IReadOnlyList<BF_BattleUnit> units)
     {
         _units.Clear();
-        _units.AddRange(FindObjectsByType<BF_BattleUnit>(FindObjectsSortMode.None));
-        _units.Sort((a, b) => string.CompareOrdinal(a.gameObject.name, b.gameObject.name));
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            _units.Add(units[i]);
+        }
     }
 
     public void StartPlayerRound()

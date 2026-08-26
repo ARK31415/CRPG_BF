@@ -11,6 +11,7 @@ public class BF_BoardManager : MonoBehaviour
 
     private BF_BoardCell[,] _cells;
 
+    public BF_LevelConfigSO LevelConfig => _levelConfig;
     public bool IsInitialized { get; private set; }
 
     private void Awake()

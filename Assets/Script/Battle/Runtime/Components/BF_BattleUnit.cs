@@ -12,10 +12,7 @@ public class BF_BattleUnit : MonoBehaviour
     private static readonly int HurtId = Animator.StringToHash("Hurt");
     private static readonly int IsDeadId = Animator.StringToHash("IsDead");
 
-    [SerializeField]
     private BF_BoardManager _board;
-
-    [SerializeField]
     private BF_UnitConfigSO _config;
 
     [SerializeField]
@@ -25,19 +22,20 @@ public class BF_BattleUnit : MonoBehaviour
     private SpriteRenderer _sprite;
 
     [SerializeField]
-    private Vector2Int _startPos = new(1, 1);
+    private Transform _worldUIAnchor;
 
     [SerializeField]
-    private BF_UnitTeam _team = BF_UnitTeam.Player;
+    private Transform _damagePopupAnchor;
 
     public Vector2Int GridPos { get; private set; }
-    public BF_UnitTeam Team => _team;
+    public BF_UnitTeam Team { get; private set; }
     public BF_UnitConfigSO Config => _config;
     public string UnitId => _config != null ? _config.Id : string.Empty;
     public string DisplayName => _config != null && !string.IsNullOrEmpty(_config.DisplayName) ? _config.DisplayName : gameObject.name;
-    public int MoveRange => _config != null ? _config.MoveRange : 0;
     public int MaxHP => _config != null ? _config.MaxHP : 0;
     public int MaxAP => _config != null ? _config.MaxAP : 0;
+    public Transform WorldUIAnchor => _worldUIAnchor;
+    public Transform DamagePopupAnchor => _damagePopupAnchor;
     public int CurrentHP { get; private set; }
     public int CurrentAP { get; private set; }
     public bool IsAlive => CurrentHP > 0;
@@ -46,9 +44,16 @@ public class BF_BattleUnit : MonoBehaviour
     public bool IsTurnEnded { get; private set; }
     public bool HasActed { get; private set; }
 
-    private void Start()
+    public void Init(
+        BF_BoardManager board,
+        BF_UnitConfigSO config,
+        BF_UnitTeam team,
+        Vector2Int pos)
     {
-        GridPos = _startPos;
+        _board = board;
+        _config = config;
+        Team = team;
+        GridPos = pos;
         HasActed = false;
 
         if (_config == null)
@@ -61,16 +66,7 @@ public class BF_BattleUnit : MonoBehaviour
         CurrentAP = 0;
         IsTurnEnded = false;
 
-        if (_sprite == null)
-        {
-            _sprite = GetComponent<SpriteRenderer>();
-        }
-        SetFacing(_team == BF_UnitTeam.Player);
-
-        if (_animator == null)
-        {
-            _animator = GetComponent<Animator>();
-        }
+        SetFacing(Team == BF_UnitTeam.Player);
 
         if (_animator != null && _config.AnimatorController != null)
         {
@@ -267,11 +263,11 @@ public class BF_BattleUnit : MonoBehaviour
 
     private void UpdateFacing(int x)
     {
-        if(x > 0)
+        if (x > 0)
         {
             SetFacing(true);
         }
-        else if(x < 0)
+        else if (x < 0)
         {
             SetFacing(false);
         }

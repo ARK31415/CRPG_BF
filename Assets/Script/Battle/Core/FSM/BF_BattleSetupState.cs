@@ -10,7 +10,7 @@ public class BF_BattleSetupState : BF_BattleState
     public override IEnumerator Execute()
     {
         controller.SetPhase(BF_BattlePhase.SetupPhase);
-        controller.CacheUnits();
+        controller.SetUnits(controller.UnitSpawner.SpawnUnits());
 
         Debug.Log($"[BF] Battle Setup - Units: {controller.Units.Count}");
 

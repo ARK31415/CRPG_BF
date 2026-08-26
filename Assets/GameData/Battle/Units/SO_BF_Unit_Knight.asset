@@ -20,6 +20,6 @@ MonoBehaviour:
   _defense: 1
   _maxAP: 6
   _basicAttack: {fileID: 11400000, guid: c55a5e673ff1607469851324481faa9a, type: 2}
-  _moveRange: 4
+  _portrait: {fileID: -3858063850402955622, guid: 154d8ea5265de834284f783d0ff85680, type: 3}
   _moveSpeed: 4
   _animatorController: {fileID: 9100000, guid: 5211b10c6bcf897418d5041598aa12ff, type: 2}

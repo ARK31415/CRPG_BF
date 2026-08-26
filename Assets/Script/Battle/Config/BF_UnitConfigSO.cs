@@ -36,11 +36,11 @@ public class BF_UnitConfigSO : ScriptableObject
     [SerializeField]
     private BF_SkillConfigSO _basicAttack;
 
-    [Header("Move")]
-    [Min(1)]
+    [Header("Display")]
     [SerializeField]
-    private int _moveRange = 4;
+    private Sprite _portrait;
 
+    [Header("Move")]
     [Min(0.1f)]
     [SerializeField]
     private float _moveSpeed = 4f;
@@ -56,7 +56,7 @@ public class BF_UnitConfigSO : ScriptableObject
     public int Defense => _defense;
     public int MaxAP => _maxAP;
     public BF_SkillConfigSO BasicAttack => _basicAttack;
-    public int MoveRange => _moveRange;
+    public Sprite Portrait => _portrait;
     public float MoveSpeed => _moveSpeed;
     public RuntimeAnimatorController AnimatorController => _animatorController;
 }
