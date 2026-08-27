@@ -140,12 +140,12 @@ TextureImporter:
       name: Wizard_Attack02_0
       rect:
         serializedVersion: 2
-        x: 42
-        y: 41
-        width: 19
-        height: 21
+        x: 32
+        y: 32
+        width: 36
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -162,12 +162,12 @@ TextureImporter:
       name: Wizard_Attack02_1
       rect:
         serializedVersion: 2
-        x: 142
-        y: 42
-        width: 20
-        height: 21
+        x: 132
+        y: 32
+        width: 36
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -184,12 +184,12 @@ TextureImporter:
       name: Wizard_Attack02_2
       rect:
         serializedVersion: 2
-        x: 242
-        y: 42
-        width: 19
-        height: 22
+        x: 232
+        y: 32
+        width: 36
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -206,12 +206,12 @@ TextureImporter:
       name: Wizard_Attack02_3
       rect:
         serializedVersion: 2
-        x: 337
-        y: 42
-        width: 21
-        height: 27
+        x: 332
+        y: 32
+        width: 36
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -228,12 +228,12 @@ TextureImporter:
       name: Wizard_Attack02_4
       rect:
         serializedVersion: 2
-        x: 443
-        y: 42
-        width: 30
-        height: 20
+        x: 432
+        y: 32
+        width: 48
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -250,12 +250,12 @@ TextureImporter:
       name: Wizard_Attack02_5
       rect:
         serializedVersion: 2
-        x: 543
-        y: 42
-        width: 32
-        height: 20
+        x: 532
+        y: 32
+        width: 48
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -272,12 +272,12 @@ TextureImporter:
       name: Wizard_Attack02_6
       rect:
         serializedVersion: 2
-        x: 643
-        y: 42
-        width: 34
-        height: 20
+        x: 632
+        y: 32
+        width: 48
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -294,12 +294,12 @@ TextureImporter:
       name: Wizard_Attack02_7
       rect:
         serializedVersion: 2
-        x: 743
-        y: 42
-        width: 35
-        height: 20
+        x: 732
+        y: 32
+        width: 48
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -316,12 +316,12 @@ TextureImporter:
       name: Wizard_Attack02_8
       rect:
         serializedVersion: 2
-        x: 843
-        y: 42
-        width: 30
-        height: 20
+        x: 832
+        y: 32
+        width: 48
+        height: 36
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -338,7 +338,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: cafc953208e5a674fa79df7623a1ba67
     internalID: 0
     vertices: []
     indices: 

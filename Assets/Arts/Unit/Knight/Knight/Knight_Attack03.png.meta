@@ -152,12 +152,12 @@ TextureImporter:
       name: Knight_Attack03_0
       rect:
         serializedVersion: 2
-        x: 140
-        y: 42
-        width: 17
-        height: 25
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 132
+        y: 32
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.38139758, y: 0.38837433}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -174,12 +174,12 @@ TextureImporter:
       name: Knight_Attack03_1
       rect:
         serializedVersion: 2
-        x: 240
-        y: 42
-        width: 17
-        height: 25
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 232
+        y: 32
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.41628042, y: 0.38139772}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -196,12 +196,12 @@ TextureImporter:
       name: Knight_Attack03_2
       rect:
         serializedVersion: 2
-        x: 340
-        y: 42
-        width: 17
-        height: 25
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 332
+        y: 32
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.4023272, y: 0.38139772}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -218,12 +218,12 @@ TextureImporter:
       name: Knight_Attack03_3
       rect:
         serializedVersion: 2
-        x: 440
-        y: 42
-        width: 28
-        height: 26
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 432
+        y: 32
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.41628012, y: 0.39535093}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -240,12 +240,12 @@ TextureImporter:
       name: Knight_Attack03_4
       rect:
         serializedVersion: 2
-        x: 537
-        y: 42
-        width: 34
-        height: 25
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 532
+        y: 32
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.38837433, y: 0.38139772}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -262,12 +262,12 @@ TextureImporter:
       name: Knight_Attack03_5
       rect:
         serializedVersion: 2
-        x: 633
-        y: 42
-        width: 41
-        height: 25
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 632
+        y: 32
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.4232572, y: 0.38139772}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -284,12 +284,12 @@ TextureImporter:
       name: Knight_Attack03_6
       rect:
         serializedVersion: 2
-        x: 742
-        y: 40
-        width: 50
-        height: 35
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 732
+        y: 32
+        width: 64
+        height: 48
+      alignment: 9
+      pivot: {x: 0.34079838, y: 0.3924907}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -306,12 +306,12 @@ TextureImporter:
       name: Knight_Attack03_7
       rect:
         serializedVersion: 2
-        x: 842
-        y: 40
-        width: 50
-        height: 35
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 832
+        y: 32
+        width: 64
+        height: 48
+      alignment: 9
+      pivot: {x: 0.3460312, y: 0.3924907}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -328,12 +328,12 @@ TextureImporter:
       name: Knight_Attack03_8
       rect:
         serializedVersion: 2
-        x: 884
-        y: 63
-        width: 6
-        height: 7
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 932
+        y: 32
+        width: 64
+        height: 48
+      alignment: 9
+      pivot: {x: 0.32818794, y: 0.3687009}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -350,12 +350,12 @@ TextureImporter:
       name: Knight_Attack03_9
       rect:
         serializedVersion: 2
-        x: 942
-        y: 40
-        width: 51
-        height: 30
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 1032
+        y: 32
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.44418588, y: 0.3604679}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -372,12 +372,12 @@ TextureImporter:
       name: Knight_Attack03_10
       rect:
         serializedVersion: 2
-        x: 40
-        y: 42
-        width: 28
-        height: 20
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 32
+        y: 32
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.41628075, y: 0.3604679}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -390,55 +390,11 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
-    - serializedVersion: 2
-      name: Knight_Attack03_11
-      rect:
-        serializedVersion: 2
-        x: 883
-        y: 40
-        width: 10
-        height: 7
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: a466380a692758a00800000000000000
-      internalID: 758138103545423434
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Knight_Attack03_12
-      rect:
-        serializedVersion: 2
-        x: 1042
-        y: 40
-        width: 27
-        height: 21
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: e1a201dd454ea02f0800000000000000
-      internalID: -1005740513626674658
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5925f2b5ffb375343b4adc20b199bda6
     internalID: 0
     vertices: []
     indices: 
