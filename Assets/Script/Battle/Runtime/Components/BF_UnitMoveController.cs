@@ -72,6 +72,18 @@ public class BF_UnitMoveController : MonoBehaviour
             UpdatePath(gridPos);
         }
 
+        if (BF_InputManager.Instance.MovePressed)
+        {
+            if (Mode == BF_PlayerActionMode.Attack)
+            {
+                CancelActionMode();
+                return;
+            }
+
+            TryMove();
+            return;
+        }
+
         if (!BF_InputManager.Instance.ClickPressed)
         {
             return;
@@ -87,15 +99,6 @@ public class BF_UnitMoveController : MonoBehaviour
             && occupant.TryGetComponent(out BF_BattleUnit unit))
         {
             _battleController.TrySelectPlayerUnit(unit);
-            return;
-        }
-
-        if (_isSelected && _path.Count > 0)
-        {
-            List<Vector2Int> movePath = new(_path);
-            ClearSelection();
-            Mode = BF_PlayerActionMode.Executing;
-            StartCoroutine(MoveUnit(movePath));
         }
     }
 
@@ -178,6 +181,19 @@ public class BF_UnitMoveController : MonoBehaviour
 
         Mode = BF_PlayerActionMode.Move;
         SelectUnit();
+    }
+
+    private void TryMove()
+    {
+        if (!_isSelected || Mode != BF_PlayerActionMode.Move || _path.Count == 0)
+        {
+            return;
+        }
+
+        List<Vector2Int> movePath = new(_path);
+        ClearSelection();
+        Mode = BF_PlayerActionMode.Executing;
+        StartCoroutine(MoveUnit(movePath));
     }
 
     private void SelectUnit()
