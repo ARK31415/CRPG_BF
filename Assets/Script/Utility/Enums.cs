@@ -49,3 +49,10 @@ public enum BF_BattleResult
     Victory,
     Defeat
 }
+
+public enum BF_BattleCommandType
+{
+    Move,
+    BasicAttack,
+    EndTurn
+}

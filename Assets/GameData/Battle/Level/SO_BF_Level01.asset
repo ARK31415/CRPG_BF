@@ -27,3 +27,6 @@ MonoBehaviour:
   - _unit: {fileID: 11400000, guid: fbf9fd7f37173fd489d6408598d61ecb, type: 2}
     _team: 1
     _pos: {x: 6, y: 4}
+  - _unit: {fileID: 11400000, guid: f028e5e7ade43a64eb6bc0bac1944332, type: 2}
+    _team: 1
+    _pos: {x: 6, y: 3}

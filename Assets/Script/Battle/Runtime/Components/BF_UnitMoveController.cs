@@ -275,14 +275,8 @@ public class BF_UnitMoveController : MonoBehaviour
     private IEnumerator MoveUnit(List<Vector2Int> path)
     {
         BF_BattleUnit unit = _unit;
-        Vector2Int target = path[path.Count - 1];
-
-        yield return unit.Move(path);
-
-        if (unit.GridPos == target)
-        {
-            unit.SpendAP(path.Count);
-        }
+        BF_BattleCommandRequest request = BF_BattleCommandRequest.CreateMove(unit, path);
+        yield return _battleController.CommandExecutor.Execute(request);
 
         ActionDone = true;
         _battleController.OnUnitActionFinished(unit);
@@ -290,7 +284,8 @@ public class BF_UnitMoveController : MonoBehaviour
 
     private IEnumerator AttackUnit(BF_BattleUnit unit, BF_BattleUnit target)
     {
-        yield return unit.Attack(target);
+        BF_BattleCommandRequest request = BF_BattleCommandRequest.CreateBasicAttack(unit, target);
+        yield return _battleController.CommandExecutor.Execute(request);
         ActionDone = true;
         _battleController.OnUnitActionFinished(unit);
     }

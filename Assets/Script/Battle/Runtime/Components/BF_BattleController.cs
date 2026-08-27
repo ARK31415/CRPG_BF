@@ -13,6 +13,9 @@ public class BF_BattleController : MonoBehaviour
     [SerializeField]
     private BF_UnitSpawner _unitSpawner;
 
+    [SerializeField]
+    private BF_EnemyController _enemyController;
+
     private readonly List<BF_BattleUnit> _units = new();
     private BF_BattleState _state;
     private Coroutine _battleLoop;
@@ -22,6 +25,7 @@ public class BF_BattleController : MonoBehaviour
     public IReadOnlyList<BF_BattleUnit> Units => _units;
     public BF_UnitMoveController MoveController => _moveController;
     public BF_UnitSpawner UnitSpawner => _unitSpawner;
+    public BF_BattleCommandExecutor CommandExecutor { get; } = new();
     public BF_BattleUnit CurrentUnit { get; private set; }
     public BF_BattlePhase CurrentPhase {get; private set; } = BF_BattlePhase.None;
     public int Round { get; private set; }
@@ -186,10 +190,7 @@ public class BF_BattleController : MonoBehaviour
             return;
         }
 
-        unit.FinishTurn();
-        Debug.Log($"[BF] Player Unit Ended: {unit.DisplayName}");
-        ClearCurrentUnit();
-        SelectFirstPlayerUnit();
+        StartCoroutine(FinishUnitRoutine(unit));
     }
 
     public void OnUnitActionFinished(BF_BattleUnit unit)
@@ -287,24 +288,11 @@ public class BF_BattleController : MonoBehaviour
     {
         while (!IsBattleEnded && TryGetNextUnit(BF_UnitTeam.Enemy, out BF_BattleUnit enemy))
         {
-            BF_SkillConfigSO skill = enemy.Config.BasicAttack;
-            BF_BattleUnit target = FindTarget(enemy, BF_UnitTeam.Player, skill != null ? skill.Range : 0);
-
-            while (skill != null
-                && target != null
-                && enemy.CanPay(skill.APCost)
-                && !IsBattleEnded)
-            {
-                Debug.Log($"[BF] Enemy Attack: {enemy.DisplayName} -> {target.DisplayName}");
-                yield return enemy.Attack(target);
-                CheckBattleResult();
-                target = FindTarget(enemy, BF_UnitTeam.Player, skill.Range);
-            }
-
-            if (enemy.IsAlive && !enemy.IsTurnEnded)
-            {
-                enemy.FinishTurn();
-            }
+            yield return _enemyController.RunTurn(
+                enemy,
+                _units,
+                CommandExecutor,
+                CheckBattleResult);
 
             yield return null;
         }
@@ -374,21 +362,12 @@ public class BF_BattleController : MonoBehaviour
         FinishUnit(CurrentUnit);
     }
 
-    private BF_BattleUnit FindTarget(BF_BattleUnit attacker, BF_UnitTeam targetTeam, int range)
+    private IEnumerator FinishUnitRoutine(BF_BattleUnit unit)
     {
-        for (int i = 0; i < _units.Count; i++)
-        {
-            BF_BattleUnit target = _units[i];
-            int distance = Mathf.Abs(attacker.GridPos.x - target.GridPos.x)
-                + Mathf.Abs(attacker.GridPos.y - target.GridPos.y);
-
-            if (target.Team == targetTeam && target.IsAlive && distance <= range)
-            {
-                return target;
-            }
-        }
-
-        return null;
+        yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateEndTurn(unit));
+        Debug.Log($"[BF] Player Unit Ended: {unit.DisplayName}");
+        ClearCurrentUnit();
+        SelectFirstPlayerUnit();
     }
 
     private bool HasLivingUnit(BF_UnitTeam team)

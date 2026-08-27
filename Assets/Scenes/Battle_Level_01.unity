@@ -1858,6 +1858,7 @@ GameObject:
   - component: {fileID: 1009608217}
   - component: {fileID: 1009608216}
   - component: {fileID: 1009608218}
+  - component: {fileID: 1009608219}
   m_Layer: 0
   m_Name: BF_BattleController
   m_TagString: Untagged
@@ -1879,6 +1880,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CRPG_BF.Runtime::BF_BattleController
   _moveController: {fileID: 1141498824}
   _unitSpawner: {fileID: 1009608218}
+  _enemyController: {fileID: 1009608219}
 --- !u!4 &1009608217
 Transform:
   m_ObjectHideFlags: 0
@@ -1909,6 +1911,19 @@ MonoBehaviour:
   _board: {fileID: 1939430160}
   _unitPrefab: {fileID: 3504258617493852821, guid: a02256450f1c1424e951513fe89503ad, type: 3}
   _unitsRoot: {fileID: 345285309}
+--- !u!114 &1009608219
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1009608215}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e2aadf0e119e95438eb39394e817edd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BF.Battle::BF_EnemyController
+  _board: {fileID: 1939430160}
 --- !u!1 &1141498821
 GameObject:
   m_ObjectHideFlags: 0
