@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -6,16 +7,16 @@ using UnityEngine.UI;
 public class BF_LevelSelectController : MonoBehaviour
 {
     [SerializeField]
-    private Button[] _levelButtons;
+    private int[] _levels = { 1, 2, 3 };
 
     [SerializeField]
-    private GameObject[] _selectedFrames;
+    private BF_LevelSelectItem _itemPrefab;
 
     [SerializeField]
-    private TMP_Text[] _stateTexts;
+    private RectTransform _content;
 
     [SerializeField]
-    private Sprite _lockedSprite;
+    private ScrollRect _scrollRect;
 
     [SerializeField]
     private Sprite _unlockedSprite;
@@ -36,6 +37,7 @@ public class BF_LevelSelectController : MonoBehaviour
     private BF_BattleService _battleService;
     private BF_LevelProgress _levelProgress;
     private int _selectedLevel = 1;
+    private readonly List<BF_LevelSelectItem> _items = new();
 
     private void OnEnable()
     {
@@ -43,36 +45,16 @@ public class BF_LevelSelectController : MonoBehaviour
         _battleService = FindFirstObjectByType<BF_BattleService>();
         _levelProgress = _battleService.LevelProgress;
 
-        _levelButtons[0].onClick.AddListener(OnLevel01Clicked);
-        _levelButtons[1].onClick.AddListener(OnLevel02Clicked);
-        _levelButtons[2].onClick.AddListener(OnLevel03Clicked);
         _backButton.onClick.AddListener(OnBackClicked);
         _enterButton.onClick.AddListener(OnEnterClicked);
-        SelectLevel(_levelProgress.HighestUnlockedLevel);
+        RefreshList();
     }
 
     private void OnDisable()
     {
-        _levelButtons[0].onClick.RemoveListener(OnLevel01Clicked);
-        _levelButtons[1].onClick.RemoveListener(OnLevel02Clicked);
-        _levelButtons[2].onClick.RemoveListener(OnLevel03Clicked);
         _backButton.onClick.RemoveListener(OnBackClicked);
         _enterButton.onClick.RemoveListener(OnEnterClicked);
-    }
-
-    private void OnLevel01Clicked()
-    {
-        SelectLevel(1);
-    }
-
-    private void OnLevel02Clicked()
-    {
-        SelectLevel(2);
-    }
-
-    private void OnLevel03Clicked()
-    {
-        SelectLevel(3);
+        ClearItems();
     }
 
     private void OnBackClicked()
@@ -87,7 +69,7 @@ public class BF_LevelSelectController : MonoBehaviour
         _battleService.StartLevel(_selectedLevel);
     }
 
-    private void SelectLevel(int level)
+    private void OnItemSelected(int level)
     {
         if (!_levelProgress.IsUnlocked(level))
         {
@@ -95,36 +77,110 @@ public class BF_LevelSelectController : MonoBehaviour
         }
 
         _selectedLevel = level;
-        Refresh();
-        EventSystem.current.SetSelectedGameObject(_levelButtons[level - 1].gameObject);
+        RefreshSelection();
+        FocusSelectedItem(false);
     }
 
-    private void Refresh()
+    private void RefreshList()
     {
-        for (int i = 0; i < _levelButtons.Length; i++)
+        ClearItems();
+        _selectedLevel = GetDefaultLevel();
+
+        foreach (int level in _levels)
         {
-            int level = i + 1;
-            bool isUnlocked = _levelProgress.IsUnlocked(level);
-            bool isCompleted = _levelProgress.IsCompleted(level);
-
-            Image image = _levelButtons[i].targetGraphic as Image;
-            if (image != null)
+            if (!_levelProgress.IsUnlocked(level))
             {
-                image.sprite = isCompleted ? _completedSprite : isUnlocked ? _unlockedSprite : _lockedSprite;
+                continue;
             }
 
-            _levelButtons[i].interactable = isUnlocked;
-            if (image != null)
-            {
-                image.color = isUnlocked ? Color.white : new Color(0.43f, 0.43f, 0.43f, 1f);
-            }
+            BF_LevelSelectItem item = Instantiate(_itemPrefab, _content);
+            item.Setup(level, GetStateSprite(level), GetStateText(level), level == _selectedLevel, OnItemSelected);
+            _items.Add(item);
+        }
 
-            _selectedFrames[i].SetActive(level == _selectedLevel);
-            _stateTexts[i].text = isCompleted ? "COMPLETED" : isUnlocked ? "UNLOCKED" : "LOCKED";
+        BuildNavigation();
+        RefreshSelection();
+        FocusSelectedItem();
+    }
+
+    private void ClearItems()
+    {
+        foreach (BF_LevelSelectItem item in _items)
+        {
+            Destroy(item.gameObject);
+        }
+
+        _items.Clear();
+    }
+
+    private int GetDefaultLevel()
+    {
+        int level = 1;
+        foreach (int configuredLevel in _levels)
+        {
+            if (_levelProgress.IsUnlocked(configuredLevel) && configuredLevel > level)
+            {
+                level = configuredLevel;
+            }
+        }
+
+        return _levelProgress.IsUnlocked(level) ? level : _levelProgress.HighestUnlockedLevel;
+    }
+
+    private Sprite GetStateSprite(int level)
+    {
+        return _levelProgress.IsCompleted(level) ? _completedSprite : _unlockedSprite;
+    }
+
+    private string GetStateText(int level)
+    {
+        return _levelProgress.IsCompleted(level) ? "已完成" : "已解锁";
+    }
+
+    private void BuildNavigation()
+    {
+        for (int i = 0; i < _items.Count; i++)
+        {
+            Navigation navigation = _items[i].Button.navigation;
+            navigation.mode = Navigation.Mode.Explicit;
+            navigation.selectOnLeft = i > 0 ? _items[i - 1].Button : null;
+            navigation.selectOnRight = i < _items.Count - 1 ? _items[i + 1].Button : null;
+            _items[i].Button.navigation = navigation;
+        }
+    }
+
+    private void RefreshSelection()
+    {
+        foreach (BF_LevelSelectItem item in _items)
+        {
+            item.SetSelected(item.Level == _selectedLevel);
         }
 
         string state = _levelProgress.IsCompleted(_selectedLevel) ? "已完成" : "已解锁";
         _levelInfoText.text = $"第{_selectedLevel}关\n状态：{state} / 当前选择";
         _enterButton.interactable = true;
+    }
+
+    private void FocusSelectedItem(bool selectItem = true)
+    {
+        BF_LevelSelectItem selectedItem = _items.Find(item => item.Level == _selectedLevel);
+        if (selectedItem == null)
+        {
+            return;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_content);
+
+        if (_items.Count > 1)
+        {
+            int index = _items.IndexOf(selectedItem);
+            _scrollRect.horizontalNormalizedPosition = (float)index / (_items.Count - 1);
+        }
+
+        if (selectItem && EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(selectedItem.gameObject);
+        }
     }
 }
