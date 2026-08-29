@@ -255,7 +255,8 @@ public class BF_BattleUnit : MonoBehaviour
             return;
         }
 
-        CurrentHP = Mathf.Max(0, CurrentHP - Mathf.Max(0, damage));
+        int actualDamage = Mathf.Max(0, damage);
+        CurrentHP = Mathf.Max(0, CurrentHP - actualDamage);
 
         if (CurrentHP == 0)
         {
@@ -267,6 +268,11 @@ public class BF_BattleUnit : MonoBehaviour
         }
 
         PublishStats();
+
+        if (actualDamage > 0)
+        {
+            GameEventBus.Instance?.Publish(new BF_DamagePopupEvent(this, actualDamage));
+        }
     }
 
     // 迁移来的动画保留了旧事件；当前伤害时点由 SkillSO.HitDelay 统一控制。

@@ -18,6 +18,18 @@ public class BF_UnitStatsChangedEvent : IGameEvent
     }
 }
 
+public class BF_DamagePopupEvent : IGameEvent
+{
+    public BF_BattleUnit Unit;
+    public int Damage;
+
+    public BF_DamagePopupEvent(BF_BattleUnit unit, int damage)
+    {
+        Unit = unit;
+        Damage = damage;
+    }
+}
+
 public class BF_PathCostChangedEvent : IGameEvent
 {
     public int Cost;
