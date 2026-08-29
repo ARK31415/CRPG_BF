@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -6,6 +7,7 @@ using UnityEngine;
 public class BF_InputManager : Singleton<BF_InputManager>
 {
     private InputSystem_Actions _actions;
+    private IDisposable _gameModeSubscription;
 
     public Vector2 Point => _actions.Player.Point.ReadValue<Vector2>();
     public Vector2 CameraMove => _actions.Player.CameraMove.ReadValue<Vector2>();
@@ -20,12 +22,20 @@ public class BF_InputManager : Singleton<BF_InputManager>
     private void OnEnable()
     {
         _actions ??= new InputSystem_Actions();
-        _actions.Player.Enable();
+        _gameModeSubscription = GameEventBus.Instance.Subscribe<BF_GameModeChangedEvent>(OnGameModeChanged);
+
+        BF_GameMode gameMode = BF_GameModeManager.Instance != null
+            ? BF_GameModeManager.Instance.CurrentGameMode
+            : BF_GameMode.Battle;
+
+        SetPlayerInput(gameMode == BF_GameMode.Battle);
     }
 
     private void OnDisable()
     {
-        _actions?.Player.Disable();
+        _gameModeSubscription?.Dispose();
+        _gameModeSubscription = null;
+        SetPlayerInput(false);
     }
 
     protected override void OnDestroy()
@@ -33,5 +43,27 @@ public class BF_InputManager : Singleton<BF_InputManager>
         _actions?.Dispose();
         _actions = null;
         base.OnDestroy();
+    }
+
+    private void OnGameModeChanged(BF_GameModeChangedEvent gameEvent)
+    {
+        SetPlayerInput(gameEvent.CurrentMode == BF_GameMode.Battle);
+    }
+
+    private void SetPlayerInput(bool isEnabled)
+    {
+        if (_actions == null)
+        {
+            return;
+        }
+
+        if (isEnabled)
+        {
+            _actions.Player.Enable();
+        }
+        else
+        {
+            _actions.Player.Disable();
+        }
     }
 }

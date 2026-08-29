@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f5db30b7ebe10f43b689a6a7522e044, type: 3}
+  m_Name: SO_BF_Level02
+  m_EditorClassIdentifier: CRPG_BF.Runtime::BF_LevelConfigSO
+  _width: 8
+  _height: 8
+  _blockedCells:
+  - {x: 2, y: 4}
+  - {x: 6, y: 4}
+  _unitSpawns:
+  - _unit: {fileID: 11400000, guid: fbf9fd7f37173fd489d6408598d61ecb, type: 2}
+    _team: 0
+    _pos: {x: 1, y: 1}
+  - _unit: {fileID: 11400000, guid: b7efed761934e12479bd86366d149452, type: 2}
+    _team: 0
+    _pos: {x: 1, y: 2}
+  - _unit: {fileID: 11400000, guid: fbf9fd7f37173fd489d6408598d61ecb, type: 2}
+    _team: 1
+    _pos: {x: 6, y: 5}
+  - _unit: {fileID: 11400000, guid: f028e5e7ade43a64eb6bc0bac1944332, type: 2}
+    _team: 1
+    _pos: {x: 6, y: 6}

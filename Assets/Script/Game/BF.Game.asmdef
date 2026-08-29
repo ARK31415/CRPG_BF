@@ -6,6 +6,8 @@
         "Singleton",
         "Unity.InputSystem",
         "Unity.Cinemachine",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
         "EventBus.Core",
         "CRPG_BF.Shared"
     ],

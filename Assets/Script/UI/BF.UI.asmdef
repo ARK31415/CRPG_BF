@@ -4,6 +4,7 @@
     "references": [
         "BF.Game",
         "BF.Battle",
+        "Singleton",
         "EventBus.Core",
         "EventBus.UnityAdapter",
         "CRPG_BF.Shared",

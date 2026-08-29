@@ -21,10 +21,11 @@ public enum BF_UnitTeam
 
 public enum BF_GameMode
 {
-    None,
-    Menu,
-    Battle,
-    Result
+    None = 0,
+    Menu = 1,
+    Battle = 2,
+    Result = 3,
+    Loading = 4
 }
 
 public enum BF_BattlePhase
