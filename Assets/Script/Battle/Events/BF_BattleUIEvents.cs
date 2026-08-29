@@ -56,6 +56,16 @@ public class BF_EndUnitRequestEvent : IGameEvent
 {
 }
 
+public class BF_ItemRequestEvent : IGameEvent
+{
+    public int Slot;
+
+    public BF_ItemRequestEvent(int slot)
+    {
+        Slot = slot;
+    }
+}
+
 public class BF_BattleResultEvent : IGameEvent
 {
     public BF_BattleResult Result;

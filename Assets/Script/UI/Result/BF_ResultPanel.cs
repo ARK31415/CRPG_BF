@@ -39,12 +39,25 @@ public class BF_ResultPanel : MonoBehaviour
         }
         else if (_battleService.CurrentLevel == 3)
         {
-            _messageText.text = "Demo 全关卡完成";
+            _messageText.text = $"Demo 全关卡完成\n{GetRewardText()}";
         }
         else
         {
-            _messageText.text = $"第{_battleService.CurrentLevel + 1}关已解锁";
+            _messageText.text = $"第{_battleService.CurrentLevel + 1}关已解锁\n{GetRewardText()}";
         }
+    }
+
+    private string GetRewardText()
+    {
+        BF_BattleReward reward = _battleService.LastReward;
+        string text = $"获得金币：{reward.Gold}";
+
+        foreach (BF_InventoryEntry entry in reward.Items)
+        {
+            text += $"\n{entry.Item.DisplayName} × {entry.Quantity}";
+        }
+
+        return text;
     }
 
     private void OnConfirmClicked()

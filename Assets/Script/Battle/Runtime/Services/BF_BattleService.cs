@@ -12,6 +12,12 @@ public class BF_BattleService : MonoBehaviour
     [SerializeField]
     private BF_LevelProgress _levelProgress;
 
+    [SerializeField]
+    private BF_InventoryService _inventory;
+
+    [SerializeField]
+    private BF_LevelConfigSO[] _levels;
+
     private IDisposable _resultSubscription;
     private IDisposable _confirmSubscription;
     private bool _isResultActive;
@@ -19,6 +25,8 @@ public class BF_BattleService : MonoBehaviour
     public int CurrentLevel { get; private set; } = 1;
     public BF_BattleResult LastResult { get; private set; }
     public BF_LevelProgress LevelProgress => _levelProgress;
+    public BF_BattleReward LastReward { get; } = new();
+    public BF_LevelConfigSO CurrentLevelConfig => GetLevelConfig(CurrentLevel);
 
     private void OnEnable()
     {
@@ -34,7 +42,7 @@ public class BF_BattleService : MonoBehaviour
         _confirmSubscription = null;
     }
 
-    public void StartLevel(int level)
+    public void PrepareLevel(int level)
     {
         if (_sceneLoadManager.IsLoading || !_levelProgress.IsUnlocked(level))
         {
@@ -43,8 +51,22 @@ public class BF_BattleService : MonoBehaviour
 
         CurrentLevel = level;
         LastResult = BF_BattleResult.None;
+        LastReward.Clear();
         _isResultActive = false;
-        _sceneLoadManager.LoadBattle(GetBattleAddress(level));
+        _sceneLoadManager.LoadBattlePrepare();
+    }
+
+    public void StartPreparedLevel()
+    {
+        if (_sceneLoadManager.IsLoading || !_levelProgress.IsUnlocked(CurrentLevel))
+        {
+            return;
+        }
+
+        LastResult = BF_BattleResult.None;
+        LastReward.Clear();
+        _isResultActive = false;
+        _sceneLoadManager.LoadBattle(GetBattleAddress(CurrentLevel));
     }
 
     private void OnBattleResult(BF_BattleResultEvent gameEvent)
@@ -59,10 +81,39 @@ public class BF_BattleService : MonoBehaviour
 
         if (LastResult == BF_BattleResult.Victory)
         {
+            GiveReward();
             _levelProgress.CompleteLevel(CurrentLevel);
         }
 
         _gameModeManager.SetGameMode(BF_GameMode.Result);
+    }
+
+    private void GiveReward()
+    {
+        BF_LevelConfigSO level = CurrentLevelConfig;
+        LastReward.Clear();
+
+        if (level == null || _inventory == null)
+        {
+            return;
+        }
+
+        LastReward.Gold = level.RewardGold;
+        _inventory.AddGold(level.RewardGold);
+
+        foreach (BF_RewardItem reward in level.RewardItems)
+        {
+            if (reward.Item != null && _inventory.TryAdd(reward.Item, reward.Quantity))
+            {
+                LastReward.Items.Add(new BF_InventoryEntry(reward.Item, reward.Quantity));
+            }
+        }
+    }
+
+    private BF_LevelConfigSO GetLevelConfig(int level)
+    {
+        int index = level - 1;
+        return _levels != null && index >= 0 && index < _levels.Length ? _levels[index] : null;
     }
 
     private void OnConfirmResult(BF_ConfirmBattleResultRequestEvent gameEvent)

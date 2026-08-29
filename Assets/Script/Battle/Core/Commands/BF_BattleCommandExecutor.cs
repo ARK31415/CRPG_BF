@@ -23,6 +23,10 @@ public class BF_BattleCommandExecutor
                 yield return request.Actor.UseSkill(request.Skill, request.TargetPos);
                 break;
 
+            case BF_BattleCommandType.Item:
+                yield return request.Actor.UseItem(request.Item);
+                break;
+
             case BF_BattleCommandType.EndTurn:
                 request.Actor.FinishTurn();
                 break;

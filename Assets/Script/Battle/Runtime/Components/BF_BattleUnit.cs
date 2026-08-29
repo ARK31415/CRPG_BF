@@ -16,6 +16,12 @@ public class BF_BattleUnit : MonoBehaviour
 
     private BF_BoardManager _board;
     private BF_UnitConfigSO _config;
+    private BF_InventoryService _inventory;
+    private BF_SkillConfigSO _skill01;
+    private BF_SkillConfigSO _skill02;
+    private int _maxHP;
+    private int _attack;
+    private int _defense;
 
     [SerializeField]
     private Animator _animator;
@@ -34,8 +40,12 @@ public class BF_BattleUnit : MonoBehaviour
     public BF_UnitConfigSO Config => _config;
     public string UnitId => _config != null ? _config.Id : string.Empty;
     public string DisplayName => _config != null && !string.IsNullOrEmpty(_config.DisplayName) ? _config.DisplayName : gameObject.name;
-    public int MaxHP => _config != null ? _config.MaxHP : 0;
+    public int MaxHP => _maxHP;
     public int MaxAP => _config != null ? _config.MaxAP : 0;
+    public int Attack => _attack;
+    public int Defense => _defense;
+    public BF_SkillConfigSO Skill01 => _skill01;
+    public BF_SkillConfigSO Skill02 => _skill02;
     public Transform WorldUIAnchor => _worldUIAnchor;
     public Transform DamagePopupAnchor => _damagePopupAnchor;
     public int CurrentHP { get; private set; }
@@ -50,10 +60,13 @@ public class BF_BattleUnit : MonoBehaviour
         BF_BoardManager board,
         BF_UnitConfigSO config,
         BF_UnitTeam team,
-        Vector2Int pos)
+        Vector2Int pos,
+        BF_UnitRuntimeData runtimeData = null,
+        BF_InventoryService inventory = null)
     {
         _board = board;
         _config = config;
+        _inventory = inventory;
         Team = team;
         GridPos = pos;
         HasActed = false;
@@ -64,7 +77,18 @@ public class BF_BattleUnit : MonoBehaviour
             return;
         }
 
-        CurrentHP = _config.MaxHP;
+        BF_ItemConfigSO equipment = runtimeData != null && _inventory != null
+            ? _inventory.GetItem(runtimeData.EquipmentItemId)
+            : null;
+        _maxHP = _config.MaxHP + (equipment != null ? equipment.MaxHPBonus : 0);
+        _attack = _config.Attack + (equipment != null ? equipment.AttackBonus : 0);
+        _defense = _config.Defense + (equipment != null ? equipment.DefenseBonus : 0);
+        _skill01 = runtimeData != null ? _config.GetSkill(runtimeData.Skill01Id) : _config.Skill01;
+        _skill02 = runtimeData != null ? _config.GetSkill(runtimeData.Skill02Id) : _config.Skill02;
+        _skill01 ??= _config.Skill01;
+        _skill02 ??= _config.Skill02;
+
+        CurrentHP = MaxHP;
         CurrentAP = 0;
         IsTurnEnded = false;
 
@@ -221,7 +245,7 @@ public class BF_BattleUnit : MonoBehaviour
                 continue;
             }
 
-            int damage = Mathf.Max(1, Mathf.RoundToInt(_config.Attack * skill.Rate) - target.Config.Defense);
+            int damage = Mathf.Max(1, Mathf.RoundToInt(Attack * skill.Rate) - target.Defense);
             target.TakeDamage(damage);
         }
 
@@ -231,6 +255,28 @@ public class BF_BattleUnit : MonoBehaviour
             yield return new WaitForSeconds(remaining);
         }
 
+        IsActing = false;
+        PublishStats();
+    }
+
+    public IEnumerator UseItem(BF_ItemConfigSO item)
+    {
+        if (item == null
+            || item.ItemType != BF_ItemType.Consumable
+            || _inventory == null
+            || CurrentHP >= MaxHP
+            || !CanPay(item.APCost)
+            || _inventory.GetCount(item.Id) <= 0)
+        {
+            yield break;
+        }
+
+        SpendAP(item.APCost);
+        IsActing = true;
+        CurrentHP = Mathf.Min(MaxHP, CurrentHP + item.HealAmount);
+        _inventory.TryRemove(item.Id, 1);
+        PublishStats();
+        yield return null;
         IsActing = false;
         PublishStats();
     }

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de8424c35599e0b438cca842f1bd716e, type: 3}
+  m_Name: SO_BF_LeatherArmor
+  m_EditorClassIdentifier: BF.Game::BF_ItemConfigSO
+  _id: leather_armor
+  _displayName: "\u65C5\u884C\u8005\u62A4\u7532"
+  _description: "\u8F7B\u4FBF\u62A4\u7532\uFF0C\u63D0\u9AD8\u751F\u5B58\u80FD\u529B\u3002"
+  _icon: {fileID: -8340728805495198047, guid: 70493ef936f0d8a469ab3ca74fcd6383, type: 3}
+  _itemType: 1
+  _buyPrice: 180
+  _sellPrice: 90
+  _maxStack: 10
+  _apCost: 2
+  _healAmount: 5
+  _attackBonus: 0
+  _defenseBonus: 1
+  _maxHPBonus: 4

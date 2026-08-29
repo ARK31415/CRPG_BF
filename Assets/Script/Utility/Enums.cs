@@ -55,7 +55,14 @@ public enum BF_BattleCommandType
 {
     Move,
     Skill,
+    Item,
     EndTurn
+}
+
+public enum BF_ItemType
+{
+    Consumable,
+    Equipment
 }
 
 public enum BF_SkillTargetType

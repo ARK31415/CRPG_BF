@@ -40,6 +40,11 @@ public class BF_ActionPanel : MonoBehaviour
     [SerializeField]
     private Button _endUnitButton;
 
+    [Header("Items")]
+    [SerializeField] private Button[] _itemButtons = new Button[4];
+    [SerializeField] private Image[] _itemIcons = new Image[4];
+    [SerializeField] private TMP_Text[] _itemCountTexts = new TMP_Text[4];
+
     private BF_BattleUnit _unit;
     private bool _isPlayerPhase;
     private bool _isBattleActive = true;
@@ -50,6 +55,16 @@ public class BF_ActionPanel : MonoBehaviour
         _skillSlot01Button.onClick.AddListener(OnSkill01Clicked);
         _skillSlot02Button.onClick.AddListener(OnSkill02Clicked);
         _endUnitButton.onClick.AddListener(OnEndUnitClicked);
+        for (int i = 0; i < _itemButtons.Length; i++)
+        {
+            if (_itemButtons[i] == null)
+            {
+                continue;
+            }
+
+            int slot = i;
+            _itemButtons[i].onClick.AddListener(() => OnItemClicked(slot));
+        }
         Refresh();
     }
 
@@ -59,6 +74,13 @@ public class BF_ActionPanel : MonoBehaviour
         _skillSlot01Button.onClick.RemoveListener(OnSkill01Clicked);
         _skillSlot02Button.onClick.RemoveListener(OnSkill02Clicked);
         _endUnitButton.onClick.RemoveListener(OnEndUnitClicked);
+        for (int i = 0; i < _itemButtons.Length; i++)
+        {
+            if (_itemButtons[i] != null)
+            {
+                _itemButtons[i].onClick.RemoveAllListeners();
+            }
+        }
     }
 
     public void Show(BF_BattleUnit unit)
@@ -100,8 +122,8 @@ public class BF_ActionPanel : MonoBehaviour
 
         _attackButton.interactable = canAct && attack != null && _unit.CanPay(attack.APCost);
         _endUnitButton.interactable = canAct;
-        BF_SkillConfigSO skill01 = _unit != null ? _unit.Config.Skill01 : null;
-        BF_SkillConfigSO skill02 = _unit != null ? _unit.Config.Skill02 : null;
+        BF_SkillConfigSO skill01 = _unit != null ? _unit.Skill01 : null;
+        BF_SkillConfigSO skill02 = _unit != null ? _unit.Skill02 : null;
 
         _skillSlot01Button.interactable = canAct && skill01 != null && _unit.CanPay(skill01.APCost);
         _skillSlot02Button.interactable = canAct && skill02 != null && _unit.CanPay(skill02.APCost);
@@ -111,6 +133,7 @@ public class BF_ActionPanel : MonoBehaviour
         _attackCostText.text = attack != null ? $"{attack.APCost} AP" : string.Empty;
         RefreshSkill(_skillSlot01Icon, _skillSlot01NameText, _skillSlot01CostText, skill01);
         RefreshSkill(_skillSlot02Icon, _skillSlot02NameText, _skillSlot02CostText, skill02);
+        RefreshItems(canAct);
     }
 
     private void OnAttackClicked()
@@ -120,12 +143,46 @@ public class BF_ActionPanel : MonoBehaviour
 
     private void OnSkill01Clicked()
     {
-        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Config.Skill01));
+        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Skill01));
     }
 
     private void OnSkill02Clicked()
     {
-        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Config.Skill02));
+        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Skill02));
+    }
+
+    private void OnItemClicked(int slot)
+    {
+        GameEventBus.Instance.Publish(new BF_ItemRequestEvent(slot));
+    }
+
+    private void RefreshItems(bool canAct)
+    {
+        BF_InventoryService inventory = FindFirstObjectByType<BF_InventoryService>();
+        BF_UnitRuntimeService runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
+        BF_UnitRuntimeData data = _unit != null && runtime != null ? runtime.Get(_unit.UnitId) : null;
+
+        for (int i = 0; i < _itemButtons.Length; i++)
+        {
+            if (_itemButtons[i] == null || _itemIcons[i] == null || _itemCountTexts[i] == null)
+            {
+                continue;
+            }
+
+            string itemId = data != null && i < data.BattleItemIds.Length ? data.BattleItemIds[i] : string.Empty;
+            BF_ItemConfigSO item = inventory != null ? inventory.GetItem(itemId) : null;
+            int count = item != null ? inventory.GetCount(item.Id) : 0;
+            bool usable = item != null
+                && item.ItemType == BF_ItemType.Consumable
+                && count > 0
+                && _unit.CurrentHP < _unit.MaxHP
+                && _unit.CanPay(item.APCost);
+
+            _itemButtons[i].interactable = canAct && usable;
+            _itemIcons[i].sprite = item != null ? item.Icon : null;
+            _itemIcons[i].enabled = item != null && item.Icon != null;
+            _itemCountTexts[i].text = item != null ? $"×{count}\n{item.APCost} AP" : "空";
+        }
     }
 
     private void OnEndUnitClicked()

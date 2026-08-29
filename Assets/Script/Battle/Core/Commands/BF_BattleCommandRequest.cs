@@ -10,12 +10,14 @@ public class BF_BattleCommandRequest
         BF_BattleCommandType type,
         BF_BattleUnit actor,
         BF_SkillConfigSO skill = null,
+        BF_ItemConfigSO item = null,
         Vector2Int targetPos = default,
         IReadOnlyList<Vector2Int> path = null)
     {
         Type = type;
         Actor = actor;
         Skill = skill;
+        Item = item;
         TargetPos = targetPos;
         Path = path;
     }
@@ -23,6 +25,7 @@ public class BF_BattleCommandRequest
     public BF_BattleCommandType Type { get; }
     public BF_BattleUnit Actor { get; }
     public BF_SkillConfigSO Skill { get; }
+    public BF_ItemConfigSO Item { get; }
     public Vector2Int TargetPos { get; }
     public IReadOnlyList<Vector2Int> Path { get; }
 
@@ -45,7 +48,13 @@ public class BF_BattleCommandRequest
             BF_BattleCommandType.Skill,
             actor,
             skill,
+            null,
             targetPos);
+    }
+
+    public static BF_BattleCommandRequest CreateItem(BF_BattleUnit actor, BF_ItemConfigSO item)
+    {
+        return new BF_BattleCommandRequest(BF_BattleCommandType.Item, actor, item: item);
     }
 
     public static BF_BattleCommandRequest CreateEndTurn(BF_BattleUnit actor)

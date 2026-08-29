@@ -35,6 +35,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e23c51743958f6746bb09a2d74a2964d
+    m_Address: BattlePrepare
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f5bacd6ea7b40b4478ef504178b9c196
     m_Address: Battle_Level_02
     m_ReadOnly: 0

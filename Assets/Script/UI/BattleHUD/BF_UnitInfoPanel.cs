@@ -60,7 +60,7 @@ public class BF_UnitInfoPanel : MonoBehaviour
         _hpText.text = $"HP  {_unit.CurrentHP} / {_unit.MaxHP}";
         _apFill.fillAmount = _unit.MaxAP > 0 ? (float)_unit.CurrentAP / _unit.MaxAP : 0f;
         _apText.text = $"AP  {_unit.CurrentAP} / {_unit.MaxAP}";
-        _attackText.text = $"ATK  {config.Attack}";
-        _defenseText.text = $"DEF  {config.Defense}";
+        _attackText.text = $"ATK  {_unit.Attack}";
+        _defenseText.text = $"DEF  {_unit.Defense}";
     }
 }

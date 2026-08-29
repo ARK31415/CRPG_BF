@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -42,6 +43,9 @@ public class BF_UnitConfigSO : ScriptableObject
     [SerializeField]
     private BF_SkillConfigSO _skill02;
 
+    [SerializeField]
+    private List<BF_SkillConfigSO> _availableSkills = new();
+
     [Header("Display")]
     [SerializeField]
     private Sprite _portrait;
@@ -64,7 +68,23 @@ public class BF_UnitConfigSO : ScriptableObject
     public BF_SkillConfigSO BasicAttack => _basicAttack;
     public BF_SkillConfigSO Skill01 => _skill01;
     public BF_SkillConfigSO Skill02 => _skill02;
+    public IReadOnlyList<BF_SkillConfigSO> AvailableSkills => _availableSkills;
     public Sprite Portrait => _portrait;
     public float MoveSpeed => _moveSpeed;
     public RuntimeAnimatorController AnimatorController => _animatorController;
+
+    public BF_SkillConfigSO GetSkill(string skillId)
+    {
+        if (_skill01 != null && _skill01.Id == skillId)
+        {
+            return _skill01;
+        }
+
+        if (_skill02 != null && _skill02.Id == skillId)
+        {
+            return _skill02;
+        }
+
+        return _availableSkills.Find(skill => skill != null && skill.Id == skillId);
+    }
 }

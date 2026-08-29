@@ -37,6 +37,7 @@ public class BF_BattleController : MonoBehaviour
         GameEventBus.Instance?.Subscribe<BF_EndPlayerPhaseRequestEvent>(OnEndPlayerPhaseRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_SkillRequestEvent>(OnSkillRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_EndUnitRequestEvent>(OnEndUnitRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
+        GameEventBus.Instance?.Subscribe<BF_ItemRequestEvent>(OnItemRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
     }
 
     private void Start()
@@ -362,12 +363,41 @@ public class BF_BattleController : MonoBehaviour
         FinishUnit(CurrentUnit);
     }
 
+    private void OnItemRequested(BF_ItemRequestEvent requestEvent)
+    {
+        if (IsBattleEnded || _state is not BF_PlayerPhaseState || CurrentUnit == null)
+        {
+            return;
+        }
+
+        BF_UnitRuntimeService runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
+        BF_InventoryService inventory = FindFirstObjectByType<BF_InventoryService>();
+        BF_UnitRuntimeData data = runtime != null ? runtime.Get(CurrentUnit.UnitId) : null;
+
+        if (data == null || requestEvent.Slot < 0 || requestEvent.Slot >= data.BattleItemIds.Length)
+        {
+            return;
+        }
+
+        BF_ItemConfigSO item = inventory != null ? inventory.GetItem(data.BattleItemIds[requestEvent.Slot]) : null;
+        if (item != null)
+        {
+            StartCoroutine(UseItemRoutine(CurrentUnit, item));
+        }
+    }
+
     private IEnumerator FinishUnitRoutine(BF_BattleUnit unit)
     {
         yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateEndTurn(unit));
         Debug.Log($"[BF] Player Unit Ended: {unit.DisplayName}");
         ClearCurrentUnit();
         SelectFirstPlayerUnit();
+    }
+
+    private IEnumerator UseItemRoutine(BF_BattleUnit unit, BF_ItemConfigSO item)
+    {
+        yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateItem(unit, item));
+        OnUnitActionFinished(unit);
     }
 
     private bool HasLivingUnit(BF_UnitTeam team)

@@ -33,3 +33,7 @@ MonoBehaviour:
   - _unit: {fileID: 11400000, guid: befdae889d6f68f4b897eb969f3dec6d, type: 2}
     _team: 1
     _pos: {x: 8, y: 5}
+  _rewardGold: 300
+  _rewardItems:
+  - _item: {fileID: 11400000, guid: 27c0fbdda85535f4e92615ca422b3724, type: 2}
+    _quantity: 3

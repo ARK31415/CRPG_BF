@@ -9,6 +9,7 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
 {
     private const string MenuAddress = "Menu";
     private const string LevelSelectAddress = "LevelSelect";
+    private const string BattlePrepareAddress = "BattlePrepare";
 
     [SerializeField]
     private BF_FadeController _fadeController;
@@ -40,6 +41,11 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
     public async void LoadBattle(string address)
     {
         await LoadContent(address, BF_GameMode.Battle);
+    }
+
+    public async void LoadBattlePrepare()
+    {
+        await LoadContent(BattlePrepareAddress, BF_GameMode.Menu);
     }
 
     private async Awaitable LoadContent(string address, BF_GameMode targetMode)

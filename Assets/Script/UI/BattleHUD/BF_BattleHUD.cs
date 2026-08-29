@@ -35,6 +35,7 @@ public class BF_BattleHUD : MonoBehaviour
         GameEventBus.Instance?.Subscribe<BF_UnitSelectedEvent>(OnUnitSelected).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_UnitStatsChangedEvent>(OnUnitStatsChanged).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_PathCostChangedEvent>(OnPathCostChanged).UnRegisterWhenGameObjectDestroyed(gameObject);
+        GameEventBus.Instance?.Subscribe<BF_InventoryChangedEvent>(_ => _actionPanel.Refresh()).UnRegisterWhenGameObjectDestroyed(gameObject);
         ResetView();
     }
 

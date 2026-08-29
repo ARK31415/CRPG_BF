@@ -66,7 +66,7 @@ public class BF_LevelSelectController : MonoBehaviour
     private void OnEnterClicked()
     {
         _enterButton.interactable = false;
-        _battleService.StartLevel(_selectedLevel);
+        _battleService.PrepareLevel(_selectedLevel);
     }
 
     private void OnItemSelected(int level)
