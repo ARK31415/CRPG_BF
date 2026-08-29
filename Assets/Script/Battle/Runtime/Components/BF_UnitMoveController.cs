@@ -4,25 +4,24 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
-/// 处理玩家单位选择、移动预览、基础攻击目标和行动提交。
+/// 处理玩家单位选择、移动预览和技能目标提交。
 /// </summary>
 public class BF_UnitMoveController : MonoBehaviour
 {
-    [SerializeField]
-    private BF_BoardManager _board;
-
-    [SerializeField]
-    private LineRenderer _pathLine;
+    [SerializeField] private BF_BoardManager _board;
+    [SerializeField] private LineRenderer _pathLine;
 
     private readonly Dictionary<Vector2Int, Vector2Int> _cameFrom = new();
     private readonly Dictionary<Vector2Int, int> _cost = new();
-    private readonly HashSet<Vector2Int> _attackable = new();
+    private readonly HashSet<Vector2Int> _targetable = new();
+    private readonly HashSet<Vector2Int> _affected = new();
     private HashSet<Vector2Int> _reachable = new();
     private List<Vector2Int> _path = new();
     private Camera _camera;
     private Material _pathMaterial;
     private BF_BattleController _battleController;
     private BF_BattleUnit _unit;
+    private BF_SkillConfigSO _skill;
     private BF_BoardCell _targetCell;
     private Vector2Int _hoverPos;
     private bool _isSelected;
@@ -54,27 +53,30 @@ public class BF_UnitMoveController : MonoBehaviour
 
         if (BF_InputManager.Instance.AttackPressed)
         {
-            EnterAttackMode();
+            EnterSkillMode(_unit.Config.BasicAttack);
         }
 
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
-            ClearPathPreview();
+            ClearPreview();
             return;
         }
 
-        Vector3 mousePos = BF_InputManager.Instance.Point;
-        Vector3 worldPos = _camera.ScreenToWorldPoint(mousePos);
-        Vector2Int gridPos = _board.WorldToGrid(worldPos);
+        Vector3 worldPos = _camera.ScreenToWorldPoint(BF_InputManager.Instance.Point);
+        Vector2Int pos = _board.WorldToGrid(worldPos);
 
         if (_isSelected && Mode == BF_PlayerActionMode.Move)
         {
-            UpdatePath(gridPos);
+            UpdatePath(pos);
+        }
+        else if (_isSelected && Mode == BF_PlayerActionMode.Skill)
+        {
+            UpdateSkillPreview(pos);
         }
 
         if (BF_InputManager.Instance.MovePressed)
         {
-            if (Mode == BF_PlayerActionMode.Attack)
+            if (Mode == BF_PlayerActionMode.Skill)
             {
                 CancelActionMode();
                 return;
@@ -89,13 +91,13 @@ public class BF_UnitMoveController : MonoBehaviour
             return;
         }
 
-        if (Mode == BF_PlayerActionMode.Attack)
+        if (Mode == BF_PlayerActionMode.Skill)
         {
-            TryAttack(gridPos);
+            TrySkill(pos);
             return;
         }
 
-        if (_board.TryGetOccupant(gridPos, out GameObject occupant)
+        if (_board.TryGetOccupant(pos, out GameObject occupant)
             && occupant.TryGetComponent(out BF_BattleUnit unit))
         {
             _battleController.TrySelectPlayerUnit(unit);
@@ -138,33 +140,56 @@ public class BF_UnitMoveController : MonoBehaviour
     {
         ClearSelection();
         _unit = null;
+        _skill = null;
         Mode = BF_PlayerActionMode.Move;
         ActionDone = false;
         GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(0, 0));
     }
 
-    public bool EnterAttackMode()
+    public bool EnterSkillMode(BF_SkillConfigSO skill)
     {
-        BF_SkillConfigSO skill = _unit != null ? _unit.Config.BasicAttack : null;
-        if (skill == null || !_unit.CanPay(skill.APCost))
+        if (_unit == null || skill == null || !_unit.CanPay(skill.APCost))
         {
             return false;
         }
 
         ClearSelection();
-        Mode = BF_PlayerActionMode.Attack;
-        ShowAttackRange(skill.Range);
+        _skill = skill;
+        Mode = BF_PlayerActionMode.Skill;
+
+        foreach (Vector2Int pos in BF_SkillRange.GetTargetCells(_board, _unit.GridPos, skill))
+        {
+            if (skill.TargetType != BF_SkillTargetType.Unit || IsValidUnitTarget(pos, skill))
+            {
+                _targetable.Add(pos);
+            }
+        }
+
+        foreach (Vector2Int pos in _targetable)
+        {
+            if (_board.TryGetCell(pos, out BF_BoardCell cell))
+            {
+                cell.SetTargetable(true);
+            }
+        }
+
+        if (_board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell))
+        {
+            unitCell.SetSelected(true);
+        }
+
         _isSelected = true;
         return true;
     }
 
     public bool CancelActionMode()
     {
-        if (Mode != BF_PlayerActionMode.Attack)
+        if (Mode != BF_PlayerActionMode.Skill)
         {
             return false;
         }
 
+        _skill = null;
         Mode = BF_PlayerActionMode.Move;
         RefreshSelection();
         return true;
@@ -179,6 +204,7 @@ public class BF_UnitMoveController : MonoBehaviour
             return;
         }
 
+        _skill = null;
         Mode = BF_PlayerActionMode.Move;
         SelectUnit();
     }
@@ -198,11 +224,10 @@ public class BF_UnitMoveController : MonoBehaviour
 
     private void SelectUnit()
     {
-        int budget = _unit.CurrentAP;
         _reachable = BF_Pathfinder.FindReachable(
             _board,
             _unit.GridPos,
-            budget,
+            _unit.CurrentAP,
             _cameFrom,
             _cost);
 
@@ -224,18 +249,18 @@ public class BF_UnitMoveController : MonoBehaviour
         GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(0, _unit.CurrentAP));
     }
 
-    private void UpdatePath(Vector2Int gridPos)
+    private void UpdatePath(Vector2Int pos)
     {
-        if (_hasHoverPos && gridPos == _hoverPos)
+        if (_hasHoverPos && pos == _hoverPos)
         {
             return;
         }
 
-        _hoverPos = gridPos;
+        _hoverPos = pos;
         _hasHoverPos = true;
         ClearTarget();
 
-        if (!_reachable.Contains(gridPos))
+        if (!_reachable.Contains(pos))
         {
             _path.Clear();
             HidePath();
@@ -243,80 +268,95 @@ public class BF_UnitMoveController : MonoBehaviour
             return;
         }
 
-        if (_board.TryGetCell(gridPos, out _targetCell))
+        if (_board.TryGetCell(pos, out _targetCell))
         {
             _targetCell.SetSelected(true);
         }
 
-        _path = BF_Pathfinder.BuildPath(_unit.GridPos, gridPos, _cameFrom);
+        _path = BF_Pathfinder.BuildPath(_unit.GridPos, pos, _cameFrom);
         ShowPath();
-
-        int pathCost = _cost[gridPos];
+        int pathCost = _cost[pos];
         GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(pathCost, _unit.CurrentAP - pathCost));
     }
 
-    private void TryAttack(Vector2Int pos)
+    private void UpdateSkillPreview(Vector2Int pos)
     {
-        if (!_attackable.Contains(pos)
-            || !_board.TryGetOccupant(pos, out GameObject occupant)
-            || !occupant.TryGetComponent(out BF_BattleUnit target)
-            || !target.IsAlive
-            || target.Team == _unit.Team)
+        if (_hasHoverPos && pos == _hoverPos)
+        {
+            return;
+        }
+
+        _hoverPos = pos;
+        _hasHoverPos = true;
+        ClearAffected();
+        ClearTarget();
+
+        if (!_targetable.Contains(pos))
+        {
+            return;
+        }
+
+        if (_board.TryGetCell(pos, out _targetCell))
+        {
+            _targetCell.SetSelected(true);
+        }
+
+        List<Vector2Int> cells = BF_SkillRange.GetAreaCells(_board, _unit, pos, _skill);
+        for (int i = 0; i < cells.Count; i++)
+        {
+            if (_board.TryGetCell(cells[i], out BF_BoardCell cell))
+            {
+                _affected.Add(cells[i]);
+                cell.SetAffected(true);
+            }
+        }
+    }
+
+    private void TrySkill(Vector2Int pos)
+    {
+        if (!_targetable.Contains(pos) || !IsValidTarget(pos))
         {
             return;
         }
 
         BF_BattleUnit unit = _unit;
+        BF_SkillConfigSO skill = _skill;
         ClearSelection();
         Mode = BF_PlayerActionMode.Executing;
-        StartCoroutine(AttackUnit(unit, target));
+        StartCoroutine(UseSkill(unit, skill, pos));
+    }
+
+    private bool IsValidTarget(Vector2Int pos)
+    {
+        if (_skill.TargetType != BF_SkillTargetType.Unit)
+        {
+            return true;
+        }
+
+        return IsValidUnitTarget(pos, _skill);
+    }
+
+    private bool IsValidUnitTarget(Vector2Int pos, BF_SkillConfigSO skill)
+    {
+        return _board.TryGetOccupant(pos, out GameObject occupant)
+            && occupant.TryGetComponent(out BF_BattleUnit target)
+            && target.IsAlive
+            && _unit.CanTarget(target, skill.TargetGroup);
     }
 
     private IEnumerator MoveUnit(List<Vector2Int> path)
     {
         BF_BattleUnit unit = _unit;
-        BF_BattleCommandRequest request = BF_BattleCommandRequest.CreateMove(unit, path);
-        yield return _battleController.CommandExecutor.Execute(request);
-
+        yield return _battleController.CommandExecutor.Execute(BF_BattleCommandRequest.CreateMove(unit, path));
         ActionDone = true;
         _battleController.OnUnitActionFinished(unit);
     }
 
-    private IEnumerator AttackUnit(BF_BattleUnit unit, BF_BattleUnit target)
+    private IEnumerator UseSkill(BF_BattleUnit unit, BF_SkillConfigSO skill, Vector2Int pos)
     {
-        BF_BattleCommandRequest request = BF_BattleCommandRequest.CreateBasicAttack(unit, target);
-        yield return _battleController.CommandExecutor.Execute(request);
+        yield return _battleController.CommandExecutor.Execute(BF_BattleCommandRequest.CreateSkill(unit, skill, pos));
         ActionDone = true;
         _battleController.OnUnitActionFinished(unit);
-    }
-
-    private void ShowAttackRange(int range)
-    {
-        _attackable.Clear();
-
-        for (int x = -range; x <= range; x++)
-        {
-            for (int y = -range; y <= range; y++)
-            {
-                if (Mathf.Abs(x) + Mathf.Abs(y) == 0
-                    || Mathf.Abs(x) + Mathf.Abs(y) > range)
-                {
-                    continue;
-                }
-
-                Vector2Int pos = _unit.GridPos + new Vector2Int(x, y);
-                if (_board.TryGetCell(pos, out BF_BoardCell cell))
-                {
-                    _attackable.Add(pos);
-                    cell.SetAttackable(true);
-                }
-            }
-        }
-
-        if (_board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell))
-        {
-            unitCell.SetSelected(true);
-        }
     }
 
     private void ShowPath()
@@ -367,29 +407,31 @@ public class BF_UnitMoveController : MonoBehaviour
             }
         }
 
-        foreach (Vector2Int pos in _attackable)
+        foreach (Vector2Int pos in _targetable)
         {
             if (_board.TryGetCell(pos, out BF_BoardCell cell))
             {
-                cell.SetAttackable(false);
+                cell.SetTargetable(false);
             }
         }
 
         _reachable.Clear();
-        _attackable.Clear();
+        _targetable.Clear();
+        ClearAffected();
 
         if (_unit != null && _board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell))
         {
             unitCell.SetSelected(false);
         }
 
-        ClearPathPreview();
+        ClearPreview();
         _isSelected = false;
     }
 
-    private void ClearPathPreview()
+    private void ClearPreview()
     {
         _hasHoverPos = false;
+        ClearAffected();
         ClearTarget();
         _path.Clear();
         HidePath();
@@ -398,6 +440,19 @@ public class BF_UnitMoveController : MonoBehaviour
         {
             GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(0, _unit.CurrentAP));
         }
+    }
+
+    private void ClearAffected()
+    {
+        foreach (Vector2Int pos in _affected)
+        {
+            if (_board.TryGetCell(pos, out BF_BoardCell cell))
+            {
+                cell.SetAffected(false);
+            }
+        }
+
+        _affected.Clear();
     }
 
     private void ClearTarget()

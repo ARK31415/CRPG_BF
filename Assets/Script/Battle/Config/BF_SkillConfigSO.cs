@@ -1,7 +1,8 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
-/// 普通攻击与后续技能共用的最小静态配置。
+/// 普通攻击与角色技能共用的静态配置。
 /// </summary>
 [CreateAssetMenu(fileName = "SO_BF_Skill", menuName = "CRPG BF/Battle/Skill Config")]
 public class BF_SkillConfigSO : ScriptableObject
@@ -19,17 +20,38 @@ public class BF_SkillConfigSO : ScriptableObject
     [SerializeField]
     private Sprite _icon;
 
+    [Header("Range")]
+    [SerializeField]
+    private BF_SkillTargetType _targetType;
+
+    [SerializeField]
+    private BF_SkillAreaType _areaType;
+
+    [SerializeField]
+    private BF_SkillTargetGroup _targetGroup = BF_SkillTargetGroup.Enemy;
+
     [Min(1)]
     [SerializeField]
     private int _apCost = 2;
 
     [Min(1)]
     [SerializeField]
-    private int _range = 1;
+    private int _targetRange = 1;
 
-    [Min(0)]
+    [Min(1)]
     [SerializeField]
-    private int _power = 2;
+    private int _areaSize = 1;
+
+    [SerializeField]
+    [FormerlySerializedAs("_power")]
+    private float _rate = 1f;
+
+    [Header("Display")]
+    [SerializeField]
+    private BF_SkillAnim _anim;
+
+    [SerializeField]
+    private GameObject _effectPrefab;
 
     [Min(0f)]
     [SerializeField]
@@ -44,8 +66,14 @@ public class BF_SkillConfigSO : ScriptableObject
     public string Description => _description;
     public Sprite Icon => _icon;
     public int APCost => _apCost;
-    public int Range => _range;
-    public int Power => _power;
+    public BF_SkillTargetType TargetType => _targetType;
+    public BF_SkillAreaType AreaType => _areaType;
+    public BF_SkillTargetGroup TargetGroup => _targetGroup;
+    public int TargetRange => _targetRange;
+    public int AreaSize => _areaSize;
+    public float Rate => _rate;
+    public BF_SkillAnim Anim => _anim;
+    public GameObject EffectPrefab => _effectPrefab;
     public float HitDelay => _hitDelay;
     public float Duration => _duration;
 }

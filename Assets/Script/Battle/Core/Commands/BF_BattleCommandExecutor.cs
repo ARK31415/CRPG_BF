@@ -19,8 +19,8 @@ public class BF_BattleCommandExecutor
                 yield return Move(request);
                 break;
 
-            case BF_BattleCommandType.BasicAttack:
-                yield return request.Actor.Attack(request.Target);
+            case BF_BattleCommandType.Skill:
+                yield return request.Actor.UseSkill(request.Skill, request.TargetPos);
                 break;
 
             case BF_BattleCommandType.EndTurn:

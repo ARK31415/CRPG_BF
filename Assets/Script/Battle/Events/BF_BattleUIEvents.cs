@@ -30,8 +30,14 @@ public class BF_PathCostChangedEvent : IGameEvent
     }
 }
 
-public class BF_AttackRequestEvent : IGameEvent
+public class BF_SkillRequestEvent : IGameEvent
 {
+    public BF_SkillConfigSO Skill;
+
+    public BF_SkillRequestEvent(BF_SkillConfigSO skill)
+    {
+        Skill = skill;
+    }
 }
 
 public class BF_EndUnitRequestEvent : IGameEvent

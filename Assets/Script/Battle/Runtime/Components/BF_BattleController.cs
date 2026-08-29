@@ -35,7 +35,7 @@ public class BF_BattleController : MonoBehaviour
     private void Awake()
     {
         GameEventBus.Instance?.Subscribe<BF_EndPlayerPhaseRequestEvent>(OnEndPlayerPhaseRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
-        GameEventBus.Instance?.Subscribe<BF_AttackRequestEvent>(OnAttackRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
+        GameEventBus.Instance?.Subscribe<BF_SkillRequestEvent>(OnSkillRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_EndUnitRequestEvent>(OnEndUnitRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
     }
 
@@ -349,11 +349,11 @@ public class BF_BattleController : MonoBehaviour
         EndPlayerPhase();
     }
 
-    private void OnAttackRequested(BF_AttackRequestEvent requestEvent)
+    private void OnSkillRequested(BF_SkillRequestEvent requestEvent)
     {
         if (!IsBattleEnded && _state is BF_PlayerPhaseState && CurrentUnit != null)
         {
-            _moveController.EnterAttackMode();
+            _moveController.EnterSkillMode(requestEvent.Skill);
         }
     }
 

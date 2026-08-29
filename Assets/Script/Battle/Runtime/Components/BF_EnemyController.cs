@@ -53,10 +53,10 @@ public class BF_EnemyController : MonoBehaviour
         }
 
         int distance = GetDistance(enemy.GridPos, target.GridPos);
-        if (distance <= skill.Range)
+        if (distance <= skill.TargetRange)
         {
             return enemy.CanPay(skill.APCost)
-                ? BF_BattleCommandRequest.CreateBasicAttack(enemy, target)
+                ? BF_BattleCommandRequest.CreateSkill(enemy, skill, target.GridPos)
                 : BF_BattleCommandRequest.CreateEndTurn(enemy);
         }
 
@@ -113,7 +113,7 @@ public class BF_EnemyController : MonoBehaviour
         {
             int distance = GetDistance(pos, target.GridPos);
             int cost = _cost[pos];
-            bool attackFromPos = distance <= skill.Range
+            bool attackFromPos = distance <= skill.TargetRange
                 && cost + skill.APCost <= enemy.CurrentAP;
 
             if (attackFromPos)
@@ -145,7 +145,7 @@ public class BF_EnemyController : MonoBehaviour
 
     private void LogCommand(BF_BattleCommandRequest request)
     {
-        string target = request.Target != null ? $" -> {request.Target.DisplayName}" : string.Empty;
+        string target = request.Type == BF_BattleCommandType.Skill ? $" -> {request.TargetPos}" : string.Empty;
         int pathCount = request.Path != null ? request.Path.Count : 0;
         string path = pathCount > 0 ? $", Path={pathCount}" : string.Empty;
         Debug.Log($"[BF] Enemy Command: {request.Actor.DisplayName} {request.Type}{target}{path}, AP={request.Actor.CurrentAP}");

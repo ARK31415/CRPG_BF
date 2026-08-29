@@ -16,8 +16,14 @@ MonoBehaviour:
   _displayName: "\u65A9\u51FB"
   _description: "\u5BF9\u76F8\u90BB\u654C\u4EBA\u9020\u6210\u4E00\u6B21\u8FD1\u6218\u4F24\u5BB3\u3002"
   _icon: {fileID: 0}
+  _targetType: 0
+  _areaType: 0
+  _targetGroup: 1
   _apCost: 2
-  _range: 1
-  _power: 2
+  _targetRange: 1
+  _areaSize: 1
+  _rate: 1
+  _anim: 0
+  _effectPrefab: {fileID: 0}
   _hitDelay: 0.25
   _duration: 0.6

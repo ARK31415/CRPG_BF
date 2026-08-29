@@ -40,7 +40,7 @@ public enum BF_BattlePhase
 public enum BF_PlayerActionMode
 {
     Move,
-    Attack,
+    Skill,
     Executing
 }
 
@@ -54,6 +54,37 @@ public enum BF_BattleResult
 public enum BF_BattleCommandType
 {
     Move,
-    BasicAttack,
+    Skill,
     EndTurn
+}
+
+public enum BF_SkillTargetType
+{
+    Unit,
+    Cell,
+    Direction
+}
+
+public enum BF_SkillAreaType
+{
+    Single,
+    ProjectileLine,
+    Square,
+    FrontT
+}
+
+[System.Flags]
+public enum BF_SkillTargetGroup
+{
+    None = 0,
+    Enemy = 1 << 0,
+    Ally = 1 << 1,
+    Self = 1 << 2
+}
+
+public enum BF_SkillAnim
+{
+    Attack,
+    Skill01,
+    Skill02
 }

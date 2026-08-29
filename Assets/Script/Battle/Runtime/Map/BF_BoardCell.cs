@@ -21,8 +21,12 @@ public class BF_BoardCell : MonoBehaviour
     [SerializeField]
     private Color _attackableColor = new(1f, 0.2f, 0.2f, 0.35f);
 
+    [SerializeField]
+    private Color _affectedColor = new(1f, 0.65f, 0.1f, 0.6f);
+
     private bool _isReachable;
-    private bool _isAttackable;
+    private bool _isTargetable;
+    private bool _isAffected;
 
     public Vector2Int GridPos { get; private set; }
     public TerrainType TerrainType { get; private set; }
@@ -41,7 +45,8 @@ public class BF_BoardCell : MonoBehaviour
         TerrainType = terrainType;
         Occupant = null;
         _isReachable = false;
-        _isAttackable = false;
+        _isTargetable = false;
+        _isAffected = false;
         SetSelected(false);
         RefreshColor();
     }
@@ -68,9 +73,15 @@ public class BF_BoardCell : MonoBehaviour
         }
     }
 
-    public void SetAttackable(bool isAttackable)
+    public void SetTargetable(bool isTargetable)
     {
-        _isAttackable = isAttackable;
+        _isTargetable = isTargetable;
+        RefreshColor();
+    }
+
+    public void SetAffected(bool isAffected)
+    {
+        _isAffected = isAffected;
         RefreshColor();
     }
 
@@ -81,7 +92,11 @@ public class BF_BoardCell : MonoBehaviour
             return;
         }
 
-        if (_isAttackable)
+        if (_isAffected)
+        {
+            _defaultSpriteRenderer.color = _affectedColor;
+        }
+        else if (_isTargetable)
         {
             _defaultSpriteRenderer.color = _attackableColor;
         }

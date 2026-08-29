@@ -9,6 +9,8 @@ public class BF_BattleUnit : MonoBehaviour
 {
     private static readonly int IsMovingId = Animator.StringToHash("IsMoving");
     private static readonly int AttackId = Animator.StringToHash("Attack");
+    private static readonly int Skill01Id = Animator.StringToHash("Skill01");
+    private static readonly int Skill02Id = Animator.StringToHash("Skill02");
     private static readonly int HurtId = Animator.StringToHash("Hurt");
     private static readonly int IsDeadId = Animator.StringToHash("IsDead");
 
@@ -184,31 +186,42 @@ public class BF_BattleUnit : MonoBehaviour
         }
     }
 
-    public IEnumerator Attack(BF_BattleUnit target)
+    public IEnumerator UseSkill(BF_SkillConfigSO skill, Vector2Int targetPos)
     {
-        BF_SkillConfigSO skill = _config != null ? _config.BasicAttack : null;
-        if (target == null || skill == null || !CanPay(skill.APCost))
+        if (skill == null || _board == null || !CanPay(skill.APCost))
         {
             yield break;
         }
 
         SpendAP(skill.APCost);
         IsActing = true;
-        UpdateFacing(target.GridPos.x - GridPos.x);
+        UpdateFacing(targetPos.x - GridPos.x);
 
         if (_animator != null)
         {
-            _animator.SetTrigger(AttackId);
+            _animator.SetTrigger(GetAnimId(skill.Anim));
         }
+
+        List<Vector2Int> area = BF_SkillRange.GetAreaCells(_board, this, targetPos, skill);
+        ShowEffect(skill, targetPos, area);
 
         if (skill.HitDelay > 0f)
         {
             yield return new WaitForSeconds(skill.HitDelay);
         }
 
-        if (target.IsAlive)
+        for (int i = 0; i < area.Count; i++)
         {
-            int damage = Mathf.Max(1, _config.Attack + skill.Power - target.Config.Defense);
+            if (_board.IsBlocked(area[i])
+                || !_board.TryGetOccupant(area[i], out GameObject occupant)
+                || !occupant.TryGetComponent(out BF_BattleUnit target)
+                || !target.IsAlive
+                || !CanTarget(target, skill.TargetGroup))
+            {
+                continue;
+            }
+
+            int damage = Mathf.Max(1, Mathf.RoundToInt(_config.Attack * skill.Rate) - target.Config.Defense);
             target.TakeDamage(damage);
         }
 
@@ -220,6 +233,19 @@ public class BF_BattleUnit : MonoBehaviour
 
         IsActing = false;
         PublishStats();
+    }
+
+    public bool CanTarget(BF_BattleUnit target, BF_SkillTargetGroup group)
+    {
+        if (target == this)
+        {
+            return (group & BF_SkillTargetGroup.Self) != 0;
+        }
+
+        BF_SkillTargetGroup targetGroup = target.Team == Team
+            ? BF_SkillTargetGroup.Ally
+            : BF_SkillTargetGroup.Enemy;
+        return (group & targetGroup) != 0;
     }
 
     public void TakeDamage(int damage)
@@ -270,6 +296,41 @@ public class BF_BattleUnit : MonoBehaviour
         else if (x < 0)
         {
             SetFacing(false);
+        }
+    }
+
+    private int GetAnimId(BF_SkillAnim anim)
+    {
+        return anim switch
+        {
+            BF_SkillAnim.Skill01 => Skill01Id,
+            BF_SkillAnim.Skill02 => Skill02Id,
+            _ => AttackId
+        };
+    }
+
+    private void ShowEffect(
+        BF_SkillConfigSO skill,
+        Vector2Int targetPos,
+        IReadOnlyList<Vector2Int> area)
+    {
+        if (skill.EffectPrefab == null)
+        {
+            return;
+        }
+
+        Vector2Int effectPos = skill.AreaType == BF_SkillAreaType.ProjectileLine && area.Count > 0
+            ? area[area.Count - 1]
+            : targetPos;
+        GameObject effect = Instantiate(skill.EffectPrefab, _board.GridToWorld(effectPos), Quaternion.identity);
+
+        if (effect.TryGetComponent(out BF_SkillEffect skillEffect))
+        {
+            skillEffect.Play(_board, GridPos, area, skill.Duration);
+        }
+        else
+        {
+            Destroy(effect, skill.Duration);
         }
     }
 

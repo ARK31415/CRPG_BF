@@ -2,28 +2,28 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 描述一次移动、普通攻击或结束行动。
+/// 描述一次移动、技能或结束行动。
 /// </summary>
 public class BF_BattleCommandRequest
 {
     private BF_BattleCommandRequest(
         BF_BattleCommandType type,
         BF_BattleUnit actor,
-        BF_BattleUnit target = null,
         BF_SkillConfigSO skill = null,
+        Vector2Int targetPos = default,
         IReadOnlyList<Vector2Int> path = null)
     {
         Type = type;
         Actor = actor;
-        Target = target;
         Skill = skill;
+        TargetPos = targetPos;
         Path = path;
     }
 
     public BF_BattleCommandType Type { get; }
     public BF_BattleUnit Actor { get; }
-    public BF_BattleUnit Target { get; }
     public BF_SkillConfigSO Skill { get; }
+    public Vector2Int TargetPos { get; }
     public IReadOnlyList<Vector2Int> Path { get; }
 
     public static BF_BattleCommandRequest CreateMove(
@@ -36,15 +36,16 @@ public class BF_BattleCommandRequest
             path: new List<Vector2Int>(path));
     }
 
-    public static BF_BattleCommandRequest CreateBasicAttack(
+    public static BF_BattleCommandRequest CreateSkill(
         BF_BattleUnit actor,
-        BF_BattleUnit target)
+        BF_SkillConfigSO skill,
+        Vector2Int targetPos)
     {
         return new BF_BattleCommandRequest(
-            BF_BattleCommandType.BasicAttack,
+            BF_BattleCommandType.Skill,
             actor,
-            target,
-            actor.Config.BasicAttack);
+            skill,
+            targetPos);
     }
 
     public static BF_BattleCommandRequest CreateEndTurn(BF_BattleUnit actor)
