@@ -47,3 +47,7 @@ public class BF_BattleResultEvent : IGameEvent
         Result = result;
     }
 }
+
+public class BF_ConfirmBattleResultRequestEvent : IGameEvent
+{
+}

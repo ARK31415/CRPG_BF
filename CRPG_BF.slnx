@@ -7,8 +7,8 @@
   <Project Path="EventBus.Core.csproj" />
   <Project Path="EventBus.Tests.csproj" />
   <Project Path="EventBus.UnityAdapter.csproj" />
-  <Project Path="CRPG_BF.Shared.csproj" />
   <Project Path="BF.Game.csproj" />
+  <Project Path="CRPG_BF.Shared.csproj" />
   <Project Path="CRPG_BF.Input.csproj" />
   <Project Path="Singleton.csproj" />
 </Solution>

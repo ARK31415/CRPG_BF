@@ -9,6 +9,9 @@ public class BF_UIManager : MonoBehaviour
     [SerializeField]
     private GameObject _resultUI;
 
+    [SerializeField]
+    private BF_BattleHUD _battleHUD;
+
     private IDisposable _gameModeSubscription;
 
     private void OnEnable()
@@ -35,6 +38,11 @@ public class BF_UIManager : MonoBehaviour
 
     private void Refresh(BF_GameMode gameMode)
     {
+        if (gameMode == BF_GameMode.Battle)
+        {
+            _battleHUD.ResetView();
+        }
+
         _battleUI.SetActive(gameMode == BF_GameMode.Battle);
         _resultUI.SetActive(gameMode == BF_GameMode.Result);
     }

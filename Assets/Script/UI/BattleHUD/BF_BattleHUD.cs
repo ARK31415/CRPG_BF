@@ -27,13 +27,6 @@ public class BF_BattleHUD : MonoBehaviour
     [SerializeField]
     private TMP_Text _pathCostText;
 
-    [Header("Result")]
-    [SerializeField]
-    private GameObject _resultPanel;
-
-    [SerializeField]
-    private TMP_Text _resultText;
-
     private BF_BattleUnit _unit;
 
     private void Awake()
@@ -42,10 +35,7 @@ public class BF_BattleHUD : MonoBehaviour
         GameEventBus.Instance?.Subscribe<BF_UnitSelectedEvent>(OnUnitSelected).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_UnitStatsChangedEvent>(OnUnitStatsChanged).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_PathCostChangedEvent>(OnPathCostChanged).UnRegisterWhenGameObjectDestroyed(gameObject);
-        GameEventBus.Instance?.Subscribe<BF_BattleResultEvent>(OnBattleResult).UnRegisterWhenGameObjectDestroyed(gameObject);
-
-        _resultPanel.SetActive(false);
-        ShowUnit(null);
+        ResetView();
     }
 
     private void OnEnable()
@@ -99,12 +89,15 @@ public class BF_BattleHUD : MonoBehaviour
             : string.Empty;
     }
 
-    private void OnBattleResult(BF_BattleResultEvent gameEvent)
+    public void ResetView()
     {
-        _resultPanel.SetActive(true);
-        _resultText.text = gameEvent.Result == BF_BattleResult.Victory ? "VICTORY" : "DEFEAT";
-        _actionPanel.SetBattleActive(false);
+        _phaseText.text = string.Empty;
+        _roundText.text = string.Empty;
+        _pathCostText.text = string.Empty;
         _endTurnButton.interactable = false;
+        _actionPanel.SetBattleActive(true);
+        _actionPanel.SetPlayerPhase(false);
+        ShowUnit(null);
     }
 
     private void OnEndTurnClicked()

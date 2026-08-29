@@ -248,9 +248,9 @@ public class BF_BattleUnit : MonoBehaviour
     {
     }
 
-    // Demo 保留死亡单位在场景中显示尸体，不在动画结束时销毁对象。
     public void OnAnimationDeathFinished()
     {
+        gameObject.SetActive(false);
     }
 
     private void SetFacing(bool faceRight)
