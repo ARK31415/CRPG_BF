@@ -145,7 +145,10 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
             return;
         }
 
-        _runtime.SetEquipment(_unit.Id, slot, string.Empty);
+        if (!_runtime.SetEquipment(_unit.Id, slot, string.Empty))
+        {
+            Debug.Log("仓库已满，无法卸下装备");
+        }
     }
 
     private void SelectBattleItemSlot(int slot)

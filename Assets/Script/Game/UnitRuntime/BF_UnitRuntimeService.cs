@@ -4,11 +4,13 @@ using UnityEngine;
 
 /// <summary>
 /// Persistent 场景中的玩家角色整备数据入口。
+/// 装备采用移动所有权：穿上即从仓库移除，卸下回仓；战斗物品槽继续以保留数量引用消耗品堆叠。
 /// </summary>
 [DefaultExecutionOrder(-70)]
 public class BF_UnitRuntimeService : MonoBehaviour
 {
     private readonly List<BF_UnitRuntimeData> _units = new();
+    private BF_InventoryService _inventory;
 
     public IReadOnlyList<BF_UnitRuntimeData> Units => _units;
 
@@ -49,12 +51,43 @@ public class BF_UnitRuntimeService : MonoBehaviour
         };
     }
 
-    public void SetEquipment(string unitId, BF_EquipmentSlot slot, string itemId)
+    /// <summary>
+    /// 设置指定部位的装备。穿上时从仓库移除一件，替换时旧装备回仓，卸下时空位不足则失败。
+    /// </summary>
+    public bool SetEquipment(string unitId, BF_EquipmentSlot slot, string itemId)
     {
         BF_UnitRuntimeData data = Get(unitId);
         if (data == null)
         {
-            return;
+            return false;
+        }
+
+        string oldItemId = GetEquipment(unitId, slot);
+        if (oldItemId == itemId)
+        {
+            return true;
+        }
+
+        _inventory ??= FindFirstObjectByType<BF_InventoryService>();
+        if (_inventory == null)
+        {
+            Debug.LogWarning("BF_InventoryService not found, cannot change equipment.", this);
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(itemId) && !_inventory.TryRemove(itemId, 1))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(oldItemId) && !_inventory.TryAdd(_inventory.GetItem(oldItemId), 1))
+        {
+            if (!string.IsNullOrEmpty(itemId))
+            {
+                _inventory.TryAdd(_inventory.GetItem(itemId), 1);
+            }
+
+            return false;
         }
 
         switch (slot)
@@ -74,6 +107,7 @@ public class BF_UnitRuntimeService : MonoBehaviour
         }
 
         PublishChanged(unitId);
+        return true;
     }
 
     public void SetSkill(string unitId, int slot, string skillId)
@@ -108,23 +142,12 @@ public class BF_UnitRuntimeService : MonoBehaviour
         PublishChanged(unitId);
     }
 
-    public int GetEquippedCount(string itemId)
-    {
-        int count = 0;
-        foreach (BF_UnitRuntimeData unit in _units)
-        {
-            count += unit.WeaponItemId == itemId ? 1 : 0;
-            count += unit.HeadItemId == itemId ? 1 : 0;
-            count += unit.ArmorItemId == itemId ? 1 : 0;
-            count += unit.ShoesItemId == itemId ? 1 : 0;
-        }
-
-        return count;
-    }
-
+    /// <summary>
+    /// 物品被战斗物品槽保留的数量。装备已改为移动所有权，不再参与保留计算。
+    /// </summary>
     public int GetReservedCount(string itemId)
     {
-        int count = GetEquippedCount(itemId);
+        int count = 0;
         foreach (BF_UnitRuntimeData unit in _units)
         {
             for (int i = 0; i < unit.BattleItemIds.Length; i++)

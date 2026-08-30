@@ -83,7 +83,12 @@ public class BF_ShopPanel : MonoBehaviour
         {
             BF_InventoryEntry entry = i < _inventory.Items.Count ? _inventory.Items[i] : null;
             int count = entry != null ? _shop.GetAvailableCount(entry.Item) : 0;
-            _inventorySlots[i].Setup(entry?.Item, count, selected => Select(selected, false));
+            bool showCount = entry != null && entry.Item.ItemType == BF_ItemType.Consumable;
+            _inventorySlots[i].Setup(
+                entry?.Item,
+                count,
+                selected => Select(selected, false),
+                showCount: showCount);
         }
 
         RefreshTrade();

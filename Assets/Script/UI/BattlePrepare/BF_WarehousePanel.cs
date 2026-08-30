@@ -14,7 +14,7 @@ public class BF_WarehousePanel : MonoBehaviour
     private readonly List<BF_ItemSlot> _slots = new();
     private BF_InventoryService _inventory;
     private BF_UnitRuntimeService _runtime;
-    private BF_ItemConfigSO _selected;
+    private int _selectedSlot = -1;
     private Action<BF_ItemConfigSO, Vector2> _onRightClick;
     private IDisposable _inventorySubscription;
     private IDisposable _unitSubscription;
@@ -50,16 +50,21 @@ public class BF_WarehousePanel : MonoBehaviour
         for (int i = 0; i < _slots.Count; i++)
         {
             BF_InventoryEntry entry = i < _inventory.Items.Count ? _inventory.Items[i] : null;
-            int count = entry != null
-                ? entry.Quantity - _runtime.GetReservedCount(entry.Item.Id)
-                : 0;
-            _slots[i].Setup(entry?.Item, count, Select, OpenMenu);
-            _slots[i].SetSelected(entry?.Item == _selected);
+            bool isConsumable = entry != null && entry.Item.ItemType == BF_ItemType.Consumable;
+            int count = entry != null ? entry.Quantity - _runtime.GetReservedCount(entry.Item.Id) : 0;
+            int slotIndex = i;
+            _slots[i].Setup(
+                entry?.Item,
+                count,
+                item => Select(slotIndex),
+                (item, pos) => OpenMenu(slotIndex, pos),
+                showCount: isConsumable);
+            _slots[i].SetSelected(i == _selectedSlot);
         }
 
-        if (_selected != null && _inventory.GetCount(_selected.Id) == 0)
+        if (_selectedSlot >= _inventory.Items.Count)
         {
-            _selected = null;
+            _selectedSlot = -1;
             _detailPanel.Show(null);
         }
     }
@@ -84,21 +89,21 @@ public class BF_WarehousePanel : MonoBehaviour
         }
     }
 
-    private void Select(BF_ItemConfigSO item)
+    private void Select(int slotIndex)
     {
-        _selected = item;
-        _detailPanel.Show(item);
+        _selectedSlot = slotIndex;
+        _detailPanel.Show(_inventory.Items[slotIndex].Item);
         Refresh();
     }
 
-    private void OpenMenu(BF_ItemConfigSO item, Vector2 screenPos)
+    private void OpenMenu(int slotIndex, Vector2 screenPos)
     {
-        if (item == null)
+        if (slotIndex >= _inventory.Items.Count)
         {
             return;
         }
 
-        Select(item);
-        _onRightClick?.Invoke(item, screenPos);
+        Select(slotIndex);
+        _onRightClick?.Invoke(_inventory.Items[slotIndex].Item, screenPos);
     }
 }

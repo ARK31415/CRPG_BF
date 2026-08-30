@@ -113,7 +113,11 @@ public class BF_ItemContextMenu : MonoBehaviour
 
         if (_item.ItemType == BF_ItemType.Equipment)
         {
-            _runtime.SetEquipment(_unit.Id, _item.EquipmentSlot, _item.Id);
+            if (!_runtime.SetEquipment(_unit.Id, _item.EquipmentSlot, _item.Id))
+            {
+                _messageText.text = "没有可用数量";
+                return;
+            }
         }
         else
         {
