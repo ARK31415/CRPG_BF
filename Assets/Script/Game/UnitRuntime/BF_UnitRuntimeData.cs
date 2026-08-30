@@ -35,4 +35,18 @@ public class BF_UnitRuntimeData
     public int Level;
     public int CurrentExp;
     public bool IsDeployed;
+
+    public BF_UnitRuntimeData Clone()
+    {
+        return new BF_UnitRuntimeData(UnitId, ConfigId, Skill01Id, Skill02Id, IsDeployed)
+        {
+            WeaponItemId = WeaponItemId,
+            HeadItemId = HeadItemId,
+            ArmorItemId = ArmorItemId,
+            ShoesItemId = ShoesItemId,
+            BattleItemIds = BattleItemIds != null ? (string[])BattleItemIds.Clone() : new string[4],
+            Level = Level,
+            CurrentExp = CurrentExp
+        };
+    }
 }

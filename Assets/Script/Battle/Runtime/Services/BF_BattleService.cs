@@ -21,6 +21,9 @@ public class BF_BattleService : MonoBehaviour
     private BF_UnitRuntimeService _unitRuntime;
 
     [SerializeField]
+    private BF_SaveService _saveService;
+
+    [SerializeField]
     private BF_LevelConfigSO[] _levels;
 
     [Header("Unit Config")]
@@ -43,6 +46,11 @@ public class BF_BattleService : MonoBehaviour
     public IReadOnlyList<string> BattlePartyUnitIds => _battlePartyUnitIds;
 
     private void Awake()
+    {
+        CreateInitialUnits();
+    }
+
+    public void CreateInitialUnits()
     {
         if (_unitRuntime == null || _unitRuntime.Units.Count > 0 || _initialUnits == null)
         {
@@ -173,6 +181,11 @@ public class BF_BattleService : MonoBehaviour
         {
             GiveReward();
             _levelProgress.CompleteLevel(CurrentLevel);
+        }
+
+        if (_saveService != null && _saveService.CurrentSlot > 0)
+        {
+            _saveService.Save();
         }
 
         _gameModeManager.SetGameMode(BF_GameMode.Result);

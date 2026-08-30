@@ -18,17 +18,7 @@ public class BF_InventoryService : MonoBehaviour
 
     private void Awake()
     {
-        Gold = _config != null ? _config.StartingGold : 0;
-
-        if (_config == null)
-        {
-            return;
-        }
-
-        foreach (BF_StartingItem entry in _config.StartingItems)
-        {
-            TryAdd(entry.Item, entry.Quantity, false);
-        }
+        ResetToDefaults(false);
     }
 
     public BF_ItemConfigSO GetItem(string itemId)
@@ -161,6 +151,78 @@ public class BF_InventoryService : MonoBehaviour
     {
         Gold += Mathf.Max(0, amount);
         PublishChanged();
+    }
+
+    public void ResetToDefaults()
+    {
+        ResetToDefaults(true);
+    }
+
+    public bool CanLoadData(int gold, IReadOnlyList<BF_InventorySaveEntry> items)
+    {
+        if (gold < 0 || items == null || _config == null)
+        {
+            return false;
+        }
+
+        int slots = 0;
+        for (int i = 0; i < items.Count; i++)
+        {
+            BF_InventorySaveEntry entry = items[i];
+            BF_ItemConfigSO item = entry != null ? GetItem(entry.ItemId) : null;
+            if (item == null || entry.Quantity <= 0)
+            {
+                return false;
+            }
+
+            if (item.ItemType != BF_ItemType.Equipment && entry.Quantity > item.MaxStack)
+            {
+                return false;
+            }
+
+            slots += item.ItemType == BF_ItemType.Equipment ? entry.Quantity : 1;
+        }
+
+        return slots <= Capacity;
+    }
+
+    public bool LoadData(int gold, IReadOnlyList<BF_InventorySaveEntry> items)
+    {
+        if (!CanLoadData(gold, items))
+        {
+            return false;
+        }
+
+        Gold = gold;
+        _items.Clear();
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            BF_InventorySaveEntry entry = items[i];
+            TryAdd(GetItem(entry.ItemId), entry.Quantity, false);
+        }
+
+        PublishChanged();
+        return true;
+    }
+
+    private void ResetToDefaults(bool publish)
+    {
+        Gold = _config != null ? _config.StartingGold : 0;
+        _items.Clear();
+
+        if (_config != null)
+        {
+            foreach (BF_StartingItem entry in _config.StartingItems)
+            {
+                TryAdd(entry.Item, entry.Quantity, false);
+            }
+        }
+
+        if (publish)
+        {
+            PublishChanged();
+        }
     }
 
     private BF_InventoryEntry FindEntry(string itemId)

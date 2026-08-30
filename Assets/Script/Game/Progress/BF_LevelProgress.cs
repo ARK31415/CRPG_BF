@@ -30,4 +30,16 @@ public class BF_LevelProgress : MonoBehaviour
 
         HighestUnlockedLevel = Mathf.Max(HighestUnlockedLevel, level + 1);
     }
+
+    public void ResetProgress()
+    {
+        HighestUnlockedLevel = 1;
+        IsDemoCompleted = false;
+    }
+
+    public void LoadProgress(int highestUnlockedLevel, bool isDemoCompleted)
+    {
+        HighestUnlockedLevel = Mathf.Clamp(highestUnlockedLevel, 1, 3);
+        IsDemoCompleted = isDemoCompleted;
+    }
 }

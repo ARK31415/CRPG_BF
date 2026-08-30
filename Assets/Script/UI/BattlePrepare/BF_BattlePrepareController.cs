@@ -30,6 +30,7 @@ public class BF_BattlePrepareController : MonoBehaviour
     private BF_BattleService _battleService;
     private BF_SceneLoadManager _sceneLoadManager;
     private BF_UnitRuntimeService _runtime;
+    private BF_SaveService _saveService;
     private int _unitIndex;
     private System.IDisposable _unitSubscription;
 
@@ -49,6 +50,7 @@ public class BF_BattlePrepareController : MonoBehaviour
         _battleService = FindFirstObjectByType<BF_BattleService>();
         _sceneLoadManager = FindFirstObjectByType<BF_SceneLoadManager>();
         _runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
+        _saveService = FindFirstObjectByType<BF_SaveService>();
 
         _warehouseButton.onClick.AddListener(ShowWarehouse);
         _skillButton.onClick.AddListener(ShowSkill);
@@ -71,6 +73,7 @@ public class BF_BattlePrepareController : MonoBehaviour
         _battleService ??= FindFirstObjectByType<BF_BattleService>();
         _sceneLoadManager ??= FindFirstObjectByType<BF_SceneLoadManager>();
         _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
+        _saveService ??= FindFirstObjectByType<BF_SaveService>();
 
         if (_unitSubscription == null && GameEventBus.Instance != null)
         {
@@ -167,13 +170,23 @@ public class BF_BattlePrepareController : MonoBehaviour
     private void Back()
     {
         _backButton.interactable = false;
+        SaveCurrentSlot();
         _sceneLoadManager.LoadLevelSelect();
     }
 
     private void StartBattle()
     {
         _startButton.interactable = false;
+        SaveCurrentSlot();
         _battleService.StartPreparedLevel();
+    }
+
+    private void SaveCurrentSlot()
+    {
+        if (_saveService != null && _saveService.CurrentSlot > 0)
+        {
+            _saveService.Save();
+        }
     }
 
     private void OnUnitChanged(BF_UnitRuntimeChangedEvent gameEvent)

@@ -261,6 +261,59 @@ public class BF_UnitRuntimeService : MonoBehaviour
         return applied;
     }
 
+    public bool CanLoadUnits(IReadOnlyList<BF_UnitRuntimeData> units)
+    {
+        if (units == null)
+        {
+            return false;
+        }
+
+        HashSet<string> ids = new();
+        for (int i = 0; i < units.Count; i++)
+        {
+            BF_UnitRuntimeData unit = units[i];
+            if (unit == null
+                || string.IsNullOrEmpty(unit.UnitId)
+                || string.IsNullOrEmpty(unit.ConfigId)
+                || !ids.Add(unit.UnitId)
+                || unit.BattleItemIds == null
+                || unit.BattleItemIds.Length != 4
+                || unit.Level < 1
+                || unit.CurrentExp < 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public bool LoadUnits(IReadOnlyList<BF_UnitRuntimeData> units)
+    {
+        if (!CanLoadUnits(units))
+        {
+            return false;
+        }
+
+        _units.Clear();
+        for (int i = 0; i < units.Count; i++)
+        {
+            _units.Add(units[i].Clone());
+        }
+
+        PublishChanged(string.Empty);
+        return true;
+    }
+
+    public void Clear(bool publish = true)
+    {
+        _units.Clear();
+        if (publish)
+        {
+            PublishChanged(string.Empty);
+        }
+    }
+
     private void PublishChanged(string unitId)
     {
         GameEventBus.Instance.Publish(new BF_UnitRuntimeChangedEvent(unitId));
