@@ -6,9 +6,13 @@
   <Project Path="CRPG_BF.Board.PlayModeTests.csproj" />
   <Project Path="BF.Game.csproj" />
   <Project Path="EventBus.Core.csproj" />
+  <Project Path="CRPG_BF.HybridCLRVerify.Bootstrap.csproj" />
   <Project Path="EventBus.Tests.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="EventBus.UnityAdapter.csproj" />
   <Project Path="CRPG_BF.Shared.csproj" />
   <Project Path="CRPG_BF.Input.csproj" />
   <Project Path="Singleton.csproj" />
+  <Project Path="CRPG_BF.HybridCLRVerify.HotUpdate.csproj" />
+  <Project Path="CRPG_BF.HybridCLRVerify.Editor.csproj" />
 </Solution>

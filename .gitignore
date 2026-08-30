@@ -67,6 +67,11 @@ sysinfo.txt
 *.unitypackage.meta
 *.app
 
+# HybridCLR local toolchain and generated data
+/HybridCLRData/
+/Assets/StreamingAssets/HybridCLRVerify/
+/Assets/StreamingAssets/HybridCLRVerify.meta
+
 # Crashlytics generated file
 crashlytics-build.properties
 
