@@ -30,7 +30,25 @@ public class BF_UnitRuntimeService : MonoBehaviour
         return _units.Find(unit => unit.UnitId == unitId);
     }
 
-    public void SetEquipment(string unitId, string itemId)
+    public string GetEquipment(string unitId, BF_EquipmentSlot slot)
+    {
+        BF_UnitRuntimeData data = Get(unitId);
+        if (data == null)
+        {
+            return string.Empty;
+        }
+
+        return slot switch
+        {
+            BF_EquipmentSlot.Weapon => data.WeaponItemId,
+            BF_EquipmentSlot.Head => data.HeadItemId,
+            BF_EquipmentSlot.Armor => data.ArmorItemId,
+            BF_EquipmentSlot.Shoes => data.ShoesItemId,
+            _ => string.Empty
+        };
+    }
+
+    public void SetEquipment(string unitId, BF_EquipmentSlot slot, string itemId)
     {
         BF_UnitRuntimeData data = Get(unitId);
         if (data == null)
@@ -38,7 +56,22 @@ public class BF_UnitRuntimeService : MonoBehaviour
             return;
         }
 
-        data.EquipmentItemId = itemId;
+        switch (slot)
+        {
+            case BF_EquipmentSlot.Weapon:
+                data.WeaponItemId = itemId;
+                break;
+            case BF_EquipmentSlot.Head:
+                data.HeadItemId = itemId;
+                break;
+            case BF_EquipmentSlot.Armor:
+                data.ArmorItemId = itemId;
+                break;
+            case BF_EquipmentSlot.Shoes:
+                data.ShoesItemId = itemId;
+                break;
+        }
+
         PublishChanged(unitId);
     }
 
@@ -79,9 +112,23 @@ public class BF_UnitRuntimeService : MonoBehaviour
         int count = 0;
         foreach (BF_UnitRuntimeData unit in _units)
         {
-            if (unit.EquipmentItemId == itemId)
+            count += unit.WeaponItemId == itemId ? 1 : 0;
+            count += unit.HeadItemId == itemId ? 1 : 0;
+            count += unit.ArmorItemId == itemId ? 1 : 0;
+            count += unit.ShoesItemId == itemId ? 1 : 0;
+        }
+
+        return count;
+    }
+
+    public int GetReservedCount(string itemId)
+    {
+        int count = GetEquippedCount(itemId);
+        foreach (BF_UnitRuntimeData unit in _units)
+        {
+            for (int i = 0; i < unit.BattleItemIds.Length; i++)
             {
-                count++;
+                count += unit.BattleItemIds[i] == itemId ? 1 : 0;
             }
         }
 

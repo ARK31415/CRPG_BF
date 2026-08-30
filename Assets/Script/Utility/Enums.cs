@@ -65,6 +65,14 @@ public enum BF_ItemType
     Equipment
 }
 
+public enum BF_EquipmentSlot
+{
+    Weapon,
+    Head,
+    Armor,
+    Shoes
+}
+
 public enum BF_SkillTargetType
 {
     Unit,

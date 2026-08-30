@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de8424c35599e0b438cca842f1bd716e, type: 3}
+  m_Name: SO_BF_TrainingSword
+  m_EditorClassIdentifier: BF.Game::BF_ItemConfigSO
+  _id: training_sword
+  _displayName: "\u8BAD\u7EC3\u77ED\u5251"
+  _description: "\u57FA\u7840\u8BAD\u7EC3\u6B66\u5668\uFF0C\u653B\u51FB +2\u3002"
+  _icon: {fileID: 5826479529469629657, guid: 6f3213157b447964ca1a3533ec541eac, type: 3}
+  _itemType: 1
+  _buyPrice: 160
+  _sellPrice: 80
+  _maxStack: 1
+  _apCost: 0
+  _healAmount: 0
+  _equipmentSlot: 0
+  _attackBonus: 2
+  _defenseBonus: 0
+  _maxHPBonus: 0
+  _maxAPBonus: 0

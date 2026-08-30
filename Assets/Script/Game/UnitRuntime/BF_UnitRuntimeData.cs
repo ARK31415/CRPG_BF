@@ -15,7 +15,10 @@ public class BF_UnitRuntimeData
     }
 
     public string UnitId;
-    public string EquipmentItemId;
+    public string WeaponItemId;
+    public string HeadItemId;
+    public string ArmorItemId;
+    public string ShoesItemId;
     public string Skill01Id;
     public string Skill02Id;
     public string[] BattleItemIds = new string[4];

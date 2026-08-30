@@ -26,9 +26,11 @@ public class BF_ItemConfigSO : ScriptableObject
     [SerializeField] private int _healAmount = 5;
 
     [Header("Equipment")]
+    [SerializeField] private BF_EquipmentSlot _equipmentSlot;
     [SerializeField] private int _attackBonus;
     [SerializeField] private int _defenseBonus;
     [SerializeField] private int _maxHPBonus;
+    [SerializeField] private int _maxAPBonus;
 
     public string Id => _id;
     public string DisplayName => _displayName;
@@ -40,7 +42,9 @@ public class BF_ItemConfigSO : ScriptableObject
     public int MaxStack => _maxStack;
     public int APCost => _apCost;
     public int HealAmount => _healAmount;
+    public BF_EquipmentSlot EquipmentSlot => _equipmentSlot;
     public int AttackBonus => _attackBonus;
     public int DefenseBonus => _defenseBonus;
     public int MaxHPBonus => _maxHPBonus;
+    public int MaxAPBonus => _maxAPBonus;
 }

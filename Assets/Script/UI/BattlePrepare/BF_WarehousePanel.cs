@@ -13,20 +13,28 @@ public class BF_WarehousePanel : MonoBehaviour
 
     private readonly List<BF_ItemSlot> _slots = new();
     private BF_InventoryService _inventory;
-    private IDisposable _subscription;
+    private BF_UnitRuntimeService _runtime;
+    private BF_ItemConfigSO _selected;
+    private Action<BF_ItemConfigSO, Vector2> _onRightClick;
+    private IDisposable _inventorySubscription;
+    private IDisposable _unitSubscription;
 
     private void OnEnable()
     {
         _inventory = FindFirstObjectByType<BF_InventoryService>();
-        _subscription = GameEventBus.Instance.Subscribe<BF_InventoryChangedEvent>(_ => Refresh());
+        _runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
+        _inventorySubscription = GameEventBus.Instance.Subscribe<BF_InventoryChangedEvent>(_ => Refresh());
+        _unitSubscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(_ => Refresh());
         BuildSlots();
         Refresh();
     }
 
     private void OnDisable()
     {
-        _subscription?.Dispose();
-        _subscription = null;
+        _inventorySubscription?.Dispose();
+        _unitSubscription?.Dispose();
+        _inventorySubscription = null;
+        _unitSubscription = null;
     }
 
     public void Refresh()
@@ -42,8 +50,23 @@ public class BF_WarehousePanel : MonoBehaviour
         for (int i = 0; i < _slots.Count; i++)
         {
             BF_InventoryEntry entry = i < _inventory.Items.Count ? _inventory.Items[i] : null;
-            _slots[i].Setup(entry?.Item, entry?.Quantity ?? 0, _detailPanel.Show);
+            int count = entry != null
+                ? entry.Quantity - _runtime.GetReservedCount(entry.Item.Id)
+                : 0;
+            _slots[i].Setup(entry?.Item, count, Select, OpenMenu);
+            _slots[i].SetSelected(entry?.Item == _selected);
         }
+
+        if (_selected != null && _inventory.GetCount(_selected.Id) == 0)
+        {
+            _selected = null;
+            _detailPanel.Show(null);
+        }
+    }
+
+    public void SetRightClick(Action<BF_ItemConfigSO, Vector2> onRightClick)
+    {
+        _onRightClick = onRightClick;
     }
 
     private void BuildSlots()
@@ -59,5 +82,23 @@ public class BF_WarehousePanel : MonoBehaviour
         {
             _slots[i].gameObject.SetActive(i < capacity);
         }
+    }
+
+    private void Select(BF_ItemConfigSO item)
+    {
+        _selected = item;
+        _detailPanel.Show(item);
+        Refresh();
+    }
+
+    private void OpenMenu(BF_ItemConfigSO item, Vector2 screenPos)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        Select(item);
+        _onRightClick?.Invoke(item, screenPos);
     }
 }

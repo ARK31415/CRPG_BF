@@ -14,4 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: BF.Game::BF_ShopConfigSO
   _items:
   - {fileID: 11400000, guid: 27c0fbdda85535f4e92615ca422b3724, type: 2}
+  - {fileID: 11400000, guid: d2dd1a62bd2283541bc0f9f8aa74a839, type: 2}
+  - {fileID: 11400000, guid: d197ea2316c3ce14d908b5870f8a9b09, type: 2}
   - {fileID: 11400000, guid: c88cedfefb45e7b4ea1b92d3d43e5244, type: 2}
+  - {fileID: 11400000, guid: 92d7ea3e18d948549bc83c94872f32de, type: 2}

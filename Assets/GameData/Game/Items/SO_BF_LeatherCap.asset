@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de8424c35599e0b438cca842f1bd716e, type: 3}
+  m_Name: SO_BF_LeatherCap
+  m_EditorClassIdentifier: BF.Game::BF_ItemConfigSO
+  _id: leather_cap
+  _displayName: "\u76AE\u8D28\u5934\u76D4"
+  _description: "\u8F7B\u4FBF\u5934\u90E8\u9632\u5177\uFF0C\u9632\u5FA1 +1\u3002"
+  _icon: {fileID: 5826479529469629657, guid: 4c8d0bed1c055bd4f8a98064b88d8d96, type: 3}
+  _itemType: 1
+  _buyPrice: 120
+  _sellPrice: 60
+  _maxStack: 1
+  _apCost: 0
+  _healAmount: 0
+  _equipmentSlot: 1
+  _attackBonus: 0
+  _defenseBonus: 1
+  _maxHPBonus: 0
+  _maxAPBonus: 0

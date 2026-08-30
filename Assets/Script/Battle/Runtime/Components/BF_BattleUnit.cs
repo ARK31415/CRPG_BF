@@ -22,6 +22,7 @@ public class BF_BattleUnit : MonoBehaviour
     private int _maxHP;
     private int _attack;
     private int _defense;
+    private int _maxAP;
 
     [SerializeField]
     private Animator _animator;
@@ -41,7 +42,7 @@ public class BF_BattleUnit : MonoBehaviour
     public string UnitId => _config != null ? _config.Id : string.Empty;
     public string DisplayName => _config != null && !string.IsNullOrEmpty(_config.DisplayName) ? _config.DisplayName : gameObject.name;
     public int MaxHP => _maxHP;
-    public int MaxAP => _config != null ? _config.MaxAP : 0;
+    public int MaxAP => _maxAP;
     public int Attack => _attack;
     public int Defense => _defense;
     public BF_SkillConfigSO Skill01 => _skill01;
@@ -77,16 +78,21 @@ public class BF_BattleUnit : MonoBehaviour
             return;
         }
 
-        BF_ItemConfigSO equipment = runtimeData != null && _inventory != null
-            ? _inventory.GetItem(runtimeData.EquipmentItemId)
-            : null;
-        _maxHP = _config.MaxHP + (equipment != null ? equipment.MaxHPBonus : 0);
-        _attack = _config.Attack + (equipment != null ? equipment.AttackBonus : 0);
-        _defense = _config.Defense + (equipment != null ? equipment.DefenseBonus : 0);
+        _maxHP = _config.MaxHP;
+        _attack = _config.Attack;
+        _defense = _config.Defense;
+        _maxAP = _config.MaxAP;
+
+        if (runtimeData != null && _inventory != null)
+        {
+            AddEquipment(_inventory.GetItem(runtimeData.WeaponItemId));
+            AddEquipment(_inventory.GetItem(runtimeData.HeadItemId));
+            AddEquipment(_inventory.GetItem(runtimeData.ArmorItemId));
+            AddEquipment(_inventory.GetItem(runtimeData.ShoesItemId));
+        }
+
         _skill01 = runtimeData != null ? _config.GetSkill(runtimeData.Skill01Id) : _config.Skill01;
         _skill02 = runtimeData != null ? _config.GetSkill(runtimeData.Skill02Id) : _config.Skill02;
-        _skill01 ??= _config.Skill01;
-        _skill02 ??= _config.Skill02;
 
         CurrentHP = MaxHP;
         CurrentAP = 0;
@@ -398,6 +404,19 @@ public class BF_BattleUnit : MonoBehaviour
             _animator.SetBool(IsMovingId, false);
             _animator.SetBool(IsDeadId, true);
         }
+    }
+
+    private void AddEquipment(BF_ItemConfigSO item)
+    {
+        if (item == null || item.ItemType != BF_ItemType.Equipment)
+        {
+            return;
+        }
+
+        _maxHP += item.MaxHPBonus;
+        _attack += item.AttackBonus;
+        _defense += item.DefenseBonus;
+        _maxAP += item.MaxAPBonus;
     }
 
     private void PublishStats()

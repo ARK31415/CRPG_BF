@@ -14,14 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: BF.Game::BF_ItemConfigSO
   _id: healing_potion
   _displayName: "\u6CBB\u7597\u836F\u5242"
-  _description: "\u6218\u6597\u4E2D\u6062\u590D 8 \u70B9\u751F\u547D\u3002"
-  _icon: {fileID: 1010475931594042381, guid: d1adfb1decd4c374098559ec48a689d3, type: 3}
+  _description: "\u6218\u6597\u4E2D\u6062\u590D 5 \u70B9\u751F\u547D\u3002"
+  _icon: {fileID: -1775203188416643965, guid: 1247b9809f4c1f84ebd544d6fc64f395, type: 3}
   _itemType: 0
-  _buyPrice: 60
-  _sellPrice: 30
+  _buyPrice: 50
+  _sellPrice: 25
   _maxStack: 99
   _apCost: 2
-  _healAmount: 8
+  _healAmount: 5
+  _equipmentSlot: 0
   _attackBonus: 0
   _defenseBonus: 0
   _maxHPBonus: 0
+  _maxAPBonus: 0

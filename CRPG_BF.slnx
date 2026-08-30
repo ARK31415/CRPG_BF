@@ -2,9 +2,9 @@
   <Project Path="MCPForUnity.Runtime.csproj" />
   <Project Path="BF.Battle.csproj" />
   <Project Path="MCPForUnity.Editor.csproj" />
+  <Project Path="BF.UI.csproj" />
   <Project Path="CRPG_BF.Board.PlayModeTests.csproj" />
   <Project Path="BF.Game.csproj" />
-  <Project Path="BF.UI.csproj" />
   <Project Path="EventBus.Core.csproj" />
   <Project Path="EventBus.Tests.csproj" />
   <Project Path="EventBus.UnityAdapter.csproj" />

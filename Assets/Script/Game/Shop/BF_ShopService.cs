@@ -11,6 +11,13 @@ public class BF_ShopService : MonoBehaviour
 
     public BF_ShopConfigSO Config => _config;
 
+    public int GetAvailableCount(BF_ItemConfigSO item)
+    {
+        return item != null
+            ? Mathf.Max(0, _inventory.GetCount(item.Id) - _unitRuntime.GetReservedCount(item.Id))
+            : 0;
+    }
+
     public bool TryBuy(BF_ItemConfigSO item)
     {
         if (item == null || !_inventory.CanAdd(item, 1) || !_inventory.TrySpendGold(item.BuyPrice))
@@ -28,8 +35,7 @@ public class BF_ShopService : MonoBehaviour
             return false;
         }
 
-        int available = _inventory.GetCount(item.Id) - _unitRuntime.GetEquippedCount(item.Id);
-        if (available <= 0 || !_inventory.TryRemove(item.Id, 1))
+        if (GetAvailableCount(item) <= 0 || !_inventory.TryRemove(item.Id, 1))
         {
             return false;
         }

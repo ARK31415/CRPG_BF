@@ -25,6 +25,21 @@ public class BF_ItemDetailPanel : MonoBehaviour
             return $"消耗品  |  恢复 {item.HealAmount} HP  |  {item.APCost} AP";
         }
 
-        return $"装备  |  攻击 +{item.AttackBonus}  防御 +{item.DefenseBonus}  HP +{item.MaxHPBonus}";
+        return
+            $"{GetSlotName(item.EquipmentSlot)}  |  " +
+            $"攻击 +{item.AttackBonus}  防御 +{item.DefenseBonus}  " +
+            $"HP +{item.MaxHPBonus}  AP +{item.MaxAPBonus}";
+    }
+
+    private string GetSlotName(BF_EquipmentSlot slot)
+    {
+        return slot switch
+        {
+            BF_EquipmentSlot.Weapon => "武器",
+            BF_EquipmentSlot.Head => "头部",
+            BF_EquipmentSlot.Armor => "护甲",
+            BF_EquipmentSlot.Shoes => "鞋",
+            _ => "装备"
+        };
     }
 }

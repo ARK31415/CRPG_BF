@@ -72,13 +72,18 @@ public class BF_ShopPanel : MonoBehaviour
         for (int i = 0; i < _shopSlots.Count; i++)
         {
             BF_ItemConfigSO item = _shop.Config.Items[i];
-            _shopSlots[i].Setup(item, item.BuyPrice, selected => Select(selected, true));
+            _shopSlots[i].Setup(
+                item,
+                0,
+                selected => Select(selected, true),
+                showCount: false);
         }
 
         for (int i = 0; i < _inventorySlots.Count; i++)
         {
             BF_InventoryEntry entry = i < _inventory.Items.Count ? _inventory.Items[i] : null;
-            _inventorySlots[i].Setup(entry?.Item, entry?.Quantity ?? 0, selected => Select(selected, false));
+            int count = entry != null ? _shop.GetAvailableCount(entry.Item) : 0;
+            _inventorySlots[i].Setup(entry?.Item, count, selected => Select(selected, false));
         }
 
         RefreshTrade();
@@ -95,12 +100,12 @@ public class BF_ShopPanel : MonoBehaviour
     private void RefreshTrade()
     {
         _buyButton.interactable = _selected != null && _isShopItem;
-        _sellButton.interactable = _selected != null && !_isShopItem;
+        _sellButton.interactable = _selected != null && !_isShopItem && _shop.GetAvailableCount(_selected) > 0;
         _tradeText.text = _selected == null
             ? "选择商品或仓库物品"
             : _isShopItem
                 ? $"购买价格：{_selected.BuyPrice}"
-                : $"出售价格：{_selected.SellPrice}";
+                : $"出售价格：{_selected.SellPrice}　可用：{_shop.GetAvailableCount(_selected)}";
     }
 
     private void Buy()
