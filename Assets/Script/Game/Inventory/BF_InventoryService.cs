@@ -3,6 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Persistent 场景中的运行时金币与库存唯一入口。
+/// 装备不可堆叠，每件独立占一个仓库条目；消耗品按 MaxStack 堆叠。
 /// </summary>
 [DefaultExecutionOrder(-80)]
 public class BF_InventoryService : MonoBehaviour
@@ -50,8 +51,16 @@ public class BF_InventoryService : MonoBehaviour
 
     public int GetCount(string itemId)
     {
-        BF_InventoryEntry entry = FindEntry(itemId);
-        return entry != null ? entry.Quantity : 0;
+        int count = 0;
+        foreach (BF_InventoryEntry entry in _items)
+        {
+            if (entry.Item != null && entry.Item.Id == itemId)
+            {
+                count += entry.Quantity;
+            }
+        }
+
+        return count;
     }
 
     public bool CanAdd(BF_ItemConfigSO item, int quantity)
@@ -59,6 +68,11 @@ public class BF_InventoryService : MonoBehaviour
         if (item == null || quantity <= 0)
         {
             return false;
+        }
+
+        if (item.ItemType == BF_ItemType.Equipment)
+        {
+            return _items.Count + quantity <= Capacity;
         }
 
         BF_InventoryEntry entry = FindEntry(item.Id);
@@ -74,14 +88,24 @@ public class BF_InventoryService : MonoBehaviour
             return false;
         }
 
-        BF_InventoryEntry entry = FindEntry(item.Id);
-        if (entry == null)
+        if (item.ItemType == BF_ItemType.Equipment)
         {
-            _items.Add(new BF_InventoryEntry(item, quantity));
+            for (int i = 0; i < quantity; i++)
+            {
+                _items.Add(new BF_InventoryEntry(item, 1));
+            }
         }
         else
         {
-            entry.Quantity += quantity;
+            BF_InventoryEntry entry = FindEntry(item.Id);
+            if (entry == null)
+            {
+                _items.Add(new BF_InventoryEntry(item, quantity));
+            }
+            else
+            {
+                entry.Quantity += quantity;
+            }
         }
 
         if (publish)
@@ -94,16 +118,27 @@ public class BF_InventoryService : MonoBehaviour
 
     public bool TryRemove(string itemId, int quantity)
     {
-        BF_InventoryEntry entry = FindEntry(itemId);
-        if (entry == null || quantity <= 0 || entry.Quantity < quantity)
+        if (quantity <= 0 || GetCount(itemId) < quantity)
         {
             return false;
         }
 
-        entry.Quantity -= quantity;
-        if (entry.Quantity == 0)
+        int remaining = quantity;
+        for (int i = _items.Count - 1; i >= 0 && remaining > 0; i--)
         {
-            _items.Remove(entry);
+            BF_InventoryEntry entry = _items[i];
+            if (entry.Item == null || entry.Item.Id != itemId)
+            {
+                continue;
+            }
+
+            int take = Mathf.Min(entry.Quantity, remaining);
+            entry.Quantity -= take;
+            remaining -= take;
+            if (entry.Quantity == 0)
+            {
+                _items.RemoveAt(i);
+            }
         }
 
         PublishChanged();

@@ -31,6 +31,7 @@ MonoBehaviour:
     _team: 1
     _pos: {x: 6, y: 6}
   _rewardGold: 200
+  _rewardExp: 140
   _rewardItems:
   - _item: {fileID: 11400000, guid: 27c0fbdda85535f4e92615ca422b3724, type: 2}
     _quantity: 2

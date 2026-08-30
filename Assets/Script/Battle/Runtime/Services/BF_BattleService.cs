@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BF_BattleService : MonoBehaviour
@@ -14,6 +15,9 @@ public class BF_BattleService : MonoBehaviour
 
     [SerializeField]
     private BF_InventoryService _inventory;
+
+    [SerializeField]
+    private BF_UnitRuntimeService _unitRuntime;
 
     [SerializeField]
     private BF_LevelConfigSO[] _levels;
@@ -108,6 +112,71 @@ public class BF_BattleService : MonoBehaviour
                 LastReward.Items.Add(new BF_InventoryEntry(reward.Item, reward.Quantity));
             }
         }
+
+        GiveExpReward(level);
+    }
+
+    /// <summary>
+    /// 胜利经验在全体玩家角色间均分，余数按运行时列表顺序补给；阵亡角色同样获得。
+    /// 每次胜利都发放，关卡可以重复刷取。
+    /// </summary>
+    private void GiveExpReward(BF_LevelConfigSO level)
+    {
+        if (_unitRuntime == null || level.RewardExp <= 0)
+        {
+            return;
+        }
+
+        LastReward.Exp = level.RewardExp;
+        IReadOnlyList<BF_UnitRuntimeData> units = _unitRuntime.Units;
+        int count = units.Count;
+        if (count == 0)
+        {
+            return;
+        }
+
+        int baseExp = level.RewardExp / count;
+        int remainder = level.RewardExp % count;
+
+        for (int i = 0; i < count; i++)
+        {
+            BF_UnitRuntimeData unit = units[i];
+            BF_UnitConfigSO config = FindPlayerConfig(level, unit.UnitId);
+            int gain = baseExp + (i < remainder ? 1 : 0);
+            if (config == null || gain <= 0)
+            {
+                continue;
+            }
+
+            int oldLevel = unit.Level;
+            int applied = _unitRuntime.AddExp(unit.UnitId, gain, config.GetExpRequiredToNextLevel);
+            if (applied <= 0)
+            {
+                continue;
+            }
+
+            LastReward.UnitGains.Add(new BF_UnitExpGain
+            {
+                UnitId = unit.UnitId,
+                UnitName = config.DisplayName,
+                GainedExp = applied,
+                OldLevel = oldLevel,
+                NewLevel = unit.Level
+            });
+        }
+    }
+
+    private BF_UnitConfigSO FindPlayerConfig(BF_LevelConfigSO level, string unitId)
+    {
+        foreach (BF_UnitSpawnData spawn in level.UnitSpawns)
+        {
+            if (spawn != null && spawn.Unit != null && spawn.Team == BF_UnitTeam.Player && spawn.Unit.Id == unitId)
+            {
+                return spawn.Unit;
+            }
+        }
+
+        return null;
     }
 
     private BF_LevelConfigSO GetLevelConfig(int level)

@@ -23,6 +23,10 @@ public class BF_LevelConfigSO : ScriptableObject
     [SerializeField]
     private int _rewardGold;
 
+    [Min(0)]
+    [SerializeField]
+    private int _rewardExp;
+
     [SerializeField]
     private List<BF_RewardItem> _rewardItems = new();
 
@@ -31,5 +35,6 @@ public class BF_LevelConfigSO : ScriptableObject
     public List<Vector2Int> BlockedCells => _blockedCells;
     public List<BF_UnitSpawnData> UnitSpawns => _unitSpawns;
     public int RewardGold => _rewardGold;
+    public int RewardExp => _rewardExp;
     public IReadOnlyList<BF_RewardItem> RewardItems => _rewardItems;
 }

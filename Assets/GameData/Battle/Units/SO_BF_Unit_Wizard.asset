@@ -22,6 +22,16 @@ MonoBehaviour:
   _basicAttack: {fileID: 11400000, guid: 19899a8ab999a414289a7bc44c4b0d45, type: 2}
   _skill01: {fileID: 11400000, guid: 46708f4bf3d5358479e97f120c8bbe5b, type: 2}
   _skill02: {fileID: 11400000, guid: 7361e86592a44fe48beff04eb2483d9a, type: 2}
+  _availableSkills: []
   _portrait: {fileID: 8159891127022863514, guid: 02d23cf4f131a8b4aba1d1113ff1bb63, type: 3}
   _moveSpeed: 4
   _animatorController: {fileID: 9100000, guid: 55aac628ce671b84b85eb8cb8b2c20e3, type: 2}
+  _growthConfig: {fileID: 11400000, guid: ed63d44ac5576674bbea56adbe1953da, type: 2}
+  _growth:
+    MaxHP: 3
+    Attack: 2
+    Defense: 4
+    MaxAP: 3
+  _expToNextLevelAtLv1: 50
+  _expGrowthPerLevel: 1.2
+  _maxLevel: 10

@@ -11,6 +11,12 @@ public class BF_ResultPanel : MonoBehaviour
     private TMP_Text _messageText;
 
     [SerializeField]
+    private TMP_Text _rewardText;
+
+    [SerializeField]
+    private GameObject _rewardBox;
+
+    [SerializeField]
     private Button _confirmButton;
 
     [SerializeField]
@@ -36,15 +42,13 @@ public class BF_ResultPanel : MonoBehaviour
         if (!isVictory)
         {
             _messageText.text = "整备队伍后再次挑战";
+            _rewardBox.SetActive(false);
+            return;
         }
-        else if (_battleService.CurrentLevel == 3)
-        {
-            _messageText.text = $"Demo 全关卡完成\n{GetRewardText()}";
-        }
-        else
-        {
-            _messageText.text = $"第{_battleService.CurrentLevel + 1}关已解锁\n{GetRewardText()}";
-        }
+
+        _rewardBox.SetActive(true);
+        _messageText.text = _battleService.CurrentLevel == 3 ? "Demo 全关卡完成" : $"第{_battleService.CurrentLevel + 1}关已解锁";
+        _rewardText.text = GetRewardText();
     }
 
     private string GetRewardText()
@@ -55,6 +59,14 @@ public class BF_ResultPanel : MonoBehaviour
         foreach (BF_InventoryEntry entry in reward.Items)
         {
             text += $"\n{entry.Item.DisplayName} × {entry.Quantity}";
+        }
+
+        foreach (BF_UnitExpGain gain in reward.UnitGains)
+        {
+            string levelText = gain.NewLevel > gain.OldLevel
+                ? $"  Lv {gain.OldLevel} → {gain.NewLevel}"
+                : string.Empty;
+            text += $"\n{gain.UnitName} +{gain.GainedExp} EXP{levelText}";
         }
 
         return text;

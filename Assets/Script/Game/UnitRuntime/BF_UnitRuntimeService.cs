@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -133,6 +134,47 @@ public class BF_UnitRuntimeService : MonoBehaviour
         }
 
         return count;
+    }
+
+    /// <summary>
+    /// 为角色增加经验并处理升级循环，返回实际生效的经验值。
+    /// expRequired 由调用方传入角色的升级经验曲线（满级返回 0）；
+    /// 满级后不再累计，CurrentExp 保持 0。
+    /// </summary>
+    public int AddExp(string unitId, int amount, Func<int, int> expRequired)
+    {
+        BF_UnitRuntimeData data = Get(unitId);
+        if (data == null || expRequired == null || amount <= 0)
+        {
+            return 0;
+        }
+
+        int applied = 0;
+        int remaining = amount;
+
+        while (remaining > 0)
+        {
+            int need = expRequired(data.Level);
+            if (need == 0)
+            {
+                data.CurrentExp = 0;
+                break;
+            }
+
+            int gain = Mathf.Min(need - data.CurrentExp, remaining);
+            data.CurrentExp += gain;
+            remaining -= gain;
+            applied += gain;
+
+            if (data.CurrentExp >= need)
+            {
+                data.Level++;
+                data.CurrentExp = 0;
+            }
+        }
+
+        PublishChanged(unitId);
+        return applied;
     }
 
     private void PublishChanged(string unitId)

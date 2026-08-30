@@ -12,6 +12,8 @@ public class BF_UnitRuntimeData
         Skill01Id = skill01;
         Skill02Id = skill02;
         BattleItemIds = new string[4];
+        Level = 1;
+        CurrentExp = 0;
     }
 
     public string UnitId;
@@ -22,4 +24,6 @@ public class BF_UnitRuntimeData
     public string Skill01Id;
     public string Skill02Id;
     public string[] BattleItemIds = new string[4];
+    public int Level;
+    public int CurrentExp;
 }

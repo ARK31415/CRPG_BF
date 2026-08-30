@@ -103,3 +103,15 @@ public enum BF_SkillAnim
     Skill01,
     Skill02
 }
+
+/// <summary>
+/// 属性成长档位，档位越高等级倍率越高。
+/// </summary>
+public enum BF_GrowthRank
+{
+    S,
+    A,
+    B,
+    C,
+    D
+}

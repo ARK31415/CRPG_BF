@@ -78,10 +78,12 @@ public class BF_BattleUnit : MonoBehaviour
             return;
         }
 
-        _maxHP = _config.MaxHP;
-        _attack = _config.Attack;
-        _defense = _config.Defense;
-        _maxAP = _config.MaxAP;
+        int level = runtimeData != null ? runtimeData.Level : 1;
+        BF_UnitStats stats = _config.GetStatsForLevel(level);
+        _maxHP = stats.MaxHP;
+        _attack = stats.Attack;
+        _defense = stats.Defense;
+        _maxAP = stats.MaxAP;
 
         if (runtimeData != null && _inventory != null)
         {

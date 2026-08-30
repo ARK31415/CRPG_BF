@@ -105,12 +105,14 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
             }
         }
 
+        BF_UnitStats stats = _unit.GetStatsForLevel(Data.Level);
         _unitNameText.text = _unit.DisplayName;
         _statsText.text =
-            $"HP   {_unit.MaxHP} +{hpBonus}\n" +
-            $"ATK  {_unit.Attack} +{attackBonus}\n" +
-            $"DEF  {_unit.Defense} +{defenseBonus}\n" +
-            $"AP   {_unit.MaxAP} +{apBonus}";
+            $"Lv  {Data.Level}\n" +
+            $"HP   {stats.MaxHP} +{hpBonus}\n" +
+            $"ATK  {stats.Attack} +{attackBonus}\n" +
+            $"DEF  {stats.Defense} +{defenseBonus}\n" +
+            $"AP   {stats.MaxAP} +{apBonus}";
         _portrait.sprite = _unit.Portrait;
         _portrait.enabled = _unit.Portrait != null;
         _portrait.preserveAspect = true;
