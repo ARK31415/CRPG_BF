@@ -15,7 +15,8 @@ public class BF_ItemContextMenu : MonoBehaviour
     private BF_InventoryService _inventory;
     private BF_UnitRuntimeService _runtime;
     private BF_ItemConfigSO _item;
-    private BF_UnitConfigSO _unit;
+    private BF_UnitRuntimeData _data;
+    private BF_UnitConfigSO _config;
     private int _battleItemSlot;
 
     private void Awake()
@@ -41,6 +42,7 @@ public class BF_ItemContextMenu : MonoBehaviour
 
     public void Show(
         BF_ItemConfigSO item,
+        BF_UnitRuntimeData data,
         BF_UnitConfigSO unit,
         int battleItemSlot,
         Vector2 screenPos)
@@ -48,7 +50,8 @@ public class BF_ItemContextMenu : MonoBehaviour
         _inventory ??= FindFirstObjectByType<BF_InventoryService>();
         _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
         _item = item;
-        _unit = unit;
+        _data = data;
+        _config = unit;
         _battleItemSlot = battleItemSlot;
         _messageText.text = string.Empty;
 
@@ -75,7 +78,7 @@ public class BF_ItemContextMenu : MonoBehaviour
 
     private bool CanUsePrimary()
     {
-        if (_item == null || _unit == null || _inventory == null || _runtime == null)
+        if (_item == null || _data == null || _inventory == null || _runtime == null)
         {
             return false;
         }
@@ -86,8 +89,8 @@ public class BF_ItemContextMenu : MonoBehaviour
         }
 
         string current = _item.ItemType == BF_ItemType.Equipment
-            ? _runtime.GetEquipment(_unit.Id, _item.EquipmentSlot)
-            : _runtime.Get(_unit.Id)?.BattleItemIds[_battleItemSlot];
+            ? _runtime.GetEquipment(_data.UnitId, _item.EquipmentSlot)
+            : _data.BattleItemIds[_battleItemSlot];
         return current == _item.Id || GetAvailableCount() > 0;
     }
 
@@ -113,7 +116,7 @@ public class BF_ItemContextMenu : MonoBehaviour
 
         if (_item.ItemType == BF_ItemType.Equipment)
         {
-            if (!_runtime.SetEquipment(_unit.Id, _item.EquipmentSlot, _item.Id))
+            if (!_runtime.SetEquipment(_data.UnitId, _item.EquipmentSlot, _item.Id))
             {
                 _messageText.text = "没有可用数量";
                 return;
@@ -121,7 +124,7 @@ public class BF_ItemContextMenu : MonoBehaviour
         }
         else
         {
-            _runtime.SetBattleItem(_unit.Id, _battleItemSlot, _item.Id);
+            _runtime.SetBattleItem(_data.UnitId, _battleItemSlot, _item.Id);
         }
 
         Hide();

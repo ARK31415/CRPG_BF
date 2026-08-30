@@ -17,20 +17,18 @@ MonoBehaviour:
   _blockedCells:
   - {x: 2, y: 2}
   - {x: 6, y: 2}
-  _unitSpawns:
+  _playerSpawns:
+  - {x: 1, y: 1}
+  - {x: 1, y: 2}
+  - {x: 1, y: 4}
+  _fixedSpawns:
   - _unit: {fileID: 11400000, guid: fbf9fd7f37173fd489d6408598d61ecb, type: 2}
-    _team: 0
-    _pos: {x: 1, y: 1}
-  - _unit: {fileID: 11400000, guid: b7efed761934e12479bd86366d149452, type: 2}
-    _team: 0
-    _pos: {x: 1, y: 2}
-  - _unit: {fileID: 11400000, guid: befdae889d6f68f4b897eb969f3dec6d, type: 2}
     _team: 1
     _pos: {x: 8, y: 4}
-  - _unit: {fileID: 11400000, guid: f028e5e7ade43a64eb6bc0bac1944332, type: 2}
+  - _unit: {fileID: 11400000, guid: b7efed761934e12479bd86366d149452, type: 2}
     _team: 1
     _pos: {x: 8, y: 3}
-  - _unit: {fileID: 11400000, guid: befdae889d6f68f4b897eb969f3dec6d, type: 2}
+  - _unit: {fileID: 11400000, guid: fbf9fd7f37173fd489d6408598d61ecb, type: 2}
     _team: 1
     _pos: {x: 8, y: 5}
   _rewardGold: 300
@@ -38,3 +36,5 @@ MonoBehaviour:
   _rewardItems:
   - _item: {fileID: 11400000, guid: 27c0fbdda85535f4e92615ca422b3724, type: 2}
     _quantity: 3
+  _rewardUnit: {fileID: 0}
+  _rewardUnitMode: 0

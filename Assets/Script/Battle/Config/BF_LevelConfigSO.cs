@@ -16,7 +16,10 @@ public class BF_LevelConfigSO : ScriptableObject
     private List<Vector2Int> _blockedCells = new();
 
     [SerializeField]
-    private List<BF_UnitSpawnData> _unitSpawns = new();
+    private List<Vector2Int> _playerSpawns = new();
+
+    [SerializeField]
+    private List<BF_UnitSpawnData> _fixedSpawns = new();
 
     [Header("Reward")]
     [Min(0)]
@@ -30,11 +33,20 @@ public class BF_LevelConfigSO : ScriptableObject
     [SerializeField]
     private List<BF_RewardItem> _rewardItems = new();
 
+    [SerializeField]
+    private BF_UnitConfigSO _rewardUnit;
+
+    [SerializeField]
+    private BF_UnitRewardMode _rewardUnitMode;
+
     public int Width => _width;
     public int Height => _height;
     public List<Vector2Int> BlockedCells => _blockedCells;
-    public List<BF_UnitSpawnData> UnitSpawns => _unitSpawns;
+    public IReadOnlyList<Vector2Int> PlayerSpawns => _playerSpawns;
+    public IReadOnlyList<BF_UnitSpawnData> FixedSpawns => _fixedSpawns;
     public int RewardGold => _rewardGold;
     public int RewardExp => _rewardExp;
     public IReadOnlyList<BF_RewardItem> RewardItems => _rewardItems;
+    public BF_UnitConfigSO RewardUnit => _rewardUnit;
+    public BF_UnitRewardMode RewardUnitMode => _rewardUnitMode;
 }

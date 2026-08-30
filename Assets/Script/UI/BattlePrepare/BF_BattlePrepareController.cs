@@ -14,9 +14,10 @@ public class BF_BattlePrepareController : MonoBehaviour
 
     [Header("Unit")]
     [SerializeField] private TMP_Text _unitNameText;
+    [SerializeField] private TMP_Text _rosterCountText;
+    [SerializeField] private TMP_Text _rosterMessageText;
     [SerializeField] private Button _prevUnitButton;
     [SerializeField] private Button _nextUnitButton;
-    [SerializeField] private BF_UnitConfigSO[] _playerUnits;
     [SerializeField] private BF_UnitLoadoutPanel _unitLoadoutPanel;
     [SerializeField] private BF_SkillLoadoutPanel _skillLoadoutPanel;
     [SerializeField] private BF_WarehousePanel _warehousePanel;
@@ -30,9 +31,17 @@ public class BF_BattlePrepareController : MonoBehaviour
     private BF_SceneLoadManager _sceneLoadManager;
     private BF_UnitRuntimeService _runtime;
     private int _unitIndex;
+    private System.IDisposable _unitSubscription;
 
-    private BF_UnitConfigSO CurrentUnit => _playerUnits != null && _playerUnits.Length > 0
-        ? _playerUnits[_unitIndex]
+    private BF_UnitRuntimeData CurrentData => _runtime != null
+        && _runtime.Units.Count > 0
+        && _unitIndex >= 0
+        && _unitIndex < _runtime.Units.Count
+        ? _runtime.Units[_unitIndex]
+        : null;
+
+    private BF_UnitConfigSO CurrentConfig => CurrentData != null && _battleService != null
+        ? _battleService.GetUnitConfig(CurrentData.ConfigId)
         : null;
 
     private void OnEnable()
@@ -50,7 +59,24 @@ public class BF_BattlePrepareController : MonoBehaviour
         _startButton.onClick.AddListener(StartBattle);
         _warehousePanel.SetRightClick(OpenItemMenu);
 
-        InitUnits();
+        _unitSubscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(OnUnitChanged);
+        SelectUnit(0);
+        ShowWarehouse();
+    }
+
+    private void Start()
+    {
+        // BattlePrepare 通过 Addressables 异步加载时，OnEnable 可能早于 Persistent 服务初始化。
+        // 在 Start 再获取一次服务，确保默认角色和出战人数显示正常。
+        _battleService ??= FindFirstObjectByType<BF_BattleService>();
+        _sceneLoadManager ??= FindFirstObjectByType<BF_SceneLoadManager>();
+        _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
+
+        if (_unitSubscription == null && GameEventBus.Instance != null)
+        {
+            _unitSubscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(OnUnitChanged);
+        }
+
         SelectUnit(0);
         ShowWarehouse();
     }
@@ -65,41 +91,33 @@ public class BF_BattlePrepareController : MonoBehaviour
         _backButton.onClick.RemoveListener(Back);
         _startButton.onClick.RemoveListener(StartBattle);
         _warehousePanel.SetRightClick(null);
-    }
-
-    private void InitUnits()
-    {
-        if (_runtime == null || _playerUnits == null)
-        {
-            return;
-        }
-
-        foreach (BF_UnitConfigSO unit in _playerUnits)
-        {
-            if (unit == null)
-            {
-                continue;
-            }
-
-            _runtime.GetOrCreate(
-                unit.Id,
-                unit.Skill01 != null ? unit.Skill01.Id : string.Empty,
-                unit.Skill02 != null ? unit.Skill02.Id : string.Empty);
-        }
+        _unitSubscription?.Dispose();
+        _unitSubscription = null;
     }
 
     private void SelectUnit(int index)
     {
-        if (_playerUnits == null || _playerUnits.Length == 0)
+        int count = _runtime != null ? _runtime.Units.Count : 0;
+        if (count == 0)
         {
+            _unitIndex = 0;
+            _unitNameText.text = string.Empty;
+            _unitLoadoutPanel.ShowUnit(null, null);
+            _skillLoadoutPanel.ShowUnit(null, null);
+            RefreshRoster();
             return;
         }
 
-        _unitIndex = (index + _playerUnits.Length) % _playerUnits.Length;
-        _unitNameText.text = CurrentUnit != null ? CurrentUnit.DisplayName : string.Empty;
-        _unitLoadoutPanel.ShowUnit(CurrentUnit);
-        _skillLoadoutPanel.ShowUnit(CurrentUnit);
+        _unitIndex = (index + count) % count;
+        BF_UnitRuntimeData data = CurrentData;
+        BF_UnitConfigSO config = CurrentConfig;
+        _unitNameText.text = data != null && config != null
+            ? $"{config.DisplayName}  ({data.UnitId})"
+            : string.Empty;
+        _unitLoadoutPanel.ShowUnit(data, config);
+        _skillLoadoutPanel.ShowUnit(data, config);
         _itemContextMenu.Hide();
+        RefreshRoster();
     }
 
     private void PreviousUnit()
@@ -140,7 +158,8 @@ public class BF_BattlePrepareController : MonoBehaviour
     {
         _itemContextMenu.Show(
             item,
-            CurrentUnit,
+            CurrentData,
+            CurrentConfig,
             _unitLoadoutPanel.SelectedBattleItemSlot,
             screenPos);
     }
@@ -155,5 +174,53 @@ public class BF_BattlePrepareController : MonoBehaviour
     {
         _startButton.interactable = false;
         _battleService.StartPreparedLevel();
+    }
+
+    private void OnUnitChanged(BF_UnitRuntimeChangedEvent gameEvent)
+    {
+        string selectedId = CurrentData != null ? CurrentData.UnitId : string.Empty;
+        if (_runtime == null || _runtime.Units.Count == 0)
+        {
+            SelectUnit(0);
+            return;
+        }
+
+        for (int i = 0; i < _runtime.Units.Count; i++)
+        {
+            if (_runtime.Units[i].UnitId == selectedId)
+            {
+                _unitIndex = i;
+                break;
+            }
+        }
+
+        SelectUnit(_unitIndex);
+    }
+
+    private void RefreshRoster()
+    {
+        int count = _runtime != null ? _runtime.DeployedCount : 0;
+        int limit = _battleService != null && _battleService.CurrentLevelConfig != null
+            ? _battleService.CurrentLevelConfig.PlayerSpawns.Count
+            : 0;
+
+        if (_rosterCountText != null)
+        {
+            _rosterCountText.text = $"出战人数：{count} / {limit}";
+        }
+
+        if (_rosterMessageText != null)
+        {
+            _rosterMessageText.text = count == 0
+                ? "至少选择一名角色出战"
+                : count > limit
+                    ? "当前出战人数超过本关上限，请撤下角色"
+                    : string.Empty;
+        }
+
+        if (_startButton != null)
+        {
+            _startButton.interactable = count > 0 && count <= limit;
+        }
     }
 }

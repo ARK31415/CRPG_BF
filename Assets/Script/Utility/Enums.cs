@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// 项目中跨模块使用的简单枚举集中定义。
 /// 具体业务逻辑仍然放在各自模块中。
@@ -15,8 +17,20 @@ public enum TerrainType
 
 public enum BF_UnitTeam
 {
+    [InspectorName("玩家")]
     Player = 0,
+
+    [InspectorName("敌人")]
     Enemy = 1,
+}
+
+public enum BF_UnitRewardMode
+{
+    [InspectorName("仅首次通关")]
+    FirstClearOnly,
+
+    [InspectorName("每次通关")]
+    EveryClear
 }
 
 public enum BF_GameMode

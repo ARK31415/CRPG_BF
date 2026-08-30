@@ -23,7 +23,12 @@ public class BF_WarehousePanel : MonoBehaviour
     {
         _inventory = FindFirstObjectByType<BF_InventoryService>();
         _runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
-        _inventorySubscription = GameEventBus.Instance.Subscribe<BF_InventoryChangedEvent>(_ => Refresh());
+        _inventorySubscription = GameEventBus.Instance.Subscribe<BF_InventoryChangedEvent>(_ =>
+        {
+            _selectedSlot = -1;
+            _detailPanel.Show(null);
+            Refresh();
+        });
         _unitSubscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(_ => Refresh());
         BuildSlots();
         Refresh();

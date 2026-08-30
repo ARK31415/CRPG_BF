@@ -14,23 +14,84 @@ public class BF_UnitRuntimeService : MonoBehaviour
 
     public IReadOnlyList<BF_UnitRuntimeData> Units => _units;
 
-    public BF_UnitRuntimeData GetOrCreate(string unitId, string skill01Id, string skill02Id)
+    public BF_UnitRuntimeData AddUnit(
+        string configId,
+        string skill01Id,
+        string skill02Id,
+        bool isDeployed = false)
     {
-        BF_UnitRuntimeData data = Get(unitId);
-        if (data != null)
+        if (string.IsNullOrEmpty(configId))
         {
-            return data;
+            return null;
         }
 
-        data = new BF_UnitRuntimeData(unitId, skill01Id, skill02Id);
+        int index = 1;
+        string unitId;
+        do
+        {
+            unitId = $"{configId}_{index:000}";
+            index++;
+        }
+        while (Get(unitId) != null);
+
+        BF_UnitRuntimeData data = new BF_UnitRuntimeData(
+            unitId,
+            configId,
+            skill01Id,
+            skill02Id,
+            isDeployed);
         _units.Add(data);
-        PublishChanged(unitId);
+        PublishChanged(data.UnitId);
         return data;
     }
 
     public BF_UnitRuntimeData Get(string unitId)
     {
         return _units.Find(unit => unit.UnitId == unitId);
+    }
+
+    public int DeployedCount
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < _units.Count; i++)
+            {
+                if (_units[i].IsDeployed)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    public List<BF_UnitRuntimeData> GetDeployedUnits()
+    {
+        List<BF_UnitRuntimeData> deployed = new();
+        for (int i = 0; i < _units.Count; i++)
+        {
+            if (_units[i].IsDeployed)
+            {
+                deployed.Add(_units[i]);
+            }
+        }
+
+        return deployed;
+    }
+
+    public bool SetDeployed(string unitId, bool isDeployed)
+    {
+        BF_UnitRuntimeData data = Get(unitId);
+        if (data == null || data.IsDeployed == isDeployed)
+        {
+            return data != null;
+        }
+
+        data.IsDeployed = isDeployed;
+        PublishChanged(unitId);
+        return true;
     }
 
     public string GetEquipment(string unitId, BF_EquipmentSlot slot)

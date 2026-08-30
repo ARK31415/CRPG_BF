@@ -16,25 +16,26 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
     [SerializeField] private TMP_Text _unitNameText;
     [SerializeField] private TMP_Text _statsText;
     [SerializeField] private Image _portrait;
+    [SerializeField] private Button _deployButton;
+    [SerializeField] private TMP_Text _deployButtonText;
     [SerializeField] private BF_ItemSlot[] _equipmentSlots = new BF_ItemSlot[4];
     [SerializeField] private BF_ItemSlot[] _itemSlots = new BF_ItemSlot[4];
 
     private BF_InventoryService _inventory;
     private BF_UnitRuntimeService _runtime;
-    private BF_UnitConfigSO _unit;
+    private BF_BattleService _battleService;
+    private BF_UnitRuntimeData _data;
+    private BF_UnitConfigSO _config;
     private int _selectedBattleItemSlot = -1;
     private IDisposable _unitSubscription;
     private IDisposable _inventorySubscription;
 
     public int SelectedBattleItemSlot => _selectedBattleItemSlot;
 
-    private BF_UnitRuntimeData Data => _unit != null && _runtime != null
-        ? _runtime.Get(_unit.Id)
-        : null;
-
     private void OnEnable()
     {
         CacheServices();
+        _deployButton?.onClick.AddListener(ToggleDeployed);
         if (GameEventBus.Instance != null)
         {
             _unitSubscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(OnUnitChanged);
@@ -50,29 +51,24 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         _inventorySubscription?.Dispose();
         _unitSubscription = null;
         _inventorySubscription = null;
+        _deployButton?.onClick.RemoveListener(ToggleDeployed);
     }
 
-    public void ShowUnit(BF_UnitConfigSO unit)
+    public void ShowUnit(BF_UnitRuntimeData data, BF_UnitConfigSO config)
     {
         CacheServices();
-        _unit = unit;
+        _data = data;
+        _config = config;
         _selectedBattleItemSlot = -1;
-
-        if (_unit != null && _runtime != null)
-        {
-            _runtime.GetOrCreate(
-                _unit.Id,
-                _unit.Skill01 != null ? _unit.Skill01.Id : string.Empty,
-                _unit.Skill02 != null ? _unit.Skill02.Id : string.Empty);
-        }
 
         Refresh();
     }
 
     public void Refresh()
     {
-        if (_unit == null || Data == null || _inventory == null)
+        if (_config == null || _data == null || _inventory == null)
         {
+            UpdateDeployButton();
             return;
         }
 
@@ -84,7 +80,7 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         for (int i = 0; i < EquipmentSlots.Length; i++)
         {
             BF_EquipmentSlot slot = EquipmentSlots[i];
-            BF_ItemConfigSO item = _inventory.GetItem(_runtime.GetEquipment(_unit.Id, slot));
+            BF_ItemConfigSO item = _inventory.GetItem(_runtime.GetEquipment(_data.UnitId, slot));
             if (item != null)
             {
                 hpBonus += item.MaxHPBonus;
@@ -105,22 +101,22 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
             }
         }
 
-        BF_UnitStats stats = _unit.GetStatsForLevel(Data.Level);
-        _unitNameText.text = _unit.DisplayName;
+        BF_UnitStats stats = _config.GetStatsForLevel(_data.Level);
+        _unitNameText.text = _config.DisplayName;
         _statsText.text =
-            $"Lv  {Data.Level}\n" +
+            $"Lv  {_data.Level}\n" +
             $"HP   {stats.MaxHP} +{hpBonus}\n" +
             $"ATK  {stats.Attack} +{attackBonus}\n" +
             $"DEF  {stats.Defense} +{defenseBonus}\n" +
             $"AP   {stats.MaxAP} +{apBonus}";
-        _portrait.sprite = _unit.Portrait;
-        _portrait.enabled = _unit.Portrait != null;
+        _portrait.sprite = _config.Portrait;
+        _portrait.enabled = _config.Portrait != null;
         _portrait.preserveAspect = true;
 
         for (int i = 0; i < _itemSlots.Length; i++)
         {
             int slot = i;
-            BF_ItemConfigSO item = _inventory.GetItem(Data.BattleItemIds[i]);
+            BF_ItemConfigSO item = _inventory.GetItem(_data.BattleItemIds[i]);
             int count = item != null ? _inventory.GetCount(item.Id) : 0;
             _itemSlots[i].Setup(
                 item,
@@ -130,22 +126,25 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
                 allowEmptyClick: true);
             _itemSlots[i].SetSelected(i == _selectedBattleItemSlot);
         }
+
+        UpdateDeployButton();
     }
 
     private void CacheServices()
     {
         _inventory ??= FindFirstObjectByType<BF_InventoryService>();
         _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
+        _battleService ??= FindFirstObjectByType<BF_BattleService>();
     }
 
     private void ClearEquipment(BF_EquipmentSlot slot)
     {
-        if (_unit == null || string.IsNullOrEmpty(_runtime.GetEquipment(_unit.Id, slot)))
+        if (_data == null || string.IsNullOrEmpty(_runtime.GetEquipment(_data.UnitId, slot)))
         {
             return;
         }
 
-        if (!_runtime.SetEquipment(_unit.Id, slot, string.Empty))
+        if (!_runtime.SetEquipment(_data.UnitId, slot, string.Empty))
         {
             Debug.Log("仓库已满，无法卸下装备");
         }
@@ -153,14 +152,14 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
 
     private void SelectBattleItemSlot(int slot)
     {
-        if (Data == null)
+        if (_data == null)
         {
             return;
         }
 
-        if (_selectedBattleItemSlot == slot && !string.IsNullOrEmpty(Data.BattleItemIds[slot]))
+        if (_selectedBattleItemSlot == slot && !string.IsNullOrEmpty(_data.BattleItemIds[slot]))
         {
-            _runtime.SetBattleItem(_unit.Id, slot, string.Empty);
+            _runtime.SetBattleItem(_data.UnitId, slot, string.Empty);
             _selectedBattleItemSlot = -1;
         }
         else
@@ -172,9 +171,50 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
 
     private void OnUnitChanged(BF_UnitRuntimeChangedEvent evt)
     {
-        if (_unit != null && evt.UnitId == _unit.Id)
+        if (_data != null && evt.UnitId == _data.UnitId)
         {
             Refresh();
+        }
+    }
+
+    private void ToggleDeployed()
+    {
+        if (_data == null || _runtime == null)
+        {
+            return;
+        }
+
+        if (_data.IsDeployed)
+        {
+            _runtime.SetDeployed(_data.UnitId, false);
+            return;
+        }
+
+        int limit = _battleService != null && _battleService.CurrentLevelConfig != null
+            ? _battleService.CurrentLevelConfig.PlayerSpawns.Count
+            : 0;
+        if (_runtime.DeployedCount < limit)
+        {
+            _runtime.SetDeployed(_data.UnitId, true);
+        }
+    }
+
+    private void UpdateDeployButton()
+    {
+        if (_deployButton == null)
+        {
+            return;
+        }
+
+        bool isDeployed = _data != null && _data.IsDeployed;
+        int limit = _battleService != null && _battleService.CurrentLevelConfig != null
+            ? _battleService.CurrentLevelConfig.PlayerSpawns.Count
+            : 0;
+        bool canDeploy = isDeployed || (_runtime != null && _runtime.DeployedCount < limit);
+        _deployButton.interactable = _data != null && canDeploy;
+        if (_deployButtonText != null)
+        {
+            _deployButtonText.text = isDeployed ? "撤下" : "出战";
         }
     }
 

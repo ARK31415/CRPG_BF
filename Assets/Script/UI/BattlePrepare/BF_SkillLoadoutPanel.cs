@@ -17,13 +17,10 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
 
     private readonly List<BF_SkillSlot> _availableSlots = new();
     private BF_UnitRuntimeService _runtime;
-    private BF_UnitConfigSO _unit;
+    private BF_UnitRuntimeData _data;
+    private BF_UnitConfigSO _config;
     private int _selectedSlot = -2;
     private IDisposable _subscription;
-
-    private BF_UnitRuntimeData Data => _unit != null && _runtime != null
-        ? _runtime.Get(_unit.Id)
-        : null;
 
     private void OnEnable()
     {
@@ -42,30 +39,31 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
         _subscription = null;
     }
 
-    public void ShowUnit(BF_UnitConfigSO unit)
+    public void ShowUnit(BF_UnitRuntimeData data, BF_UnitConfigSO config)
     {
         _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
-        _unit = unit;
+        _data = data;
+        _config = config;
         _selectedSlot = -2;
         Refresh();
-        ShowDetail(_unit != null ? _unit.BasicAttack : null);
+        ShowDetail(_config != null ? _config.BasicAttack : null);
     }
 
     public void Refresh()
     {
-        if (_unit == null || Data == null)
+        if (_config == null || _data == null)
         {
             return;
         }
 
-        _basicAttackSlot.Setup(_unit.BasicAttack, "普通攻击", SelectBasicAttack);
+        _basicAttackSlot.Setup(_config.BasicAttack, "普通攻击", SelectBasicAttack);
         _basicAttackSlot.SetSelected(_selectedSlot == -2);
 
         for (int i = 0; i < _skillSlots.Length; i++)
         {
             int slot = i;
-            string skillId = i == 0 ? Data.Skill01Id : Data.Skill02Id;
-            BF_SkillConfigSO skill = _unit.GetSkill(skillId);
+            string skillId = i == 0 ? _data.Skill01Id : _data.Skill02Id;
+            BF_SkillConfigSO skill = _config.GetSkill(skillId);
             _skillSlots[i].Setup(skill, $"技能 {i + 1}", () => SelectSlot(slot));
             _skillSlots[i].SetSelected(_selectedSlot == i);
         }
@@ -76,15 +74,15 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
     private void SelectBasicAttack()
     {
         _selectedSlot = -2;
-        ShowDetail(_unit.BasicAttack);
+        ShowDetail(_config.BasicAttack);
         Refresh();
     }
 
     private void SelectSlot(int slot)
     {
         _selectedSlot = slot;
-        string skillId = slot == 0 ? Data.Skill01Id : Data.Skill02Id;
-        ShowDetail(_unit.GetSkill(skillId));
+        string skillId = slot == 0 ? _data.Skill01Id : _data.Skill02Id;
+        ShowDetail(_config.GetSkill(skillId));
         Refresh();
     }
 
@@ -96,8 +94,8 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
             return;
         }
 
-        string current = _selectedSlot == 0 ? Data.Skill01Id : Data.Skill02Id;
-        _runtime.SetSkill(_unit.Id, _selectedSlot, current == skill.Id ? string.Empty : skill.Id);
+        string current = _selectedSlot == 0 ? _data.Skill01Id : _data.Skill02Id;
+        _runtime.SetSkill(_data.UnitId, _selectedSlot, current == skill.Id ? string.Empty : skill.Id);
     }
 
     private void RefreshAvailable()
@@ -105,14 +103,14 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
         List<BF_SkillConfigSO> skills = GetSkills();
         string current = _selectedSlot switch
         {
-            0 => Data.Skill01Id,
-            1 => Data.Skill02Id,
+            0 => _data.Skill01Id,
+            1 => _data.Skill02Id,
             _ => string.Empty
         };
         string usedByOtherSlot = _selectedSlot switch
         {
-            0 => Data.Skill02Id,
-            1 => Data.Skill01Id,
+            0 => _data.Skill02Id,
+            1 => _data.Skill01Id,
             _ => string.Empty
         };
 
@@ -141,9 +139,9 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
     private List<BF_SkillConfigSO> GetSkills()
     {
         List<BF_SkillConfigSO> skills = new();
-        AddSkill(skills, _unit.Skill01);
-        AddSkill(skills, _unit.Skill02);
-        foreach (BF_SkillConfigSO skill in _unit.AvailableSkills)
+        AddSkill(skills, _config.Skill01);
+        AddSkill(skills, _config.Skill02);
+        foreach (BF_SkillConfigSO skill in _config.AvailableSkills)
         {
             AddSkill(skills, skill);
         }
@@ -153,7 +151,7 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
 
     private void AddSkill(List<BF_SkillConfigSO> skills, BF_SkillConfigSO skill)
     {
-        if (skill != null && !skills.Contains(skill) && skill != _unit.BasicAttack)
+        if (skill != null && !skills.Contains(skill) && skill != _config.BasicAttack)
         {
             skills.Add(skill);
         }
@@ -172,7 +170,7 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
 
     private void OnUnitChanged(BF_UnitRuntimeChangedEvent evt)
     {
-        if (_unit != null && evt.UnitId == _unit.Id)
+        if (_data != null && evt.UnitId == _data.UnitId)
         {
             Refresh();
         }

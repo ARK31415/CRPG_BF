@@ -16,6 +16,7 @@ public class BF_BattleUnit : MonoBehaviour
 
     private BF_BoardManager _board;
     private BF_UnitConfigSO _config;
+    private string _unitId;
     private BF_InventoryService _inventory;
     private BF_SkillConfigSO _skill01;
     private BF_SkillConfigSO _skill02;
@@ -39,7 +40,7 @@ public class BF_BattleUnit : MonoBehaviour
     public Vector2Int GridPos { get; private set; }
     public BF_UnitTeam Team { get; private set; }
     public BF_UnitConfigSO Config => _config;
-    public string UnitId => _config != null ? _config.Id : string.Empty;
+    public string UnitId => _unitId;
     public string DisplayName => _config != null && !string.IsNullOrEmpty(_config.DisplayName) ? _config.DisplayName : gameObject.name;
     public int MaxHP => _maxHP;
     public int MaxAP => _maxAP;
@@ -67,6 +68,7 @@ public class BF_BattleUnit : MonoBehaviour
     {
         _board = board;
         _config = config;
+        _unitId = runtimeData != null ? runtimeData.UnitId : config != null ? config.Id : string.Empty;
         _inventory = inventory;
         Team = team;
         GridPos = pos;

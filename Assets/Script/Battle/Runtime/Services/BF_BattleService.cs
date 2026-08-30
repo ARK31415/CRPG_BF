@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[DefaultExecutionOrder(-60)]
 public class BF_BattleService : MonoBehaviour
 {
     [SerializeField]
@@ -22,8 +23,16 @@ public class BF_BattleService : MonoBehaviour
     [SerializeField]
     private BF_LevelConfigSO[] _levels;
 
+    [Header("Unit Config")]
+    [SerializeField]
+    private BF_UnitConfigSO[] _unitCatalog;
+
+    [SerializeField]
+    private BF_UnitConfigSO[] _initialUnits;
+
     private IDisposable _resultSubscription;
     private IDisposable _confirmSubscription;
+    private readonly List<string> _battlePartyUnitIds = new();
     private bool _isResultActive;
 
     public int CurrentLevel { get; private set; } = 1;
@@ -31,6 +40,28 @@ public class BF_BattleService : MonoBehaviour
     public BF_LevelProgress LevelProgress => _levelProgress;
     public BF_BattleReward LastReward { get; } = new();
     public BF_LevelConfigSO CurrentLevelConfig => GetLevelConfig(CurrentLevel);
+    public IReadOnlyList<string> BattlePartyUnitIds => _battlePartyUnitIds;
+
+    private void Awake()
+    {
+        if (_unitRuntime == null || _unitRuntime.Units.Count > 0 || _initialUnits == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _initialUnits.Length; i++)
+        {
+            BF_UnitConfigSO config = _initialUnits[i];
+            if (config == null)
+            {
+                continue;
+            }
+
+            string skill01 = config.Skill01 != null ? config.Skill01.Id : string.Empty;
+            string skill02 = config.Skill02 != null ? config.Skill02.Id : string.Empty;
+            _unitRuntime.AddUnit(config.Id, skill01, skill02, true);
+        }
+    }
 
     private void OnEnable()
     {
@@ -56,14 +87,19 @@ public class BF_BattleService : MonoBehaviour
         CurrentLevel = level;
         LastResult = BF_BattleResult.None;
         LastReward.Clear();
+        _battlePartyUnitIds.Clear();
         _isResultActive = false;
         _sceneLoadManager.LoadBattlePrepare();
     }
 
     public void StartPreparedLevel()
     {
-        if (_sceneLoadManager.IsLoading || !_levelProgress.IsUnlocked(CurrentLevel))
+        BF_LevelConfigSO level = CurrentLevelConfig;
+        if (_sceneLoadManager.IsLoading
+            || !_levelProgress.IsUnlocked(CurrentLevel)
+            || !TryBuildBattleParty(level))
         {
+            Debug.LogWarning("Cannot start battle: deployed roster is invalid for this level.", this);
             return;
         }
 
@@ -71,6 +107,56 @@ public class BF_BattleService : MonoBehaviour
         LastReward.Clear();
         _isResultActive = false;
         _sceneLoadManager.LoadBattle(GetBattleAddress(CurrentLevel));
+    }
+
+    public BF_UnitConfigSO GetUnitConfig(string configId)
+    {
+        if (string.IsNullOrEmpty(configId))
+        {
+            return null;
+        }
+
+        BF_UnitConfigSO config = FindConfig(_unitCatalog, configId);
+        if (config != null)
+        {
+            return config;
+        }
+
+        config = FindConfig(_initialUnits, configId);
+        if (config != null)
+        {
+            return config;
+        }
+
+        if (_levels == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < _levels.Length; i++)
+        {
+            BF_LevelConfigSO level = _levels[i];
+            if (level == null)
+            {
+                continue;
+            }
+
+            if (level.RewardUnit != null && level.RewardUnit.Id == configId)
+            {
+                return level.RewardUnit;
+            }
+
+            for (int j = 0; j < level.FixedSpawns.Count; j++)
+            {
+                BF_UnitSpawnData spawn = level.FixedSpawns[j];
+                if (spawn != null && spawn.Unit != null && spawn.Unit.Id == configId)
+                {
+                    return spawn.Unit;
+                }
+            }
+        }
+
+        return null;
     }
 
     private void OnBattleResult(BF_BattleResultEvent gameEvent)
@@ -97,27 +183,31 @@ public class BF_BattleService : MonoBehaviour
         BF_LevelConfigSO level = CurrentLevelConfig;
         LastReward.Clear();
 
-        if (level == null || _inventory == null)
+        if (level == null)
         {
             return;
         }
 
         LastReward.Gold = level.RewardGold;
-        _inventory.AddGold(level.RewardGold);
-
-        foreach (BF_RewardItem reward in level.RewardItems)
+        if (_inventory != null)
         {
-            if (reward.Item != null && _inventory.TryAdd(reward.Item, reward.Quantity))
+            _inventory.AddGold(level.RewardGold);
+
+            foreach (BF_RewardItem reward in level.RewardItems)
             {
-                LastReward.Items.Add(new BF_InventoryEntry(reward.Item, reward.Quantity));
+                if (reward.Item != null && _inventory.TryAdd(reward.Item, reward.Quantity))
+                {
+                    LastReward.Items.Add(new BF_InventoryEntry(reward.Item, reward.Quantity));
+                }
             }
         }
 
         GiveExpReward(level);
+        GiveUnitReward(level);
     }
 
     /// <summary>
-    /// 胜利经验在全体玩家角色间均分，余数按运行时列表顺序补给；阵亡角色同样获得。
+    /// 胜利经验在当前关卡玩家阵容间均分，余数按阵容配置顺序补给；阵亡角色同样获得。
     /// 每次胜利都发放，关卡可以重复刷取。
     /// </summary>
     private void GiveExpReward(BF_LevelConfigSO level)
@@ -128,8 +218,7 @@ public class BF_BattleService : MonoBehaviour
         }
 
         LastReward.Exp = level.RewardExp;
-        IReadOnlyList<BF_UnitRuntimeData> units = _unitRuntime.Units;
-        int count = units.Count;
+        int count = _battlePartyUnitIds.Count;
         if (count == 0)
         {
             return;
@@ -140,10 +229,10 @@ public class BF_BattleService : MonoBehaviour
 
         for (int i = 0; i < count; i++)
         {
-            BF_UnitRuntimeData unit = units[i];
-            BF_UnitConfigSO config = FindPlayerConfig(level, unit.UnitId);
             int gain = baseExp + (i < remainder ? 1 : 0);
-            if (config == null || gain <= 0)
+            BF_UnitRuntimeData unit = _unitRuntime.Get(_battlePartyUnitIds[i]);
+            BF_UnitConfigSO config = unit != null ? GetUnitConfig(unit.ConfigId) : null;
+            if (unit == null || config == null || gain <= 0)
             {
                 continue;
             }
@@ -166,13 +255,67 @@ public class BF_BattleService : MonoBehaviour
         }
     }
 
-    private BF_UnitConfigSO FindPlayerConfig(BF_LevelConfigSO level, string unitId)
+    private void GiveUnitReward(BF_LevelConfigSO level)
     {
-        foreach (BF_UnitSpawnData spawn in level.UnitSpawns)
+        if (_unitRuntime == null || level.RewardUnit == null)
         {
-            if (spawn != null && spawn.Unit != null && spawn.Team == BF_UnitTeam.Player && spawn.Unit.Id == unitId)
+            return;
+        }
+
+        bool isFirstClear = !_levelProgress.IsCompleted(CurrentLevel);
+        if (level.RewardUnitMode == BF_UnitRewardMode.FirstClearOnly && !isFirstClear)
+        {
+            return;
+        }
+
+        string skill01 = level.RewardUnit.Skill01 != null ? level.RewardUnit.Skill01.Id : string.Empty;
+        string skill02 = level.RewardUnit.Skill02 != null ? level.RewardUnit.Skill02.Id : string.Empty;
+        BF_UnitRuntimeData unit = _unitRuntime.AddUnit(
+            level.RewardUnit.Id,
+            skill01,
+            skill02);
+
+        if (unit != null)
+        {
+            LastReward.NewUnits.Add(new BF_NewUnitReward
             {
-                return spawn.Unit;
+                UnitId = unit.UnitId,
+                UnitName = level.RewardUnit.DisplayName,
+                ConfigId = level.RewardUnit.Id
+            });
+        }
+    }
+
+    private bool TryBuildBattleParty(BF_LevelConfigSO level)
+    {
+        _battlePartyUnitIds.Clear();
+        if (level == null || _unitRuntime == null)
+        {
+            return false;
+        }
+
+        List<BF_UnitRuntimeData> deployed = _unitRuntime.GetDeployedUnits();
+        for (int i = 0; i < deployed.Count; i++)
+        {
+            _battlePartyUnitIds.Add(deployed[i].UnitId);
+        }
+
+        return _battlePartyUnitIds.Count > 0
+            && _battlePartyUnitIds.Count <= level.PlayerSpawns.Count;
+    }
+
+    private BF_UnitConfigSO FindConfig(BF_UnitConfigSO[] configs, string configId)
+    {
+        if (configs == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < configs.Length; i++)
+        {
+            if (configs[i] != null && configs[i].Id == configId)
+            {
+                return configs[i];
             }
         }
 

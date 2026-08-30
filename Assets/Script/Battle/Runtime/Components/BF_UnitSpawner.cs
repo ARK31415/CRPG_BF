@@ -15,25 +15,58 @@ public class BF_UnitSpawner : MonoBehaviour
     public List<BF_BattleUnit> SpawnUnits()
     {
         List<BF_BattleUnit> units = new();
+        BF_BattleService battle = FindFirstObjectByType<BF_BattleService>();
         BF_UnitRuntimeService runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
         BF_InventoryService inventory = FindFirstObjectByType<BF_InventoryService>();
 
-        foreach (BF_UnitSpawnData data in _board.LevelConfig.UnitSpawns)
+        if (battle == null || runtime == null || _board == null || _board.LevelConfig == null)
         {
-            BF_BattleUnit unit = Instantiate(_unitPrefab, _unitsRoot);
-            unit.name = $"{data.Team}_{data.Unit.Id}";
-            BF_UnitRuntimeData unitData = null;
-            if (data.Team == BF_UnitTeam.Player && runtime != null)
+            return units;
+        }
+
+        for (int i = 0; i < battle.BattlePartyUnitIds.Count && i < _board.LevelConfig.PlayerSpawns.Count; i++)
+        {
+            BF_UnitRuntimeData unitData = runtime.Get(battle.BattlePartyUnitIds[i]);
+            BF_UnitConfigSO config = unitData != null ? battle.GetUnitConfig(unitData.ConfigId) : null;
+            if (unitData == null || config == null)
             {
-                string skill01 = data.Unit.Skill01 != null ? data.Unit.Skill01.Id : string.Empty;
-                string skill02 = data.Unit.Skill02 != null ? data.Unit.Skill02.Id : string.Empty;
-                unitData = runtime.GetOrCreate(data.Unit.Id, skill01, skill02);
+                continue;
             }
 
-            unit.Init(_board, data.Unit, data.Team, data.Pos, unitData, inventory);
-            units.Add(unit);
+            SpawnUnit(
+                units,
+                config,
+                BF_UnitTeam.Player,
+                _board.LevelConfig.PlayerSpawns[i],
+                unitData,
+                inventory);
+        }
+
+        for (int i = 0; i < _board.LevelConfig.FixedSpawns.Count; i++)
+        {
+            BF_UnitSpawnData data = _board.LevelConfig.FixedSpawns[i];
+            if (data == null || data.Unit == null)
+            {
+                continue;
+            }
+
+            SpawnUnit(units, data.Unit, data.Team, data.Pos, null, inventory);
         }
 
         return units;
+    }
+
+    private void SpawnUnit(
+        List<BF_BattleUnit> units,
+        BF_UnitConfigSO config,
+        BF_UnitTeam team,
+        Vector2Int pos,
+        BF_UnitRuntimeData runtimeData,
+        BF_InventoryService inventory)
+    {
+        BF_BattleUnit unit = Instantiate(_unitPrefab, _unitsRoot);
+        unit.name = runtimeData != null ? runtimeData.UnitId : $"{team}_{config.Id}";
+        unit.Init(_board, config, team, pos, runtimeData, inventory);
+        units.Add(unit);
     }
 }

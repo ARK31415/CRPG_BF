@@ -6,6 +6,7 @@ public class BF_BattleReward
     public int Exp;
     public readonly List<BF_InventoryEntry> Items = new();
     public readonly List<BF_UnitExpGain> UnitGains = new();
+    public readonly List<BF_NewUnitReward> NewUnits = new();
 
     public void Clear()
     {
@@ -13,6 +14,7 @@ public class BF_BattleReward
         Exp = 0;
         Items.Clear();
         UnitGains.Clear();
+        NewUnits.Clear();
     }
 }
 
@@ -26,4 +28,14 @@ public class BF_UnitExpGain
     public int GainedExp;
     public int OldLevel;
     public int NewLevel;
+}
+
+/// <summary>
+/// 本场新获得的角色实例快照。
+/// </summary>
+public class BF_NewUnitReward
+{
+    public string UnitId;
+    public string UnitName;
+    public string ConfigId;
 }

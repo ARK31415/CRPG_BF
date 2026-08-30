@@ -69,6 +69,11 @@ public class BF_ResultPanel : MonoBehaviour
             text += $"\n{gain.UnitName} +{gain.GainedExp} EXP{levelText}";
         }
 
+        foreach (BF_NewUnitReward unit in reward.NewUnits)
+        {
+            text += $"\n获得角色：{unit.UnitName} ({unit.UnitId})";
+        }
+
         return text;
     }
 
