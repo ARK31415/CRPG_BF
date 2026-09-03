@@ -6,11 +6,3 @@ public interface IGameEvent
 {
 
 }
-
-/// <summary>
-/// 测试事件：验证总线用，Message 为携带的数据。
-/// </summary>
-public struct TestEvent : IGameEvent
-{
-    public string Message;
-}

@@ -115,10 +115,16 @@ public class BF_BattleService : MonoBehaviour
             return;
         }
 
+        if (!TryGetBattleAddress(CurrentLevel, out string battleAddress))
+        {
+            Debug.LogError($"Cannot start battle: unsupported level {CurrentLevel}.", this);
+            return;
+        }
+
         LastResult = BF_BattleResult.None;
         LastReward.Clear();
         _isResultActive = false;
-        _sceneLoadManager.LoadBattle(GetBattleAddress(CurrentLevel));
+        _sceneLoadManager.LoadBattle(battleAddress);
     }
 
     public BF_UnitConfigSO GetUnitConfig(string configId)
@@ -392,14 +398,22 @@ public class BF_BattleService : MonoBehaviour
         AbandonBattle();
     }
 
-    private string GetBattleAddress(int level)
+    private bool TryGetBattleAddress(int level, out string address)
     {
-        return level switch
+        switch (level)
         {
-            1 => "Battle_Level_01",
-            2 => "Battle_Level_02",
-            3 => "Battle_Level_03",
-            _ => "Battle_Level_01"
-        };
+            case 1:
+                address = "Battle_Level_01";
+                return true;
+            case 2:
+                address = "Battle_Level_02";
+                return true;
+            case 3:
+                address = "Battle_Level_03";
+                return true;
+            default:
+                address = string.Empty;
+                return false;
+        }
     }
 }

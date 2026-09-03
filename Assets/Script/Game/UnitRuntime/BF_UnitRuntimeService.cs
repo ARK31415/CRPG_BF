@@ -239,10 +239,15 @@ public class BF_UnitRuntimeService : MonoBehaviour
         while (remaining > 0)
         {
             int need = expRequired(data.Level);
-            if (need == 0)
+            if (need <= 0)
             {
                 data.CurrentExp = 0;
                 break;
+            }
+
+            if (data.CurrentExp < 0 || data.CurrentExp >= need)
+            {
+                data.CurrentExp = Mathf.Clamp(data.CurrentExp, 0, need - 1);
             }
 
             int gain = Mathf.Min(need - data.CurrentExp, remaining);

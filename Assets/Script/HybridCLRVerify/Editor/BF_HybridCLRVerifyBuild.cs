@@ -62,15 +62,25 @@ public static class BF_HybridCLRVerifyBuild
     public static void Prepare()
     {
         BuildTarget target = BuildTarget.StandaloneWindows64;
-        ConfigureHybridCLR();
-        CompileDllCommand.CompileDll(target, false);
-        CopyDll(target);
-        Debug.Log("[HybridCLR Verify] Hot-update DLL prepared.");
+        HybridCLRSettings settings = HybridCLRSettings.Instance;
+        SettingsSnapshot snapshot = SettingsSnapshot.Capture(settings);
+
+        try
+        {
+            ConfigureHybridCLR(settings);
+            CompileDllCommand.CompileDll(target, false);
+            CopyDll(target);
+            Debug.Log("[HybridCLR Verify] Hot-update DLL prepared.");
+        }
+        finally
+        {
+            snapshot.Restore(settings);
+            HybridCLRSettings.Save();
+        }
     }
 
-    private static void ConfigureHybridCLR()
+    private static void ConfigureHybridCLR(HybridCLRSettings settings)
     {
-        HybridCLRSettings settings = HybridCLRSettings.Instance;
         settings.enable = true;
         settings.hotUpdateAssemblies = new[] { AssemblyName };
         settings.hotUpdateAssemblyDefinitions ??= Array.Empty<AssemblyDefinitionAsset>();
@@ -78,6 +88,46 @@ public static class BF_HybridCLRVerifyBuild
         settings.externalHotUpdateAssembliyDirs ??= Array.Empty<string>();
         settings.patchAOTAssemblies ??= Array.Empty<string>();
         HybridCLRSettings.Save();
+    }
+
+    private sealed class SettingsSnapshot
+    {
+        private readonly bool _enable;
+        private readonly string[] _hotUpdateAssemblies;
+        private readonly AssemblyDefinitionAsset[] _hotUpdateAssemblyDefinitions;
+        private readonly string[] _preserveHotUpdateAssemblies;
+        private readonly string[] _externalHotUpdateAssemblyDirs;
+        private readonly string[] _patchAOTAssemblies;
+
+        private SettingsSnapshot(HybridCLRSettings settings)
+        {
+            _enable = settings.enable;
+            _hotUpdateAssemblies = Clone(settings.hotUpdateAssemblies);
+            _hotUpdateAssemblyDefinitions = Clone(settings.hotUpdateAssemblyDefinitions);
+            _preserveHotUpdateAssemblies = Clone(settings.preserveHotUpdateAssemblies);
+            _externalHotUpdateAssemblyDirs = Clone(settings.externalHotUpdateAssembliyDirs);
+            _patchAOTAssemblies = Clone(settings.patchAOTAssemblies);
+        }
+
+        public static SettingsSnapshot Capture(HybridCLRSettings settings)
+        {
+            return new SettingsSnapshot(settings);
+        }
+
+        public void Restore(HybridCLRSettings settings)
+        {
+            settings.enable = _enable;
+            settings.hotUpdateAssemblies = Clone(_hotUpdateAssemblies);
+            settings.hotUpdateAssemblyDefinitions = Clone(_hotUpdateAssemblyDefinitions);
+            settings.preserveHotUpdateAssemblies = Clone(_preserveHotUpdateAssemblies);
+            settings.externalHotUpdateAssembliyDirs = Clone(_externalHotUpdateAssemblyDirs);
+            settings.patchAOTAssemblies = Clone(_patchAOTAssemblies);
+        }
+
+        private static T[] Clone<T>(T[] values)
+        {
+            return values == null ? null : (T[])values.Clone();
+        }
     }
 
     private static void CopyDll(BuildTarget target)
