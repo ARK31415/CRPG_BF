@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a456d6f99a1989f4b9697b3dfd0a8bfd, type: 3}
+  m_Name: SO_BF_AudioConfig
+  m_EditorClassIdentifier: BF.Game::BF_AudioConfigSO
+  _mixer: {fileID: 24100000, guid: 2dca25cfa5b2b4f469f64f11c2210005, type: 2}
+  _bgmGroup: {fileID: -5249682701935500666, guid: 2dca25cfa5b2b4f469f64f11c2210005, type: 2}
+  _sfxGroup: {fileID: 7949799926827431494, guid: 2dca25cfa5b2b4f469f64f11c2210005, type: 2}
+  _masterVolumeParameter: MasterVolume
+  _bgmVolumeParameter: BGMVolume
+  _sfxVolumeParameter: SFXVolume
+  _bgmBaseGainDb: 10
+  _menuBGM: {fileID: 8300000, guid: ee6dd48a84164a844bea00e0dff49403, type: 3}
+  _battleBGM: {fileID: 8300000, guid: 030d09003cd8cae4d8bad161995779d6, type: 3}
+  _victory: {fileID: 8300000, guid: 0cf3207e22a43a94bb19570d40cd71f9, type: 3}
+  _defeat: {fileID: 8300000, guid: b070a79b4cc1dfd4b97b5914de4e80ae, type: 3}
+  _complete: {fileID: 8300000, guid: 33ca42f54ff05624e89405624594e954, type: 3}
+  _button: {fileID: 0}
+  _move: {fileID: 0}
+  _basicAttack: {fileID: 0}
+  _skill: {fileID: 0}
+  _item: {fileID: 0}
+  _unitDeath: {fileID: 0}

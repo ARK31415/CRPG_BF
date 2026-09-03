@@ -16,8 +16,9 @@ public class BF_InputManager : Singleton<BF_InputManager>
     public bool MovePressed => _actions.Player.Move.WasPressedThisFrame();
     public bool AttackPressed => _actions.Player.Attack.WasPressedThisFrame();
     public bool NextUnitPressed => _actions.Player.NextUnit.WasPressedThisFrame();
-    public bool CancelSelectionPressed => _actions.Player.CancelSelection.WasPressedThisFrame();
+    public bool CancelSelectionPressed => !PausePressed && _actions.Player.CancelSelection.WasPressedThisFrame();
     public bool EndPlayerPhasePressed => _actions.Player.EndPlayerPhase.WasPressedThisFrame();
+    public bool PausePressed => _actions.Global.Pause.WasPressedThisFrame();
 
     private void OnEnable()
     {
@@ -28,6 +29,7 @@ public class BF_InputManager : Singleton<BF_InputManager>
             ? BF_GameModeManager.Instance.CurrentGameMode
             : BF_GameMode.Battle;
 
+        _actions.Global.Enable();
         SetPlayerInput(gameMode == BF_GameMode.Battle);
     }
 
@@ -35,6 +37,7 @@ public class BF_InputManager : Singleton<BF_InputManager>
     {
         _gameModeSubscription?.Dispose();
         _gameModeSubscription = null;
+        _actions?.Global.Disable();
         SetPlayerInput(false);
     }
 

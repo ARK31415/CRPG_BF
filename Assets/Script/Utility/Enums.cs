@@ -39,7 +39,8 @@ public enum BF_GameMode
     Menu = 1,
     Battle = 2,
     Result = 3,
-    Loading = 4
+    Loading = 4,
+    Paused = 5
 }
 
 public enum BF_BattlePhase
@@ -128,4 +129,27 @@ public enum BF_GrowthRank
     B,
     C,
     D
+}
+
+public enum BF_BGM
+{
+    Menu,
+    Battle
+}
+
+public enum BF_Stinger
+{
+    Victory,
+    Defeat,
+    Complete
+}
+
+public enum BF_SFX
+{
+    UIButton,
+    Move,
+    BasicAttack,
+    Skill,
+    Item,
+    UnitDeath
 }

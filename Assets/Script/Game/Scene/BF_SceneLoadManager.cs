@@ -56,6 +56,7 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
         }
 
         IsLoading = true;
+        _gameModeManager.NormalizeTimeScale();
         BF_GameMode previousMode = _gameModeManager.CurrentGameMode;
         _gameModeManager.SetGameMode(BF_GameMode.Loading);
         await _fadeController.Show();

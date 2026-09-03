@@ -1,10 +1,10 @@
 ﻿<Solution>
   <Project Path="MCPForUnity.Runtime.csproj" />
   <Project Path="BF.Battle.csproj" />
+  <Project Path="BF.Game.csproj" />
   <Project Path="MCPForUnity.Editor.csproj" />
   <Project Path="BF.UI.csproj" />
   <Project Path="CRPG_BF.Board.PlayModeTests.csproj" />
-  <Project Path="BF.Game.csproj" />
   <Project Path="EventBus.Core.csproj" />
   <Project Path="CRPG_BF.HybridCLRVerify.Bootstrap.csproj" />
   <Project Path="EventBus.Tests.csproj" />

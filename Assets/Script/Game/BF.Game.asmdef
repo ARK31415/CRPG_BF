@@ -5,6 +5,7 @@
         "CRPG_BF.Input",
         "Singleton",
         "Unity.InputSystem",
+        "UnityEngine.AudioModule",
         "Unity.Cinemachine",
         "Unity.Addressables",
         "Unity.ResourceManager",

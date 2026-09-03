@@ -9,6 +9,7 @@ public class BF_MenuController : MonoBehaviour
     [SerializeField] private Button _newGameButton;
     [SerializeField] private Button _continueButton;
     [SerializeField] private Button _exitButton;
+    [SerializeField] private Button _settingsButton;
 
     [Header("Save Slots")]
     [SerializeField] private GameObject _slotPanel;
@@ -24,6 +25,7 @@ public class BF_MenuController : MonoBehaviour
     private BF_SceneLoadManager _sceneLoadManager;
     private BF_SaveService _saveService;
     private BF_BattleService _battleService;
+    private BF_UIManager _uiManager;
     private SlotAction _slotAction;
     private ConfirmAction _confirmAction;
     private int _selectedSlot;
@@ -33,9 +35,11 @@ public class BF_MenuController : MonoBehaviour
         _sceneLoadManager = FindFirstObjectByType<BF_SceneLoadManager>();
         _saveService = FindFirstObjectByType<BF_SaveService>();
         _battleService = FindFirstObjectByType<BF_BattleService>();
+        _uiManager = FindFirstObjectByType<BF_UIManager>();
         _newGameButton.onClick.AddListener(ShowNewGameSlots);
         _continueButton.onClick.AddListener(ShowContinueSlots);
         _exitButton.onClick.AddListener(OnExitClicked);
+        _settingsButton?.onClick.AddListener(OpenSettings);
         _backButton.onClick.AddListener(ShowMain);
         _confirmButton.onClick.AddListener(Confirm);
         _cancelButton.onClick.AddListener(CancelConfirm);
@@ -47,6 +51,7 @@ public class BF_MenuController : MonoBehaviour
         _newGameButton.onClick.RemoveListener(ShowNewGameSlots);
         _continueButton.onClick.RemoveListener(ShowContinueSlots);
         _exitButton.onClick.RemoveListener(OnExitClicked);
+        _settingsButton?.onClick.RemoveListener(OpenSettings);
         _backButton.onClick.RemoveListener(ShowMain);
         _confirmButton.onClick.RemoveListener(Confirm);
         _cancelButton.onClick.RemoveListener(CancelConfirm);
@@ -188,6 +193,7 @@ public class BF_MenuController : MonoBehaviour
         _newGameButton.gameObject.SetActive(visible);
         _continueButton.gameObject.SetActive(visible);
         _exitButton.gameObject.SetActive(visible);
+        _settingsButton?.gameObject.SetActive(visible);
     }
 
     private void SelectButton(Button button)
@@ -205,6 +211,11 @@ public class BF_MenuController : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    private void OpenSettings()
+    {
+        _uiManager?.OpenSettingsPanel();
     }
 
     private enum SlotAction

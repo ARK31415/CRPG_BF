@@ -176,6 +176,7 @@ public class BF_BattleUnit : MonoBehaviour
         }
 
         IsMoving = true;
+        GameEventBus.Instance?.Publish(new BF_PlaySFXEvent(BF_SFX.Move));
         if (_animator != null)
         {
             _animator.SetBool(IsMovingId, true);
@@ -229,6 +230,8 @@ public class BF_BattleUnit : MonoBehaviour
 
         SpendAP(skill.APCost);
         IsActing = true;
+        GameEventBus.Instance?.Publish(new BF_PlaySFXEvent(
+            skill == _config.BasicAttack ? BF_SFX.BasicAttack : BF_SFX.Skill));
         UpdateFacing(targetPos.x - GridPos.x);
 
         if (_animator != null)
@@ -283,6 +286,7 @@ public class BF_BattleUnit : MonoBehaviour
 
         SpendAP(item.APCost);
         IsActing = true;
+        GameEventBus.Instance?.Publish(new BF_PlaySFXEvent(BF_SFX.Item));
         CurrentHP = Mathf.Min(MaxHP, CurrentHP + item.HealAmount);
         _inventory.TryRemove(item.Id, 1);
         PublishStats();
@@ -408,6 +412,8 @@ public class BF_BattleUnit : MonoBehaviour
             _animator.SetBool(IsMovingId, false);
             _animator.SetBool(IsDeadId, true);
         }
+
+        GameEventBus.Instance?.Publish(new BF_PlaySFXEvent(BF_SFX.UnitDeath));
     }
 
     private void AddEquipment(BF_ItemConfigSO item)

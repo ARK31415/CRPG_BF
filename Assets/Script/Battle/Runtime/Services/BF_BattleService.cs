@@ -35,6 +35,7 @@ public class BF_BattleService : MonoBehaviour
 
     private IDisposable _resultSubscription;
     private IDisposable _confirmSubscription;
+    private IDisposable _abandonSubscription;
     private readonly List<string> _battlePartyUnitIds = new();
     private bool _isResultActive;
 
@@ -75,14 +76,17 @@ public class BF_BattleService : MonoBehaviour
     {
         _resultSubscription = GameEventBus.Instance.Subscribe<BF_BattleResultEvent>(OnBattleResult);
         _confirmSubscription = GameEventBus.Instance.Subscribe<BF_ConfirmBattleResultRequestEvent>(OnConfirmResult);
+        _abandonSubscription = GameEventBus.Instance.Subscribe<BF_AbandonBattleRequestEvent>(OnAbandonBattleRequested);
     }
 
     private void OnDisable()
     {
         _resultSubscription?.Dispose();
         _confirmSubscription?.Dispose();
+        _abandonSubscription?.Dispose();
         _resultSubscription = null;
         _confirmSubscription = null;
+        _abandonSubscription = null;
     }
 
     public void PrepareLevel(int level)
@@ -182,6 +186,11 @@ public class BF_BattleService : MonoBehaviour
             GiveReward();
             _levelProgress.CompleteLevel(CurrentLevel);
         }
+
+        BF_Stinger stinger = LastResult == BF_BattleResult.Defeat
+            ? BF_Stinger.Defeat
+            : CurrentLevel == 3 ? BF_Stinger.Complete : BF_Stinger.Victory;
+        GameEventBus.Instance.Publish(new BF_PlayStingerEvent(stinger));
 
         if (_saveService != null && _saveService.CurrentSlot > 0)
         {
@@ -350,6 +359,37 @@ public class BF_BattleService : MonoBehaviour
 
         _isResultActive = false;
         _sceneLoadManager.LoadLevelSelect();
+    }
+
+    public void AbandonBattle()
+    {
+        if (_sceneLoadManager == null
+            || _sceneLoadManager.IsLoading
+            || _gameModeManager == null
+            || (_gameModeManager.CurrentGameMode != BF_GameMode.Battle
+                && _gameModeManager.CurrentGameMode != BF_GameMode.Paused))
+        {
+            return;
+        }
+
+        LastResult = BF_BattleResult.None;
+        LastReward.Clear();
+        _battlePartyUnitIds.Clear();
+        _isResultActive = false;
+        _gameModeManager.NormalizeTimeScale();
+
+        if (_saveService != null && _saveService.CurrentSlot > 0)
+        {
+            _saveService.Save();
+        }
+
+        Debug.Log("[BF] Battle abandoned. No reward or level progress was applied.");
+        _sceneLoadManager.LoadLevelSelect();
+    }
+
+    private void OnAbandonBattleRequested(BF_AbandonBattleRequestEvent gameEvent)
+    {
+        AbandonBattle();
     }
 
     private string GetBattleAddress(int level)
