@@ -27,7 +27,6 @@ public class BF_SettingsPanel : MonoBehaviour
     [SerializeField]
     private Button _closeButton;
 
-    private BF_SettingsService _settings;
     private bool _refreshing;
     private IDisposable _settingsSubscription;
 
@@ -35,7 +34,6 @@ public class BF_SettingsPanel : MonoBehaviour
 
     private void OnEnable()
     {
-        _settings = BF_SettingsService.Instance;
         _settingsSubscription = GameEventBus.Instance.Subscribe<BF_SettingsChangedEvent>(_ => Refresh());
         _masterSlider?.onValueChanged.AddListener(OnMasterChanged);
         _bgmSlider?.onValueChanged.AddListener(OnBGMChanged);
@@ -73,8 +71,8 @@ public class BF_SettingsPanel : MonoBehaviour
 
     private void Refresh()
     {
-        _settings ??= BF_SettingsService.Instance;
-        if (_settings == null)
+        BF_SettingsService settings = BF_SettingsService.Instance;
+        if (settings == null)
         {
             return;
         }
@@ -82,36 +80,36 @@ public class BF_SettingsPanel : MonoBehaviour
         _refreshing = true;
         if (_masterSlider != null)
         {
-            _masterSlider.value = _settings.MasterVolume;
+            _masterSlider.value = settings.MasterVolume;
         }
 
         if (_bgmSlider != null)
         {
-            _bgmSlider.value = _settings.BGMVolume;
+            _bgmSlider.value = settings.BGMVolume;
         }
 
         if (_sfxSlider != null)
         {
-            _sfxSlider.value = _settings.SFXVolume;
+            _sfxSlider.value = settings.SFXVolume;
         }
 
         if (_fullscreenToggle != null)
         {
-            _fullscreenToggle.isOn = _settings.Fullscreen;
+            _fullscreenToggle.isOn = settings.Fullscreen;
         }
 
-        RefreshResolutions();
+        RefreshResolutions(settings);
         _refreshing = false;
     }
 
-    private void RefreshResolutions()
+    private void RefreshResolutions(BF_SettingsService settings)
     {
-        if (_resolutionDropdown == null || _settings == null)
+        if (_resolutionDropdown == null || settings == null)
         {
             return;
         }
 
-        Resolution[] resolutions = _settings.GetResolutions();
+        Resolution[] resolutions = settings.GetResolutions();
         List<string> options = new();
         for (int i = 0; i < resolutions.Length; i++)
         {
@@ -122,7 +120,7 @@ public class BF_SettingsPanel : MonoBehaviour
         _resolutionDropdown.AddOptions(options);
         if (options.Count > 0)
         {
-            _resolutionDropdown.SetValueWithoutNotify(_settings.GetResolutionIndex());
+            _resolutionDropdown.SetValueWithoutNotify(settings.GetResolutionIndex());
         }
     }
 
@@ -130,7 +128,7 @@ public class BF_SettingsPanel : MonoBehaviour
     {
         if (!_refreshing)
         {
-            _settings?.SetMasterVolume(value);
+            BF_SettingsService.Instance?.SetMasterVolume(value);
         }
     }
 
@@ -138,7 +136,7 @@ public class BF_SettingsPanel : MonoBehaviour
     {
         if (!_refreshing)
         {
-            _settings?.SetBGMVolume(value);
+            BF_SettingsService.Instance?.SetBGMVolume(value);
         }
     }
 
@@ -146,7 +144,7 @@ public class BF_SettingsPanel : MonoBehaviour
     {
         if (!_refreshing)
         {
-            _settings?.SetSFXVolume(value);
+            BF_SettingsService.Instance?.SetSFXVolume(value);
         }
     }
 
@@ -154,7 +152,7 @@ public class BF_SettingsPanel : MonoBehaviour
     {
         if (!_refreshing)
         {
-            _settings?.SetFullscreen(value);
+            BF_SettingsService.Instance?.SetFullscreen(value);
         }
     }
 
@@ -162,12 +160,12 @@ public class BF_SettingsPanel : MonoBehaviour
     {
         if (!_refreshing)
         {
-            _settings?.SetResolution(index);
+            BF_SettingsService.Instance?.SetResolution(index);
         }
     }
 
     private void ResetDefaults()
     {
-        _settings?.ResetDefaults();
+        BF_SettingsService.Instance?.ResetDefaults();
     }
 }

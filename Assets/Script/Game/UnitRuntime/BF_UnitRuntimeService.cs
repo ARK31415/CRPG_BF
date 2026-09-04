@@ -7,10 +7,9 @@ using UnityEngine;
 /// 装备采用移动所有权：穿上即从仓库移除，卸下回仓；战斗物品槽继续以保留数量引用消耗品堆叠。
 /// </summary>
 [DefaultExecutionOrder(-70)]
-public class BF_UnitRuntimeService : MonoBehaviour
+public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
 {
     private readonly List<BF_UnitRuntimeData> _units = new();
-    private BF_InventoryService _inventory;
 
     public IReadOnlyList<BF_UnitRuntimeData> Units => _units;
 
@@ -129,23 +128,23 @@ public class BF_UnitRuntimeService : MonoBehaviour
             return true;
         }
 
-        _inventory ??= FindFirstObjectByType<BF_InventoryService>();
-        if (_inventory == null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (inventory == null)
         {
             Debug.LogWarning("BF_InventoryService not found, cannot change equipment.", this);
             return false;
         }
 
-        if (!string.IsNullOrEmpty(itemId) && !_inventory.TryRemove(itemId, 1))
+        if (!string.IsNullOrEmpty(itemId) && !inventory.TryRemove(itemId, 1))
         {
             return false;
         }
 
-        if (!string.IsNullOrEmpty(oldItemId) && !_inventory.TryAdd(_inventory.GetItem(oldItemId), 1))
+        if (!string.IsNullOrEmpty(oldItemId) && !inventory.TryAdd(inventory.GetItem(oldItemId), 1))
         {
             if (!string.IsNullOrEmpty(itemId))
             {
-                _inventory.TryAdd(_inventory.GetItem(itemId), 1);
+                inventory.TryAdd(inventory.GetItem(itemId), 1);
             }
 
             return false;
@@ -191,16 +190,36 @@ public class BF_UnitRuntimeService : MonoBehaviour
         PublishChanged(unitId);
     }
 
-    public void SetBattleItem(string unitId, int slot, string itemId)
+    public bool SetBattleItem(string unitId, int slot, string itemId)
     {
         BF_UnitRuntimeData data = Get(unitId);
         if (data == null || slot < 0 || slot >= data.BattleItemIds.Length)
         {
-            return;
+            return false;
+        }
+
+        if (data.BattleItemIds[slot] == itemId)
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrEmpty(itemId))
+        {
+            BF_InventoryService inventory = BF_InventoryService.Instance;
+            BF_ItemConfigSO item = inventory != null ? inventory.GetItem(itemId) : null;
+            int available = inventory != null
+                ? inventory.GetCount(itemId) - GetReservedCount(itemId)
+                : 0;
+
+            if (item == null || item.ItemType != BF_ItemType.Consumable || available <= 0)
+            {
+                return false;
+            }
         }
 
         data.BattleItemIds[slot] = itemId;
         PublishChanged(unitId);
+        return true;
     }
 
     /// <summary>

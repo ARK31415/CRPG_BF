@@ -15,9 +15,8 @@ public class BF_UnitSpawner : MonoBehaviour
     public List<BF_BattleUnit> SpawnUnits()
     {
         List<BF_BattleUnit> units = new();
-        BF_BattleService battle = FindFirstObjectByType<BF_BattleService>();
-        BF_UnitRuntimeService runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
-        BF_InventoryService inventory = FindFirstObjectByType<BF_InventoryService>();
+        BF_BattleService battle = BF_BattleService.Instance;
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
 
         if (battle == null || runtime == null || _board == null || _board.LevelConfig == null)
         {
@@ -38,8 +37,7 @@ public class BF_UnitSpawner : MonoBehaviour
                 config,
                 BF_UnitTeam.Player,
                 _board.LevelConfig.PlayerSpawns[i],
-                unitData,
-                inventory);
+                unitData);
         }
 
         for (int i = 0; i < _board.LevelConfig.FixedSpawns.Count; i++)
@@ -50,7 +48,7 @@ public class BF_UnitSpawner : MonoBehaviour
                 continue;
             }
 
-            SpawnUnit(units, data.Unit, data.Team, data.Pos, null, inventory);
+            SpawnUnit(units, data.Unit, data.Team, data.Pos, null);
         }
 
         return units;
@@ -61,12 +59,11 @@ public class BF_UnitSpawner : MonoBehaviour
         BF_UnitConfigSO config,
         BF_UnitTeam team,
         Vector2Int pos,
-        BF_UnitRuntimeData runtimeData,
-        BF_InventoryService inventory)
+        BF_UnitRuntimeData runtimeData)
     {
         BF_BattleUnit unit = Instantiate(_unitPrefab, _unitsRoot);
         unit.name = runtimeData != null ? runtimeData.UnitId : $"{team}_{config.Id}";
-        unit.Init(_board, config, team, pos, runtimeData, inventory);
+        unit.Init(_board, config, team, pos, runtimeData);
         units.Add(unit);
     }
 }

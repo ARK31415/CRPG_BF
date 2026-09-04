@@ -17,7 +17,6 @@ public class BF_ShopPanel : MonoBehaviour
 
     private readonly List<BF_ItemSlot> _shopSlots = new();
     private readonly List<BF_ItemSlot> _inventorySlots = new();
-    private BF_InventoryService _inventory;
     private BF_ShopService _shop;
     private BF_ItemConfigSO _selected;
     private bool _isShopItem;
@@ -25,7 +24,6 @@ public class BF_ShopPanel : MonoBehaviour
 
     private void OnEnable()
     {
-        _inventory = FindFirstObjectByType<BF_InventoryService>();
         _shop = FindFirstObjectByType<BF_ShopService>();
         _subscription = GameEventBus.Instance.Subscribe<BF_InventoryChangedEvent>(_ => Refresh());
         _buyButton.onClick.AddListener(Buy);
@@ -54,7 +52,13 @@ public class BF_ShopPanel : MonoBehaviour
             _shopSlots.Add(Instantiate(_slotPrefab, _shopContent));
         }
 
-        while (_inventorySlots.Count < _inventory.Capacity)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (inventory == null)
+        {
+            return;
+        }
+
+        while (_inventorySlots.Count < inventory.Capacity)
         {
             _inventorySlots.Add(Instantiate(_slotPrefab, _inventoryContent));
         }
@@ -62,12 +66,13 @@ public class BF_ShopPanel : MonoBehaviour
 
     private void Refresh()
     {
-        if (_shop == null || _shop.Config == null || _inventory == null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (_shop == null || _shop.Config == null || inventory == null)
         {
             return;
         }
 
-        _goldText.text = $"金币  {_inventory.Gold}";
+        _goldText.text = $"金币  {inventory.Gold}";
 
         for (int i = 0; i < _shopSlots.Count; i++)
         {
@@ -81,7 +86,7 @@ public class BF_ShopPanel : MonoBehaviour
 
         for (int i = 0; i < _inventorySlots.Count; i++)
         {
-            BF_InventoryEntry entry = i < _inventory.Items.Count ? _inventory.Items[i] : null;
+            BF_InventoryEntry entry = i < inventory.Items.Count ? inventory.Items[i] : null;
             int count = entry != null ? _shop.GetAvailableCount(entry.Item) : 0;
             bool showCount = entry != null && entry.Item.ItemType == BF_ItemType.Consumable;
             _inventorySlots[i].Setup(

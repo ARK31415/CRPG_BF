@@ -12,12 +12,12 @@ public class BF_ItemContextMenu : MonoBehaviour
 
     private RectTransform _rect;
     private RectTransform _canvasRect;
-    private BF_InventoryService _inventory;
-    private BF_UnitRuntimeService _runtime;
     private BF_ItemConfigSO _item;
     private BF_UnitRuntimeData _data;
     private BF_UnitConfigSO _config;
     private int _battleItemSlot;
+
+    public bool IsOpen => gameObject.activeSelf;
 
     private void Awake()
     {
@@ -47,8 +47,6 @@ public class BF_ItemContextMenu : MonoBehaviour
         int battleItemSlot,
         Vector2 screenPos)
     {
-        _inventory ??= FindFirstObjectByType<BF_InventoryService>();
-        _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
         _item = item;
         _data = data;
         _config = unit;
@@ -78,7 +76,9 @@ public class BF_ItemContextMenu : MonoBehaviour
 
     private bool CanUsePrimary()
     {
-        if (_item == null || _data == null || _inventory == null || _runtime == null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (_item == null || _data == null || inventory == null || runtime == null)
         {
             return false;
         }
@@ -89,19 +89,21 @@ public class BF_ItemContextMenu : MonoBehaviour
         }
 
         string current = _item.ItemType == BF_ItemType.Equipment
-            ? _runtime.GetEquipment(_data.UnitId, _item.EquipmentSlot)
+            ? runtime.GetEquipment(_data.UnitId, _item.EquipmentSlot)
             : _data.BattleItemIds[_battleItemSlot];
         return current == _item.Id || GetAvailableCount() > 0;
     }
 
     private int GetAvailableCount()
     {
-        if (_item == null || _inventory == null || _runtime == null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (_item == null || inventory == null || runtime == null)
         {
             return 0;
         }
 
-        return _inventory.GetCount(_item.Id) - _runtime.GetReservedCount(_item.Id);
+        return inventory.GetCount(_item.Id) - runtime.GetReservedCount(_item.Id);
     }
 
     private void UsePrimary()
@@ -114,9 +116,15 @@ public class BF_ItemContextMenu : MonoBehaviour
             return;
         }
 
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (runtime == null)
+        {
+            return;
+        }
+
         if (_item.ItemType == BF_ItemType.Equipment)
         {
-            if (!_runtime.SetEquipment(_data.UnitId, _item.EquipmentSlot, _item.Id))
+            if (!runtime.SetEquipment(_data.UnitId, _item.EquipmentSlot, _item.Id))
             {
                 _messageText.text = "没有可用数量";
                 return;
@@ -124,7 +132,7 @@ public class BF_ItemContextMenu : MonoBehaviour
         }
         else
         {
-            _runtime.SetBattleItem(_data.UnitId, _battleItemSlot, _item.Id);
+            runtime.SetBattleItem(_data.UnitId, _battleItemSlot, _item.Id);
         }
 
         Hide();
@@ -132,7 +140,8 @@ public class BF_ItemContextMenu : MonoBehaviour
 
     private void Discard()
     {
-        if (GetAvailableCount() <= 0 || !_inventory.TryRemove(_item.Id, 1))
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (inventory == null || GetAvailableCount() <= 0 || !inventory.TryRemove(_item.Id, 1))
         {
             _messageText.text = "物品正在使用，不能丢弃";
             _discardButton.interactable = false;

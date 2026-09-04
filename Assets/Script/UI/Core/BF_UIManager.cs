@@ -1,7 +1,9 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-public class BF_UIManager : MonoBehaviour
+[DefaultExecutionOrder(10)]
+public class BF_UIManager : Singleton<BF_UIManager>
 {
     [SerializeField]
     private GameObject _battleUI;
@@ -18,10 +20,18 @@ public class BF_UIManager : MonoBehaviour
     [SerializeField]
     private BF_BattleHUD _battleHUD;
 
+    [SerializeField]
+    private BF_TutorialPanel _tutorialPanel;
+
     private IDisposable _gameModeSubscription;
 
     private void OnEnable()
     {
+        if (Instance != this)
+        {
+            return;
+        }
+
         _gameModeSubscription = GameEventBus.Instance.Subscribe<BF_GameModeChangedEvent>(OnGameModeChanged);
 
         BF_GameMode gameMode = BF_GameModeManager.Instance != null
@@ -49,14 +59,48 @@ public class BF_UIManager : MonoBehaviour
             return;
         }
 
+        _tutorialPanel ??= FindFirstObjectByType<BF_TutorialPanel>();
+        if (_tutorialPanel != null && _tutorialPanel.IsOpen)
+        {
+            _tutorialPanel.Close();
+            return;
+        }
+
         if (_settingsPanel != null && _settingsPanel.IsOpen)
         {
             _settingsPanel.Close();
             return;
         }
 
+        BF_ItemContextMenu itemMenu = FindFirstObjectByType<BF_ItemContextMenu>();
+        if (itemMenu != null && itemMenu.IsOpen)
+        {
+            itemMenu.Hide();
+            return;
+        }
+
+        BF_MenuController menu = FindFirstObjectByType<BF_MenuController>();
+        if (menu != null && menu.IsConfirmOpen)
+        {
+            menu.CloseConfirm();
+            return;
+        }
+
+        BF_PausePanel pausePanel = FindFirstObjectByType<BF_PausePanel>();
+        if (pausePanel != null && pausePanel.IsExitConfirmOpen)
+        {
+            pausePanel.CloseExitConfirm();
+            return;
+        }
+
         BF_GameModeManager gameModeManager = BF_GameModeManager.Instance;
         if (gameModeManager == null)
+        {
+            return;
+        }
+
+        BF_SceneLoadManager sceneLoad = BF_SceneLoadManager.Instance;
+        if (sceneLoad != null && sceneLoad.IsLoading)
         {
             return;
         }
@@ -68,6 +112,18 @@ public class BF_UIManager : MonoBehaviour
         else if (gameModeManager.CurrentGameMode == BF_GameMode.Paused)
         {
             gameModeManager.ResumeBattle();
+        }
+        else if (gameModeManager.CurrentGameMode == BF_GameMode.Menu)
+        {
+            string sceneName = SceneManager.GetActiveScene().name;
+            if (sceneName == "BattlePrepare")
+            {
+                sceneLoad?.LoadLevelSelect();
+            }
+            else if (sceneName == "LevelSelect")
+            {
+                sceneLoad?.LoadMenu();
+            }
         }
     }
 

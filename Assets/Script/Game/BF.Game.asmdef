@@ -9,6 +9,7 @@
         "Unity.Cinemachine",
         "Unity.Addressables",
         "Unity.ResourceManager",
+        "Unity.TextMeshPro",
         "EventBus.Core",
         "CRPG_BF.Shared"
     ],

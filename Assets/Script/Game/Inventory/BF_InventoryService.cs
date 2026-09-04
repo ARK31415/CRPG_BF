@@ -6,7 +6,7 @@ using UnityEngine;
 /// 装备不可堆叠，每件独立占一个仓库条目；消耗品按 MaxStack 堆叠。
 /// </summary>
 [DefaultExecutionOrder(-80)]
-public class BF_InventoryService : MonoBehaviour
+public class BF_InventoryService : Singleton<BF_InventoryService>
 {
     [SerializeField] private BF_InventoryConfigSO _config;
 
@@ -16,8 +16,15 @@ public class BF_InventoryService : MonoBehaviour
     public int Capacity => _config != null ? _config.Capacity : 0;
     public IReadOnlyList<BF_InventoryEntry> Items => _items;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
+        if (Instance != this)
+        {
+            return;
+        }
+
         ResetToDefaults(false);
     }
 

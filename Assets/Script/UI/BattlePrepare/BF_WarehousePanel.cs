@@ -12,8 +12,6 @@ public class BF_WarehousePanel : MonoBehaviour
     [SerializeField] private TMP_Text _capacityText;
 
     private readonly List<BF_ItemSlot> _slots = new();
-    private BF_InventoryService _inventory;
-    private BF_UnitRuntimeService _runtime;
     private int _selectedSlot = -1;
     private Action<BF_ItemConfigSO, Vector2> _onRightClick;
     private IDisposable _inventorySubscription;
@@ -21,8 +19,6 @@ public class BF_WarehousePanel : MonoBehaviour
 
     private void OnEnable()
     {
-        _inventory = FindFirstObjectByType<BF_InventoryService>();
-        _runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
         _inventorySubscription = GameEventBus.Instance.Subscribe<BF_InventoryChangedEvent>(_ =>
         {
             _selectedSlot = -1;
@@ -44,19 +40,23 @@ public class BF_WarehousePanel : MonoBehaviour
 
     public void Refresh()
     {
-        if (_inventory == null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (inventory == null)
         {
             return;
         }
 
-        _goldText.text = $"金币  {_inventory.Gold}";
-        _capacityText.text = $"仓库  {_inventory.Items.Count} / {_inventory.Capacity}";
+        _goldText.text = $"金币  {inventory.Gold}";
+        _capacityText.text = $"仓库  {inventory.Items.Count} / {inventory.Capacity}";
 
         for (int i = 0; i < _slots.Count; i++)
         {
-            BF_InventoryEntry entry = i < _inventory.Items.Count ? _inventory.Items[i] : null;
+            BF_InventoryEntry entry = i < inventory.Items.Count ? inventory.Items[i] : null;
             bool isConsumable = entry != null && entry.Item.ItemType == BF_ItemType.Consumable;
-            int count = entry != null ? entry.Quantity - _runtime.GetReservedCount(entry.Item.Id) : 0;
+            int count = entry != null && isConsumable && runtime != null
+                ? entry.Quantity - runtime.GetReservedCount(entry.Item.Id)
+                : 0;
             int slotIndex = i;
             _slots[i].Setup(
                 entry?.Item,
@@ -67,7 +67,7 @@ public class BF_WarehousePanel : MonoBehaviour
             _slots[i].SetSelected(i == _selectedSlot);
         }
 
-        if (_selectedSlot >= _inventory.Items.Count)
+        if (_selectedSlot >= inventory.Items.Count)
         {
             _selectedSlot = -1;
             _detailPanel.Show(null);
@@ -81,7 +81,8 @@ public class BF_WarehousePanel : MonoBehaviour
 
     private void BuildSlots()
     {
-        int capacity = _inventory != null ? _inventory.Capacity : 0;
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        int capacity = inventory != null ? inventory.Capacity : 0;
 
         while (_slots.Count < capacity)
         {
@@ -96,19 +97,26 @@ public class BF_WarehousePanel : MonoBehaviour
 
     private void Select(int slotIndex)
     {
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (inventory == null || slotIndex < 0 || slotIndex >= inventory.Items.Count)
+        {
+            return;
+        }
+
         _selectedSlot = slotIndex;
-        _detailPanel.Show(_inventory.Items[slotIndex].Item);
+        _detailPanel.Show(inventory.Items[slotIndex].Item);
         Refresh();
     }
 
     private void OpenMenu(int slotIndex, Vector2 screenPos)
     {
-        if (slotIndex >= _inventory.Items.Count)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (inventory == null || slotIndex < 0 || slotIndex >= inventory.Items.Count)
         {
             return;
         }
 
         Select(slotIndex);
-        _onRightClick?.Invoke(_inventory.Items[slotIndex].Item, screenPos);
+        _onRightClick?.Invoke(inventory.Items[slotIndex].Item, screenPos);
     }
 }

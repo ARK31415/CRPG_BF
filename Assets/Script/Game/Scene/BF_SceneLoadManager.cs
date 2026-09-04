@@ -4,6 +4,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
+using System.Threading.Tasks;
 
 public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
 {
@@ -14,12 +15,11 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
     [SerializeField]
     private BF_FadeController _fadeController;
 
-    [SerializeField]
-    private BF_GameModeManager _gameModeManager;
-
     private AsyncOperationHandle<SceneInstance> _contentHandle;
     private Scene _contentScene;
     private bool _hasContentScene;
+
+    private const float UnloadProgressEnd = 0.3f;
 
     public bool IsLoading { get; private set; }
 
@@ -56,27 +56,40 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
         }
 
         IsLoading = true;
-        _gameModeManager.NormalizeTimeScale();
-        BF_GameMode previousMode = _gameModeManager.CurrentGameMode;
-        _gameModeManager.SetGameMode(BF_GameMode.Loading);
+        BF_GameModeManager gameModeManager = BF_GameModeManager.Instance;
+        if (gameModeManager == null)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        gameModeManager.NormalizeTimeScale();
+        BF_GameMode previousMode = gameModeManager.CurrentGameMode;
+        gameModeManager.SetGameMode(BF_GameMode.Loading);
         await _fadeController.Show();
 
         try
         {
-            if (_hasContentScene)
+            bool hasContentScene = _hasContentScene;
+            float loadStart = hasContentScene ? UnloadProgressEnd : 0f;
+
+            if (hasContentScene)
             {
                 Debug.Log($"[BF] Unload content: {_contentScene.name}, handle valid: {_contentHandle.IsValid()}");
 
                 if (_contentHandle.IsValid())
                 {
-                    await Addressables.UnloadSceneAsync(_contentHandle).Task;
+                    AsyncOperationHandle unloadHandle = Addressables.UnloadSceneAsync(_contentHandle);
+                    await WaitForUnload(unloadHandle, 0f, UnloadProgressEnd);
                 }
                 else if (_contentScene.IsValid() && _contentScene.isLoaded)
                 {
-                    await SceneManager.UnloadSceneAsync(_contentScene);
+                    await WaitForUnload(SceneManager.UnloadSceneAsync(_contentScene), 0f, UnloadProgressEnd);
                 }
 
                 _hasContentScene = false;
+                _contentHandle = default;
+                _contentScene = default;
                 Debug.Log("[BF] Content unloaded");
             }
 
@@ -86,7 +99,7 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
                 LoadSceneMode.Additive,
                 true);
 
-            await loadHandle.Task;
+            await WaitForLoad(loadHandle, loadStart, 1f);
             Debug.Log($"[BF] Content load completed: {address}, status: {loadHandle.Status}");
 
             if (loadHandle.Status != AsyncOperationStatus.Succeeded)
@@ -99,18 +112,64 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
             _contentScene = loadHandle.Result.Scene;
             _hasContentScene = true;
             SceneManager.SetActiveScene(loadHandle.Result.Scene);
-            _gameModeManager.SetGameMode(targetMode);
+            _fadeController.SetProgress(1f);
+            _fadeController.SetLoadingText("加载完成");
+            gameModeManager.SetGameMode(targetMode);
         }
         catch (Exception exception)
         {
             Debug.LogError($"[BF] Load scene failed: {address}");
             Debug.LogException(exception);
-            _gameModeManager.SetGameMode(previousMode);
+            _fadeController.SetLoadingText("加载失败");
+            gameModeManager.SetGameMode(previousMode);
         }
         finally
         {
             await _fadeController.Hide();
             IsLoading = false;
         }
+    }
+
+    private async Task WaitForUnload(AsyncOperationHandle handle, float start, float end)
+    {
+        while (!handle.IsDone)
+        {
+            _fadeController.SetProgress(Mathf.Lerp(start, end, handle.PercentComplete));
+            await Task.Yield();
+        }
+
+        _fadeController.SetProgress(end); // Unload handle may auto-release on completion.
+    }
+
+    private async Task WaitForUnload(AsyncOperation operation, float start, float end)
+    {
+        if (operation == null)
+        {
+            _fadeController.SetProgress(end);
+            return;
+        }
+
+        while (!operation.isDone)
+        {
+            _fadeController.SetProgress(Mathf.Lerp(start, end, operation.progress));
+            await Task.Yield();
+        }
+
+        _fadeController.SetProgress(end);
+    }
+
+    private async Task WaitForLoad(
+        AsyncOperationHandle<SceneInstance> handle,
+        float start,
+        float end)
+    {
+        while (!handle.IsDone)
+        {
+            _fadeController.SetProgress(Mathf.Lerp(start, end, handle.PercentComplete));
+            await Task.Yield();
+        }
+
+        _fadeController.SetProgress(end);
+        await handle.Task;
     }
 }

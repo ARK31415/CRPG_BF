@@ -27,31 +27,28 @@ public class BF_BattlePrepareController : MonoBehaviour
     [SerializeField] private Button _backButton;
     [SerializeField] private Button _startButton;
 
-    private BF_BattleService _battleService;
-    private BF_SceneLoadManager _sceneLoadManager;
-    private BF_UnitRuntimeService _runtime;
-    private BF_SaveService _saveService;
     private int _unitIndex;
     private System.IDisposable _unitSubscription;
 
-    private BF_UnitRuntimeData CurrentData => _runtime != null
-        && _runtime.Units.Count > 0
-        && _unitIndex >= 0
-        && _unitIndex < _runtime.Units.Count
-        ? _runtime.Units[_unitIndex]
-        : null;
+    private BF_UnitRuntimeData CurrentData
+    {
+        get
+        {
+            BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+            return runtime != null
+                && _unitIndex >= 0
+                && _unitIndex < runtime.Units.Count
+                ? runtime.Units[_unitIndex]
+                : null;
+        }
+    }
 
-    private BF_UnitConfigSO CurrentConfig => CurrentData != null && _battleService != null
-        ? _battleService.GetUnitConfig(CurrentData.ConfigId)
+    private BF_UnitConfigSO CurrentConfig => CurrentData != null && BF_BattleService.Instance != null
+        ? BF_BattleService.Instance.GetUnitConfig(CurrentData.ConfigId)
         : null;
 
     private void OnEnable()
     {
-        _battleService = FindFirstObjectByType<BF_BattleService>();
-        _sceneLoadManager = FindFirstObjectByType<BF_SceneLoadManager>();
-        _runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
-        _saveService = FindFirstObjectByType<BF_SaveService>();
-
         _warehouseButton.onClick.AddListener(ShowWarehouse);
         _skillButton.onClick.AddListener(ShowSkill);
         _shopButton.onClick.AddListener(ShowShop);
@@ -62,24 +59,6 @@ public class BF_BattlePrepareController : MonoBehaviour
         _warehousePanel.SetRightClick(OpenItemMenu);
 
         _unitSubscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(OnUnitChanged);
-        SelectUnit(0);
-        ShowWarehouse();
-    }
-
-    private void Start()
-    {
-        // BattlePrepare 通过 Addressables 异步加载时，OnEnable 可能早于 Persistent 服务初始化。
-        // 在 Start 再获取一次服务，确保默认角色和出战人数显示正常。
-        _battleService ??= FindFirstObjectByType<BF_BattleService>();
-        _sceneLoadManager ??= FindFirstObjectByType<BF_SceneLoadManager>();
-        _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
-        _saveService ??= FindFirstObjectByType<BF_SaveService>();
-
-        if (_unitSubscription == null && GameEventBus.Instance != null)
-        {
-            _unitSubscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(OnUnitChanged);
-        }
-
         SelectUnit(0);
         ShowWarehouse();
     }
@@ -100,7 +79,8 @@ public class BF_BattlePrepareController : MonoBehaviour
 
     private void SelectUnit(int index)
     {
-        int count = _runtime != null ? _runtime.Units.Count : 0;
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        int count = runtime != null ? runtime.Units.Count : 0;
         if (count == 0)
         {
             _unitIndex = 0;
@@ -171,36 +151,38 @@ public class BF_BattlePrepareController : MonoBehaviour
     {
         _backButton.interactable = false;
         SaveCurrentSlot();
-        _sceneLoadManager.LoadLevelSelect();
+        BF_SceneLoadManager.Instance?.LoadLevelSelect();
     }
 
     private void StartBattle()
     {
         _startButton.interactable = false;
         SaveCurrentSlot();
-        _battleService.StartPreparedLevel();
+        BF_BattleService.Instance?.StartPreparedLevel();
     }
 
     private void SaveCurrentSlot()
     {
-        if (_saveService != null && _saveService.CurrentSlot > 0)
+        BF_SaveService saveService = BF_SaveService.Instance;
+        if (saveService != null && saveService.CurrentSlot > 0)
         {
-            _saveService.Save();
+            saveService.Save();
         }
     }
 
     private void OnUnitChanged(BF_UnitRuntimeChangedEvent gameEvent)
     {
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
         string selectedId = CurrentData != null ? CurrentData.UnitId : string.Empty;
-        if (_runtime == null || _runtime.Units.Count == 0)
+        if (runtime == null || runtime.Units.Count == 0)
         {
             SelectUnit(0);
             return;
         }
 
-        for (int i = 0; i < _runtime.Units.Count; i++)
+        for (int i = 0; i < runtime.Units.Count; i++)
         {
-            if (_runtime.Units[i].UnitId == selectedId)
+            if (runtime.Units[i].UnitId == selectedId)
             {
                 _unitIndex = i;
                 break;
@@ -212,9 +194,11 @@ public class BF_BattlePrepareController : MonoBehaviour
 
     private void RefreshRoster()
     {
-        int count = _runtime != null ? _runtime.DeployedCount : 0;
-        int limit = _battleService != null && _battleService.CurrentLevelConfig != null
-            ? _battleService.CurrentLevelConfig.PlayerSpawns.Count
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        BF_BattleService battleService = BF_BattleService.Instance;
+        int count = runtime != null ? runtime.DeployedCount : 0;
+        int limit = battleService != null && battleService.CurrentLevelConfig != null
+            ? battleService.CurrentLevelConfig.PlayerSpawns.Count
             : 0;
 
         if (_rosterCountText != null)

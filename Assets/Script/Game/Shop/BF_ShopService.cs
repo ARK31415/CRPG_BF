@@ -6,41 +6,43 @@ using UnityEngine;
 public class BF_ShopService : MonoBehaviour
 {
     [SerializeField] private BF_ShopConfigSO _config;
-    [SerializeField] private BF_InventoryService _inventory;
-    [SerializeField] private BF_UnitRuntimeService _unitRuntime;
 
     public BF_ShopConfigSO Config => _config;
 
     public int GetAvailableCount(BF_ItemConfigSO item)
     {
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
         return item != null
-            ? Mathf.Max(0, _inventory.GetCount(item.Id) - _unitRuntime.GetReservedCount(item.Id))
+            ? Mathf.Max(0, inventory.GetCount(item.Id) - unitRuntime.GetReservedCount(item.Id))
             : 0;
     }
 
     public bool TryBuy(BF_ItemConfigSO item)
     {
-        if (item == null || !_inventory.CanAdd(item, 1) || !_inventory.TrySpendGold(item.BuyPrice))
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (item == null || inventory == null || !inventory.CanAdd(item, 1) || !inventory.TrySpendGold(item.BuyPrice))
         {
             return false;
         }
 
-        return _inventory.TryAdd(item, 1);
+        return inventory.TryAdd(item, 1);
     }
 
     public bool TrySell(BF_ItemConfigSO item)
     {
-        if (item == null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (item == null || inventory == null)
         {
             return false;
         }
 
-        if (GetAvailableCount(item) <= 0 || !_inventory.TryRemove(item.Id, 1))
+        if (GetAvailableCount(item) <= 0 || !inventory.TryRemove(item.Id, 1))
         {
             return false;
         }
 
-        _inventory.AddGold(item.SellPrice);
+        inventory.AddGold(item.SellPrice);
         return true;
     }
 }

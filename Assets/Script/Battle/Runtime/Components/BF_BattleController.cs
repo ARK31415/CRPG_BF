@@ -370,8 +370,8 @@ public class BF_BattleController : MonoBehaviour
             return;
         }
 
-        BF_UnitRuntimeService runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
-        BF_InventoryService inventory = FindFirstObjectByType<BF_InventoryService>();
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        BF_InventoryService inventory = BF_InventoryService.Instance;
         BF_UnitRuntimeData data = runtime != null ? runtime.Get(CurrentUnit.UnitId) : null;
 
         if (data == null || requestEvent.Slot < 0 || requestEvent.Slot >= data.BattleItemIds.Length)

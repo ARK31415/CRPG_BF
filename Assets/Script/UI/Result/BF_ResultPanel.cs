@@ -19,9 +19,6 @@ public class BF_ResultPanel : MonoBehaviour
     [SerializeField]
     private Button _confirmButton;
 
-    [SerializeField]
-    private BF_BattleService _battleService;
-
     private void OnEnable()
     {
         _confirmButton.interactable = true;
@@ -36,7 +33,13 @@ public class BF_ResultPanel : MonoBehaviour
 
     private void Refresh()
     {
-        bool isVictory = _battleService.LastResult == BF_BattleResult.Victory;
+        BF_BattleService battleService = BF_BattleService.Instance;
+        if (battleService == null)
+        {
+            return;
+        }
+
+        bool isVictory = battleService.LastResult == BF_BattleResult.Victory;
         _titleText.text = isVictory ? "VICTORY" : "DEFEAT";
 
         if (!isVictory)
@@ -47,13 +50,19 @@ public class BF_ResultPanel : MonoBehaviour
         }
 
         _rewardBox.SetActive(true);
-        _messageText.text = _battleService.CurrentLevel == 3 ? "Demo 全关卡完成" : $"第{_battleService.CurrentLevel + 1}关已解锁";
+        _messageText.text = battleService.CurrentLevel == 3 ? "Demo 全关卡完成" : $"第{battleService.CurrentLevel + 1}关已解锁";
         _rewardText.text = GetRewardText();
     }
 
     private string GetRewardText()
     {
-        BF_BattleReward reward = _battleService.LastReward;
+        BF_BattleService battleService = BF_BattleService.Instance;
+        if (battleService == null)
+        {
+            return string.Empty;
+        }
+
+        BF_BattleReward reward = battleService.LastReward;
         string text = $"获得金币：{reward.Gold}";
 
         foreach (BF_InventoryEntry entry in reward.Items)

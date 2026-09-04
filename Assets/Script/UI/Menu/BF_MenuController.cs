@@ -22,20 +22,14 @@ public class BF_MenuController : MonoBehaviour
     [SerializeField] private Button _confirmButton;
     [SerializeField] private Button _cancelButton;
 
-    private BF_SceneLoadManager _sceneLoadManager;
-    private BF_SaveService _saveService;
-    private BF_BattleService _battleService;
-    private BF_UIManager _uiManager;
     private SlotAction _slotAction;
     private ConfirmAction _confirmAction;
     private int _selectedSlot;
 
+    public bool IsConfirmOpen => _confirmPanel != null && _confirmPanel.activeSelf;
+
     private void OnEnable()
     {
-        _sceneLoadManager = FindFirstObjectByType<BF_SceneLoadManager>();
-        _saveService = FindFirstObjectByType<BF_SaveService>();
-        _battleService = FindFirstObjectByType<BF_BattleService>();
-        _uiManager = FindFirstObjectByType<BF_UIManager>();
         _newGameButton.onClick.AddListener(ShowNewGameSlots);
         _continueButton.onClick.AddListener(ShowContinueSlots);
         _exitButton.onClick.AddListener(OnExitClicked);
@@ -66,11 +60,12 @@ public class BF_MenuController : MonoBehaviour
         SetMainVisible(true);
 
         bool hasSave = false;
-        if (_saveService != null)
+        BF_SaveService saveService = BF_SaveService.Instance;
+        if (saveService != null)
         {
             for (int slot = 1; slot <= 3; slot++)
             {
-                hasSave |= _saveService.HasSave(slot);
+                hasSave |= saveService.HasSave(slot);
             }
         }
 
@@ -100,14 +95,15 @@ public class BF_MenuController : MonoBehaviour
 
     private void RefreshSlots()
     {
-        if (_saveService == null)
+        BF_SaveService saveService = BF_SaveService.Instance;
+        if (saveService == null)
         {
             return;
         }
 
         for (int i = 0; i < _slotViews.Length; i++)
         {
-            BF_SaveSlotInfo info = _saveService.GetSlotInfo(i + 1);
+            BF_SaveSlotInfo info = saveService.GetSlotInfo(i + 1);
             bool canSelect = _slotAction == SlotAction.NewGame || info.IsValid;
             _slotViews[i].Show(info, canSelect, SelectSlot, RequestDelete);
         }
@@ -115,7 +111,13 @@ public class BF_MenuController : MonoBehaviour
 
     private void SelectSlot(int slot)
     {
-        BF_SaveSlotInfo info = _saveService.GetSlotInfo(slot);
+        BF_SaveService saveService = BF_SaveService.Instance;
+        if (saveService == null)
+        {
+            return;
+        }
+
+        BF_SaveSlotInfo info = saveService.GetSlotInfo(slot);
         if (_slotAction == SlotAction.NewGame && info.HasData)
         {
             ShowConfirm(slot, ConfirmAction.Overwrite, $"覆盖存档 {slot}？\n原有进度将被替换。");
@@ -126,7 +128,7 @@ public class BF_MenuController : MonoBehaviour
         {
             StartNewGame(slot);
         }
-        else if (_slotAction == SlotAction.Continue && _saveService.Load(slot))
+        else if (_slotAction == SlotAction.Continue && saveService.Load(slot))
         {
             EnterLevelSelect();
         }
@@ -156,7 +158,7 @@ public class BF_MenuController : MonoBehaviour
         }
         else if (_confirmAction == ConfirmAction.Delete)
         {
-            _saveService.Delete(_selectedSlot);
+            BF_SaveService.Instance?.Delete(_selectedSlot);
             RefreshSlots();
             SelectButton(_backButton);
         }
@@ -171,11 +173,18 @@ public class BF_MenuController : MonoBehaviour
         SelectButton(_backButton);
     }
 
+    public void CloseConfirm()
+    {
+        CancelConfirm();
+    }
+
     private void StartNewGame(int slot)
     {
-        if (_saveService != null
-            && _battleService != null
-            && _saveService.StartNewGame(slot, _battleService.CreateInitialUnits))
+        BF_SaveService saveService = BF_SaveService.Instance;
+        BF_BattleService battleService = BF_BattleService.Instance;
+        if (saveService != null
+            && battleService != null
+            && saveService.StartNewGame(slot, battleService.CreateInitialUnits))
         {
             EnterLevelSelect();
         }
@@ -185,7 +194,7 @@ public class BF_MenuController : MonoBehaviour
     {
         _newGameButton.interactable = false;
         _continueButton.interactable = false;
-        _sceneLoadManager.LoadLevelSelect();
+        BF_SceneLoadManager.Instance?.LoadLevelSelect();
     }
 
     private void SetMainVisible(bool visible)
@@ -215,7 +224,7 @@ public class BF_MenuController : MonoBehaviour
 
     private void OpenSettings()
     {
-        _uiManager?.OpenSettingsPanel();
+        BF_UIManager.Instance?.OpenSettingsPanel();
     }
 
     private enum SlotAction

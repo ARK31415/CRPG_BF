@@ -33,17 +33,19 @@ public class BF_LevelSelectController : MonoBehaviour
     [SerializeField]
     private TMP_Text _levelInfoText;
 
-    private BF_SceneLoadManager _sceneLoadManager;
-    private BF_BattleService _battleService;
     private BF_LevelProgress _levelProgress;
     private int _selectedLevel = 1;
     private readonly List<BF_LevelSelectItem> _items = new();
 
     private void OnEnable()
     {
-        _sceneLoadManager = FindFirstObjectByType<BF_SceneLoadManager>();
-        _battleService = FindFirstObjectByType<BF_BattleService>();
-        _levelProgress = _battleService.LevelProgress;
+        BF_BattleService battleService = BF_BattleService.Instance;
+        if (battleService == null)
+        {
+            return;
+        }
+
+        _levelProgress = battleService.LevelProgress;
 
         _backButton.onClick.AddListener(OnBackClicked);
         _enterButton.onClick.AddListener(OnEnterClicked);
@@ -60,13 +62,13 @@ public class BF_LevelSelectController : MonoBehaviour
     private void OnBackClicked()
     {
         _backButton.interactable = false;
-        _sceneLoadManager.LoadMenu();
+        BF_SceneLoadManager.Instance?.LoadMenu();
     }
 
     private void OnEnterClicked()
     {
         _enterButton.interactable = false;
-        _battleService.PrepareLevel(_selectedLevel);
+        BF_BattleService.Instance?.PrepareLevel(_selectedLevel);
     }
 
     private void OnItemSelected(int level)

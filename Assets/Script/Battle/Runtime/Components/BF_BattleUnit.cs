@@ -17,7 +17,6 @@ public class BF_BattleUnit : MonoBehaviour
     private BF_BoardManager _board;
     private BF_UnitConfigSO _config;
     private string _unitId;
-    private BF_InventoryService _inventory;
     private BF_SkillConfigSO _skill01;
     private BF_SkillConfigSO _skill02;
     private int _maxHP;
@@ -63,13 +62,11 @@ public class BF_BattleUnit : MonoBehaviour
         BF_UnitConfigSO config,
         BF_UnitTeam team,
         Vector2Int pos,
-        BF_UnitRuntimeData runtimeData = null,
-        BF_InventoryService inventory = null)
+        BF_UnitRuntimeData runtimeData = null)
     {
         _board = board;
         _config = config;
         _unitId = runtimeData != null ? runtimeData.UnitId : config != null ? config.Id : string.Empty;
-        _inventory = inventory;
         Team = team;
         GridPos = pos;
         HasActed = false;
@@ -87,12 +84,13 @@ public class BF_BattleUnit : MonoBehaviour
         _defense = stats.Defense;
         _maxAP = stats.MaxAP;
 
-        if (runtimeData != null && _inventory != null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (runtimeData != null && inventory != null)
         {
-            AddEquipment(_inventory.GetItem(runtimeData.WeaponItemId));
-            AddEquipment(_inventory.GetItem(runtimeData.HeadItemId));
-            AddEquipment(_inventory.GetItem(runtimeData.ArmorItemId));
-            AddEquipment(_inventory.GetItem(runtimeData.ShoesItemId));
+            AddEquipment(inventory.GetItem(runtimeData.WeaponItemId));
+            AddEquipment(inventory.GetItem(runtimeData.HeadItemId));
+            AddEquipment(inventory.GetItem(runtimeData.ArmorItemId));
+            AddEquipment(inventory.GetItem(runtimeData.ShoesItemId));
         }
 
         _skill01 = runtimeData != null ? _config.GetSkill(runtimeData.Skill01Id) : _config.Skill01;
@@ -274,12 +272,13 @@ public class BF_BattleUnit : MonoBehaviour
 
     public IEnumerator UseItem(BF_ItemConfigSO item)
     {
+        BF_InventoryService inventory = BF_InventoryService.Instance;
         if (item == null
             || item.ItemType != BF_ItemType.Consumable
-            || _inventory == null
+            || inventory == null
             || CurrentHP >= MaxHP
             || !CanPay(item.APCost)
-            || _inventory.GetCount(item.Id) <= 0)
+            || inventory.GetCount(item.Id) <= 0)
         {
             yield break;
         }
@@ -288,7 +287,7 @@ public class BF_BattleUnit : MonoBehaviour
         IsActing = true;
         GameEventBus.Instance?.Publish(new BF_PlaySFXEvent(BF_SFX.Item));
         CurrentHP = Mathf.Min(MaxHP, CurrentHP + item.HealAmount);
-        _inventory.TryRemove(item.Id, 1);
+        inventory.TryRemove(item.Id, 1);
         PublishStats();
         yield return null;
         IsActing = false;

@@ -3,25 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [DefaultExecutionOrder(-60)]
-public class BF_BattleService : MonoBehaviour
+public class BF_BattleService : Singleton<BF_BattleService>
 {
     [SerializeField]
-    private BF_SceneLoadManager _sceneLoadManager;
-
-    [SerializeField]
-    private BF_GameModeManager _gameModeManager;
-
-    [SerializeField]
     private BF_LevelProgress _levelProgress;
-
-    [SerializeField]
-    private BF_InventoryService _inventory;
-
-    [SerializeField]
-    private BF_UnitRuntimeService _unitRuntime;
-
-    [SerializeField]
-    private BF_SaveService _saveService;
 
     [SerializeField]
     private BF_LevelConfigSO[] _levels;
@@ -46,14 +31,22 @@ public class BF_BattleService : MonoBehaviour
     public BF_LevelConfigSO CurrentLevelConfig => GetLevelConfig(CurrentLevel);
     public IReadOnlyList<string> BattlePartyUnitIds => _battlePartyUnitIds;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
+        if (Instance != this)
+        {
+            return;
+        }
+
         CreateInitialUnits();
     }
 
     public void CreateInitialUnits()
     {
-        if (_unitRuntime == null || _unitRuntime.Units.Count > 0 || _initialUnits == null)
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
+        if (unitRuntime == null || unitRuntime.Units.Count > 0 || _initialUnits == null)
         {
             return;
         }
@@ -68,12 +61,17 @@ public class BF_BattleService : MonoBehaviour
 
             string skill01 = config.Skill01 != null ? config.Skill01.Id : string.Empty;
             string skill02 = config.Skill02 != null ? config.Skill02.Id : string.Empty;
-            _unitRuntime.AddUnit(config.Id, skill01, skill02, true);
+            unitRuntime.AddUnit(config.Id, skill01, skill02, true);
         }
     }
 
     private void OnEnable()
     {
+        if (Instance != this)
+        {
+            return;
+        }
+
         _resultSubscription = GameEventBus.Instance.Subscribe<BF_BattleResultEvent>(OnBattleResult);
         _confirmSubscription = GameEventBus.Instance.Subscribe<BF_ConfirmBattleResultRequestEvent>(OnConfirmResult);
         _abandonSubscription = GameEventBus.Instance.Subscribe<BF_AbandonBattleRequestEvent>(OnAbandonBattleRequested);
@@ -91,7 +89,8 @@ public class BF_BattleService : MonoBehaviour
 
     public void PrepareLevel(int level)
     {
-        if (_sceneLoadManager.IsLoading || !_levelProgress.IsUnlocked(level))
+        BF_SceneLoadManager sceneLoad = BF_SceneLoadManager.Instance;
+        if (sceneLoad == null || _levelProgress == null || sceneLoad.IsLoading || !_levelProgress.IsUnlocked(level))
         {
             return;
         }
@@ -101,13 +100,15 @@ public class BF_BattleService : MonoBehaviour
         LastReward.Clear();
         _battlePartyUnitIds.Clear();
         _isResultActive = false;
-        _sceneLoadManager.LoadBattlePrepare();
+        sceneLoad.LoadBattlePrepare();
     }
 
     public void StartPreparedLevel()
     {
         BF_LevelConfigSO level = CurrentLevelConfig;
-        if (_sceneLoadManager.IsLoading
+        BF_SceneLoadManager sceneLoad = BF_SceneLoadManager.Instance;
+        if (sceneLoad == null
+            || sceneLoad.IsLoading
             || !_levelProgress.IsUnlocked(CurrentLevel)
             || !TryBuildBattleParty(level))
         {
@@ -124,7 +125,7 @@ public class BF_BattleService : MonoBehaviour
         LastResult = BF_BattleResult.None;
         LastReward.Clear();
         _isResultActive = false;
-        _sceneLoadManager.LoadBattle(battleAddress);
+        sceneLoad.LoadBattle(battleAddress);
     }
 
     public BF_UnitConfigSO GetUnitConfig(string configId)
@@ -198,12 +199,17 @@ public class BF_BattleService : MonoBehaviour
             : CurrentLevel == 3 ? BF_Stinger.Complete : BF_Stinger.Victory;
         GameEventBus.Instance.Publish(new BF_PlayStingerEvent(stinger));
 
-        if (_saveService != null && _saveService.CurrentSlot > 0)
+        BF_SaveService saveService = BF_SaveService.Instance;
+        if (saveService != null && saveService.CurrentSlot > 0)
         {
-            _saveService.Save();
+            saveService.Save();
         }
 
-        _gameModeManager.SetGameMode(BF_GameMode.Result);
+        BF_GameModeManager gameModeManager = BF_GameModeManager.Instance;
+        if (gameModeManager != null)
+        {
+            gameModeManager.SetGameMode(BF_GameMode.Result);
+        }
     }
 
     private void GiveReward()
@@ -217,13 +223,14 @@ public class BF_BattleService : MonoBehaviour
         }
 
         LastReward.Gold = level.RewardGold;
-        if (_inventory != null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (inventory != null)
         {
-            _inventory.AddGold(level.RewardGold);
+            inventory.AddGold(level.RewardGold);
 
             foreach (BF_RewardItem reward in level.RewardItems)
             {
-                if (reward.Item != null && _inventory.TryAdd(reward.Item, reward.Quantity))
+                if (reward.Item != null && inventory.TryAdd(reward.Item, reward.Quantity))
                 {
                     LastReward.Items.Add(new BF_InventoryEntry(reward.Item, reward.Quantity));
                 }
@@ -240,7 +247,8 @@ public class BF_BattleService : MonoBehaviour
     /// </summary>
     private void GiveExpReward(BF_LevelConfigSO level)
     {
-        if (_unitRuntime == null || level.RewardExp <= 0)
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
+        if (unitRuntime == null || level.RewardExp <= 0)
         {
             return;
         }
@@ -258,7 +266,7 @@ public class BF_BattleService : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             int gain = baseExp + (i < remainder ? 1 : 0);
-            BF_UnitRuntimeData unit = _unitRuntime.Get(_battlePartyUnitIds[i]);
+            BF_UnitRuntimeData unit = unitRuntime.Get(_battlePartyUnitIds[i]);
             BF_UnitConfigSO config = unit != null ? GetUnitConfig(unit.ConfigId) : null;
             if (unit == null || config == null || gain <= 0)
             {
@@ -266,7 +274,7 @@ public class BF_BattleService : MonoBehaviour
             }
 
             int oldLevel = unit.Level;
-            int applied = _unitRuntime.AddExp(unit.UnitId, gain, config.GetExpRequiredToNextLevel);
+            int applied = unitRuntime.AddExp(unit.UnitId, gain, config.GetExpRequiredToNextLevel);
             if (applied <= 0)
             {
                 continue;
@@ -285,7 +293,8 @@ public class BF_BattleService : MonoBehaviour
 
     private void GiveUnitReward(BF_LevelConfigSO level)
     {
-        if (_unitRuntime == null || level.RewardUnit == null)
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
+        if (unitRuntime == null || level.RewardUnit == null)
         {
             return;
         }
@@ -298,7 +307,7 @@ public class BF_BattleService : MonoBehaviour
 
         string skill01 = level.RewardUnit.Skill01 != null ? level.RewardUnit.Skill01.Id : string.Empty;
         string skill02 = level.RewardUnit.Skill02 != null ? level.RewardUnit.Skill02.Id : string.Empty;
-        BF_UnitRuntimeData unit = _unitRuntime.AddUnit(
+        BF_UnitRuntimeData unit = unitRuntime.AddUnit(
             level.RewardUnit.Id,
             skill01,
             skill02);
@@ -317,12 +326,13 @@ public class BF_BattleService : MonoBehaviour
     private bool TryBuildBattleParty(BF_LevelConfigSO level)
     {
         _battlePartyUnitIds.Clear();
-        if (level == null || _unitRuntime == null)
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
+        if (level == null || unitRuntime == null)
         {
             return false;
         }
 
-        List<BF_UnitRuntimeData> deployed = _unitRuntime.GetDeployedUnits();
+        List<BF_UnitRuntimeData> deployed = unitRuntime.GetDeployedUnits();
         for (int i = 0; i < deployed.Count; i++)
         {
             _battlePartyUnitIds.Add(deployed[i].UnitId);
@@ -358,22 +368,25 @@ public class BF_BattleService : MonoBehaviour
 
     private void OnConfirmResult(BF_ConfirmBattleResultRequestEvent gameEvent)
     {
-        if (!_isResultActive || _sceneLoadManager.IsLoading)
+        BF_SceneLoadManager sceneLoad = BF_SceneLoadManager.Instance;
+        if (!_isResultActive || sceneLoad == null || sceneLoad.IsLoading)
         {
             return;
         }
 
         _isResultActive = false;
-        _sceneLoadManager.LoadLevelSelect();
+        sceneLoad.LoadLevelSelect();
     }
 
     public void AbandonBattle()
     {
-        if (_sceneLoadManager == null
-            || _sceneLoadManager.IsLoading
-            || _gameModeManager == null
-            || (_gameModeManager.CurrentGameMode != BF_GameMode.Battle
-                && _gameModeManager.CurrentGameMode != BF_GameMode.Paused))
+        BF_SceneLoadManager sceneLoad = BF_SceneLoadManager.Instance;
+        BF_GameModeManager gameModeManager = BF_GameModeManager.Instance;
+        if (sceneLoad == null
+            || sceneLoad.IsLoading
+            || gameModeManager == null
+            || (gameModeManager.CurrentGameMode != BF_GameMode.Battle
+                && gameModeManager.CurrentGameMode != BF_GameMode.Paused))
         {
             return;
         }
@@ -382,15 +395,16 @@ public class BF_BattleService : MonoBehaviour
         LastReward.Clear();
         _battlePartyUnitIds.Clear();
         _isResultActive = false;
-        _gameModeManager.NormalizeTimeScale();
+        gameModeManager.NormalizeTimeScale();
 
-        if (_saveService != null && _saveService.CurrentSlot > 0)
+        BF_SaveService saveService = BF_SaveService.Instance;
+        if (saveService != null && saveService.CurrentSlot > 0)
         {
-            _saveService.Save();
+            saveService.Save();
         }
 
         Debug.Log("[BF] Battle abandoned. No reward or level progress was applied.");
-        _sceneLoadManager.LoadLevelSelect();
+        sceneLoad.LoadLevelSelect();
     }
 
     private void OnAbandonBattleRequested(BF_AbandonBattleRequestEvent gameEvent)

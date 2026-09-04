@@ -3,14 +3,12 @@ using System.IO;
 using UnityEngine;
 
 [DefaultExecutionOrder(-50)]
-public class BF_SaveService : MonoBehaviour
+public class BF_SaveService : Singleton<BF_SaveService>
 {
     private const int SaveVersion = 1;
     private const int SlotCount = 3;
 
     [SerializeField] private BF_LevelProgress _levelProgress;
-    [SerializeField] private BF_InventoryService _inventory;
-    [SerializeField] private BF_UnitRuntimeService _unitRuntime;
 
     public int CurrentSlot { get; private set; }
 
@@ -41,14 +39,19 @@ public class BF_SaveService : MonoBehaviour
 
     public bool StartNewGame(int slot, Action createInitialUnits)
     {
-        if (!IsReady() || !IsValidSlot(slot))
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
+        if (_levelProgress == null
+            || inventory == null
+            || unitRuntime == null
+            || !IsValidSlot(slot))
         {
             return false;
         }
 
         _levelProgress.ResetProgress();
-        _inventory.ResetToDefaults();
-        _unitRuntime.Clear(false);
+        inventory.ResetToDefaults();
+        unitRuntime.Clear(false);
 
         try
         {
@@ -72,21 +75,26 @@ public class BF_SaveService : MonoBehaviour
 
     public bool Load(int slot)
     {
-        if (!IsReady() || !TryRead(slot, out BF_SaveData data, true))
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
+        if (_levelProgress == null
+            || inventory == null
+            || unitRuntime == null
+            || !TryRead(slot, out BF_SaveData data, true))
         {
             return false;
         }
 
-        if (!_inventory.CanLoadData(data.Gold, data.Inventory)
-            || !_unitRuntime.CanLoadUnits(data.Units))
+        if (!inventory.CanLoadData(data.Gold, data.Inventory)
+            || !unitRuntime.CanLoadUnits(data.Units))
         {
             Debug.LogWarning($"[BF] Save slot {slot} contains invalid runtime data.", this);
             return false;
         }
 
         _levelProgress.LoadProgress(data.HighestUnlockedLevel, data.IsDemoCompleted);
-        _inventory.LoadData(data.Gold, data.Inventory);
-        _unitRuntime.LoadUnits(data.Units);
+        inventory.LoadData(data.Gold, data.Inventory);
+        unitRuntime.LoadUnits(data.Units);
         CurrentSlot = slot;
         Debug.Log($"[BF] Loaded save slot {slot}.", this);
         return true;
@@ -173,18 +181,20 @@ public class BF_SaveService : MonoBehaviour
 
     private BF_SaveData BuildData()
     {
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
         BF_SaveData data = new BF_SaveData
         {
             Version = SaveVersion,
             SavedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             HighestUnlockedLevel = _levelProgress.HighestUnlockedLevel,
             IsDemoCompleted = _levelProgress.IsDemoCompleted,
-            Gold = _inventory.Gold
+            Gold = inventory.Gold
         };
 
-        for (int i = 0; i < _inventory.Items.Count; i++)
+        for (int i = 0; i < inventory.Items.Count; i++)
         {
-            BF_InventoryEntry entry = _inventory.Items[i];
+            BF_InventoryEntry entry = inventory.Items[i];
             if (entry.Item == null || entry.Quantity <= 0)
             {
                 continue;
@@ -197,9 +207,9 @@ public class BF_SaveService : MonoBehaviour
             });
         }
 
-        for (int i = 0; i < _unitRuntime.Units.Count; i++)
+        for (int i = 0; i < unitRuntime.Units.Count; i++)
         {
-            data.Units.Add(_unitRuntime.Units[i].Clone());
+            data.Units.Add(unitRuntime.Units[i].Clone());
         }
 
         return data;
@@ -253,7 +263,9 @@ public class BF_SaveService : MonoBehaviour
 
     private bool IsReady()
     {
-        return _levelProgress != null && _inventory != null && _unitRuntime != null;
+        return _levelProgress != null
+            && BF_InventoryService.Instance != null
+            && BF_UnitRuntimeService.Instance != null;
     }
 
     private bool IsValidSlot(int slot)

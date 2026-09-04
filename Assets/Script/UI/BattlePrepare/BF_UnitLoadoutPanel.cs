@@ -21,9 +21,6 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
     [SerializeField] private BF_ItemSlot[] _equipmentSlots = new BF_ItemSlot[4];
     [SerializeField] private BF_ItemSlot[] _itemSlots = new BF_ItemSlot[4];
 
-    private BF_InventoryService _inventory;
-    private BF_UnitRuntimeService _runtime;
-    private BF_BattleService _battleService;
     private BF_UnitRuntimeData _data;
     private BF_UnitConfigSO _config;
     private int _selectedBattleItemSlot = -1;
@@ -34,7 +31,6 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
 
     private void OnEnable()
     {
-        CacheServices();
         _deployButton?.onClick.AddListener(ToggleDeployed);
         if (GameEventBus.Instance != null)
         {
@@ -56,7 +52,6 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
 
     public void ShowUnit(BF_UnitRuntimeData data, BF_UnitConfigSO config)
     {
-        CacheServices();
         _data = data;
         _config = config;
         _selectedBattleItemSlot = -1;
@@ -66,7 +61,9 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
 
     public void Refresh()
     {
-        if (_config == null || _data == null || _inventory == null)
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (_config == null || _data == null || inventory == null || runtime == null)
         {
             UpdateDeployButton();
             return;
@@ -80,7 +77,7 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         for (int i = 0; i < EquipmentSlots.Length; i++)
         {
             BF_EquipmentSlot slot = EquipmentSlots[i];
-            BF_ItemConfigSO item = _inventory.GetItem(_runtime.GetEquipment(_data.UnitId, slot));
+            BF_ItemConfigSO item = inventory.GetItem(runtime.GetEquipment(_data.UnitId, slot));
             if (item != null)
             {
                 hpBonus += item.MaxHPBonus;
@@ -116,8 +113,8 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         for (int i = 0; i < _itemSlots.Length; i++)
         {
             int slot = i;
-            BF_ItemConfigSO item = _inventory.GetItem(_data.BattleItemIds[i]);
-            int count = item != null ? _inventory.GetCount(item.Id) : 0;
+            BF_ItemConfigSO item = inventory.GetItem(_data.BattleItemIds[i]);
+            int count = item != null ? 1 : 0;
             _itemSlots[i].Setup(
                 item,
                 count,
@@ -130,21 +127,15 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         UpdateDeployButton();
     }
 
-    private void CacheServices()
-    {
-        _inventory ??= FindFirstObjectByType<BF_InventoryService>();
-        _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
-        _battleService ??= FindFirstObjectByType<BF_BattleService>();
-    }
-
     private void ClearEquipment(BF_EquipmentSlot slot)
     {
-        if (_data == null || string.IsNullOrEmpty(_runtime.GetEquipment(_data.UnitId, slot)))
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (_data == null || runtime == null || string.IsNullOrEmpty(runtime.GetEquipment(_data.UnitId, slot)))
         {
             return;
         }
 
-        if (!_runtime.SetEquipment(_data.UnitId, slot, string.Empty))
+        if (!runtime.SetEquipment(_data.UnitId, slot, string.Empty))
         {
             Debug.Log("仓库已满，无法卸下装备");
         }
@@ -152,14 +143,15 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
 
     private void SelectBattleItemSlot(int slot)
     {
-        if (_data == null)
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (_data == null || runtime == null)
         {
             return;
         }
 
         if (_selectedBattleItemSlot == slot && !string.IsNullOrEmpty(_data.BattleItemIds[slot]))
         {
-            _runtime.SetBattleItem(_data.UnitId, slot, string.Empty);
+            runtime.SetBattleItem(_data.UnitId, slot, string.Empty);
             _selectedBattleItemSlot = -1;
         }
         else
@@ -179,23 +171,25 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
 
     private void ToggleDeployed()
     {
-        if (_data == null || _runtime == null)
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (_data == null || runtime == null)
         {
             return;
         }
 
         if (_data.IsDeployed)
         {
-            _runtime.SetDeployed(_data.UnitId, false);
+            runtime.SetDeployed(_data.UnitId, false);
             return;
         }
 
-        int limit = _battleService != null && _battleService.CurrentLevelConfig != null
-            ? _battleService.CurrentLevelConfig.PlayerSpawns.Count
+        BF_BattleService battleService = BF_BattleService.Instance;
+        int limit = battleService != null && battleService.CurrentLevelConfig != null
+            ? battleService.CurrentLevelConfig.PlayerSpawns.Count
             : 0;
-        if (_runtime.DeployedCount < limit)
+        if (runtime.DeployedCount < limit)
         {
-            _runtime.SetDeployed(_data.UnitId, true);
+            runtime.SetDeployed(_data.UnitId, true);
         }
     }
 
@@ -207,10 +201,12 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         }
 
         bool isDeployed = _data != null && _data.IsDeployed;
-        int limit = _battleService != null && _battleService.CurrentLevelConfig != null
-            ? _battleService.CurrentLevelConfig.PlayerSpawns.Count
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        BF_BattleService battleService = BF_BattleService.Instance;
+        int limit = battleService != null && battleService.CurrentLevelConfig != null
+            ? battleService.CurrentLevelConfig.PlayerSpawns.Count
             : 0;
-        bool canDeploy = isDeployed || (_runtime != null && _runtime.DeployedCount < limit);
+        bool canDeploy = isDeployed || (runtime != null && runtime.DeployedCount < limit);
         _deployButton.interactable = _data != null && canDeploy;
         if (_deployButtonText != null)
         {

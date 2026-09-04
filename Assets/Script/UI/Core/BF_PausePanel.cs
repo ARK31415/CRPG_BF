@@ -21,8 +21,7 @@ public class BF_PausePanel : MonoBehaviour
     [SerializeField]
     private Button _cancelExitButton;
 
-    [SerializeField]
-    private BF_UIManager _uiManager;
+    public bool IsExitConfirmOpen => _exitConfirmPanel != null && _exitConfirmPanel.activeSelf;
 
     private void OnEnable()
     {
@@ -50,8 +49,7 @@ public class BF_PausePanel : MonoBehaviour
 
     private void OpenSettings()
     {
-        _uiManager ??= FindFirstObjectByType<BF_UIManager>();
-        _uiManager?.OpenSettingsPanel();
+        BF_UIManager.Instance?.OpenSettingsPanel();
     }
 
     private void ShowExitConfirm()
@@ -65,6 +63,11 @@ public class BF_PausePanel : MonoBehaviour
         {
             _exitConfirmPanel.SetActive(false);
         }
+    }
+
+    public void CloseExitConfirm()
+    {
+        HideExitConfirm();
     }
 
     private void ConfirmExit()

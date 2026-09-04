@@ -16,7 +16,6 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
     [SerializeField] private TMP_Text _detailDescriptionText;
 
     private readonly List<BF_SkillSlot> _availableSlots = new();
-    private BF_UnitRuntimeService _runtime;
     private BF_UnitRuntimeData _data;
     private BF_UnitConfigSO _config;
     private int _selectedSlot = -2;
@@ -24,7 +23,6 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
 
     private void OnEnable()
     {
-        _runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
         if (GameEventBus.Instance != null)
         {
             _subscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(OnUnitChanged);
@@ -41,7 +39,6 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
 
     public void ShowUnit(BF_UnitRuntimeData data, BF_UnitConfigSO config)
     {
-        _runtime ??= FindFirstObjectByType<BF_UnitRuntimeService>();
         _data = data;
         _config = config;
         _selectedSlot = -2;
@@ -95,7 +92,8 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
         }
 
         string current = _selectedSlot == 0 ? _data.Skill01Id : _data.Skill02Id;
-        _runtime.SetSkill(_data.UnitId, _selectedSlot, current == skill.Id ? string.Empty : skill.Id);
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        runtime?.SetSkill(_data.UnitId, _selectedSlot, current == skill.Id ? string.Empty : skill.Id);
     }
 
     private void RefreshAvailable()

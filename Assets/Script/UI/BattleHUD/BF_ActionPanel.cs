@@ -158,8 +158,8 @@ public class BF_ActionPanel : MonoBehaviour
 
     private void RefreshItems(bool canAct)
     {
-        BF_InventoryService inventory = FindFirstObjectByType<BF_InventoryService>();
-        BF_UnitRuntimeService runtime = FindFirstObjectByType<BF_UnitRuntimeService>();
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
         BF_UnitRuntimeData data = _unit != null && runtime != null ? runtime.Get(_unit.UnitId) : null;
 
         for (int i = 0; i < _itemButtons.Length; i++)
