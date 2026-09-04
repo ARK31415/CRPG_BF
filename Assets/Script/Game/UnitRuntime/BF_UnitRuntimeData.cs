@@ -17,7 +17,7 @@ public class BF_UnitRuntimeData
         ConfigId = configId;
         Skill01Id = skill01;
         Skill02Id = skill02;
-        BattleItemIds = new string[4];
+        BattleItemIds = new string[BF_GameConstants.BattleItemSlotCount];
         Level = 1;
         CurrentExp = 0;
         IsDeployed = isDeployed;
@@ -31,7 +31,7 @@ public class BF_UnitRuntimeData
     public string ShoesItemId;
     public string Skill01Id;
     public string Skill02Id;
-    public string[] BattleItemIds = new string[4];
+    public string[] BattleItemIds = new string[BF_GameConstants.BattleItemSlotCount];
     public int Level;
     public int CurrentExp;
     public bool IsDeployed;
@@ -44,7 +44,9 @@ public class BF_UnitRuntimeData
             HeadItemId = HeadItemId,
             ArmorItemId = ArmorItemId,
             ShoesItemId = ShoesItemId,
-            BattleItemIds = BattleItemIds != null ? (string[])BattleItemIds.Clone() : new string[4],
+            BattleItemIds = BattleItemIds != null
+                ? (string[])BattleItemIds.Clone()
+                : new string[BF_GameConstants.BattleItemSlotCount],
             Level = Level,
             CurrentExp = CurrentExp
         };

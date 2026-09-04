@@ -41,9 +41,9 @@ public class BF_ActionPanel : MonoBehaviour
     private Button _endUnitButton;
 
     [Header("Items")]
-    [SerializeField] private Button[] _itemButtons = new Button[4];
-    [SerializeField] private Image[] _itemIcons = new Image[4];
-    [SerializeField] private TMP_Text[] _itemCountTexts = new TMP_Text[4];
+    [SerializeField] private Button[] _itemButtons = new Button[BF_GameConstants.BattleItemSlotCount];
+    [SerializeField] private Image[] _itemIcons = new Image[BF_GameConstants.BattleItemSlotCount];
+    [SerializeField] private TMP_Text[] _itemCountTexts = new TMP_Text[BF_GameConstants.BattleItemSlotCount];
 
     private BF_BattleUnit _unit;
     private bool _isPlayerPhase;
@@ -159,8 +159,6 @@ public class BF_ActionPanel : MonoBehaviour
     private void RefreshItems(bool canAct)
     {
         BF_InventoryService inventory = BF_InventoryService.Instance;
-        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
-        BF_UnitRuntimeData data = _unit != null && runtime != null ? runtime.Get(_unit.UnitId) : null;
 
         for (int i = 0; i < _itemButtons.Length; i++)
         {
@@ -169,16 +167,11 @@ public class BF_ActionPanel : MonoBehaviour
                 continue;
             }
 
-            string itemId = data != null && i < data.BattleItemIds.Length ? data.BattleItemIds[i] : string.Empty;
-            BF_ItemConfigSO item = inventory != null ? inventory.GetItem(itemId) : null;
-            int count = item != null ? inventory.GetCount(item.Id) : 0;
-            bool usable = item != null
-                && item.ItemType == BF_ItemType.Consumable
-                && count > 0
-                && _unit.CurrentHP < _unit.MaxHP
-                && _unit.CanPay(item.APCost);
+            BF_ItemConfigSO item = _unit != null ? _unit.GetBattleItem(i) : null;
+            int count = item != null && inventory != null ? inventory.GetCount(item.Id) : 0;
+            bool usable = canAct && _unit.CanUseBattleItem(i);
 
-            _itemButtons[i].interactable = canAct && usable;
+            _itemButtons[i].interactable = usable;
             _itemIcons[i].sprite = item != null ? item.Icon : null;
             _itemIcons[i].enabled = item != null && item.Icon != null;
             _itemCountTexts[i].text = item != null ? $"×{count}\n{item.APCost} AP" : "空";

@@ -153,3 +153,40 @@ public enum BF_SFX
     Item,
     UnitDeath
 }
+
+/// <summary>
+/// 库存添加结果。容量、堆叠和物品有效性由 BF_InventoryService 唯一判定。
+/// </summary>
+public enum BF_InventoryAddResult
+{
+    Success,
+    InvalidItem,
+    InvalidQuantity,
+    InventoryFull,
+    StackFull
+}
+
+/// <summary>
+/// 商店购买结果。容量与堆叠失败由库存添加结果映射，商店不复制库存数学。
+/// </summary>
+public enum BF_ShopBuyResult
+{
+    Success,
+    InvalidItem,
+    NotEnoughGold,
+    InventoryFull,
+    StackFull
+}
+
+/// <summary>
+/// 战斗物品快捷栏配置结果，由 BF_UnitRuntimeService 唯一判定，UI 只映射文案。
+/// </summary>
+public enum BF_BattleItemAssignResult
+{
+    Success,
+    InvalidTarget,
+    InvalidItem,
+    CurrentSlotAlreadyAssigned,
+    AlreadyAssignedToUnit,
+    ItemUnavailable
+}

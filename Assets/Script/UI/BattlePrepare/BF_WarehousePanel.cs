@@ -15,7 +15,6 @@ public class BF_WarehousePanel : MonoBehaviour
     private int _selectedSlot = -1;
     private Action<BF_ItemConfigSO, Vector2> _onRightClick;
     private IDisposable _inventorySubscription;
-    private IDisposable _unitSubscription;
 
     private void OnEnable()
     {
@@ -25,7 +24,6 @@ public class BF_WarehousePanel : MonoBehaviour
             _detailPanel.Show(null);
             Refresh();
         });
-        _unitSubscription = GameEventBus.Instance.Subscribe<BF_UnitRuntimeChangedEvent>(_ => Refresh());
         BuildSlots();
         Refresh();
     }
@@ -33,15 +31,12 @@ public class BF_WarehousePanel : MonoBehaviour
     private void OnDisable()
     {
         _inventorySubscription?.Dispose();
-        _unitSubscription?.Dispose();
         _inventorySubscription = null;
-        _unitSubscription = null;
     }
 
     public void Refresh()
     {
         BF_InventoryService inventory = BF_InventoryService.Instance;
-        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
         if (inventory == null)
         {
             return;
@@ -54,9 +49,7 @@ public class BF_WarehousePanel : MonoBehaviour
         {
             BF_InventoryEntry entry = i < inventory.Items.Count ? inventory.Items[i] : null;
             bool isConsumable = entry != null && entry.Item.ItemType == BF_ItemType.Consumable;
-            int count = entry != null && isConsumable && runtime != null
-                ? entry.Quantity - runtime.GetReservedCount(entry.Item.Id)
-                : 0;
+            int count = entry != null && isConsumable ? entry.Quantity : 0;
             int slotIndex = i;
             _slots[i].Setup(
                 entry?.Item,

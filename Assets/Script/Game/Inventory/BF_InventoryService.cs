@@ -60,22 +60,49 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
         return count;
     }
 
-    public bool CanAdd(BF_ItemConfigSO item, int quantity)
+    /// <summary>
+    /// 库存添加判定的唯一入口；容量与 MaxStack 数学只存在这一份。
+    /// </summary>
+    public BF_InventoryAddResult GetAddResult(BF_ItemConfigSO item, int quantity)
     {
-        if (item == null || quantity <= 0)
+        if (item == null)
         {
-            return false;
+            return BF_InventoryAddResult.InvalidItem;
+        }
+
+        if (quantity <= 0)
+        {
+            return BF_InventoryAddResult.InvalidQuantity;
         }
 
         if (item.ItemType == BF_ItemType.Equipment)
         {
-            return _items.Count + quantity <= Capacity;
+            return _items.Count + quantity <= Capacity
+                ? BF_InventoryAddResult.Success
+                : BF_InventoryAddResult.InventoryFull;
         }
 
         BF_InventoryEntry entry = FindEntry(item.Id);
-        return entry != null
-            ? entry.Quantity + quantity <= item.MaxStack
-            : _items.Count < Capacity && quantity <= item.MaxStack;
+        if (entry != null)
+        {
+            return entry.Quantity + quantity <= item.MaxStack
+                ? BF_InventoryAddResult.Success
+                : BF_InventoryAddResult.StackFull;
+        }
+
+        if (_items.Count >= Capacity)
+        {
+            return BF_InventoryAddResult.InventoryFull;
+        }
+
+        return quantity <= item.MaxStack
+            ? BF_InventoryAddResult.Success
+            : BF_InventoryAddResult.StackFull;
+    }
+
+    public bool CanAdd(BF_ItemConfigSO item, int quantity)
+    {
+        return GetAddResult(item, quantity) == BF_InventoryAddResult.Success;
     }
 
     public bool TryAdd(BF_ItemConfigSO item, int quantity, bool publish = true)
@@ -85,25 +112,7 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
             return false;
         }
 
-        if (item.ItemType == BF_ItemType.Equipment)
-        {
-            for (int i = 0; i < quantity; i++)
-            {
-                _items.Add(new BF_InventoryEntry(item, 1));
-            }
-        }
-        else
-        {
-            BF_InventoryEntry entry = FindEntry(item.Id);
-            if (entry == null)
-            {
-                _items.Add(new BF_InventoryEntry(item, quantity));
-            }
-            else
-            {
-                entry.Quantity += quantity;
-            }
-        }
+        AddEntries(item, quantity);
 
         if (publish)
         {
@@ -113,7 +122,7 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
         return true;
     }
 
-    public bool TryRemove(string itemId, int quantity)
+    public bool TryRemove(string itemId, int quantity, bool publish = true)
     {
         if (quantity <= 0 || GetCount(itemId) < quantity)
         {
@@ -138,8 +147,61 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
             }
         }
 
+        if (publish)
+        {
+            PublishChanged();
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 最小原子购买入口：金币、容量与堆叠校验通过后，在同一同步段内完成扣金币与加库存，
+    /// 最后只广播一次库存变化。失败时不修改金币、不修改库存。
+    /// </summary>
+    public bool TryPurchase(BF_ItemConfigSO item, int price)
+    {
+        if (item == null || price < 0 || Gold < price || GetAddResult(item, 1) != BF_InventoryAddResult.Success)
+        {
+            return false;
+        }
+
+        Gold -= price;
+        AddEntries(item, 1);
         PublishChanged();
         return true;
+    }
+
+    /// <summary>
+    /// 显式通知库存变化。供跨系统同步提交在全部业务修改完成后统一广播使用，
+    /// 保持库存事件的唯一发布入口在库存层。
+    /// </summary>
+    public void NotifyChanged()
+    {
+        PublishChanged();
+    }
+
+    private void AddEntries(BF_ItemConfigSO item, int quantity)
+    {
+        if (item.ItemType == BF_ItemType.Equipment)
+        {
+            for (int i = 0; i < quantity; i++)
+            {
+                _items.Add(new BF_InventoryEntry(item, 1));
+            }
+        }
+        else
+        {
+            BF_InventoryEntry entry = FindEntry(item.Id);
+            if (entry == null)
+            {
+                _items.Add(new BF_InventoryEntry(item, quantity));
+            }
+            else
+            {
+                entry.Quantity += quantity;
+            }
+        }
     }
 
     public bool TrySpendGold(int amount)

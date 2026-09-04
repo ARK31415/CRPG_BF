@@ -4,7 +4,8 @@ using UnityEngine;
 
 /// <summary>
 /// Persistent 场景中的玩家角色整备数据入口。
-/// 装备采用移动所有权：穿上即从仓库移除，卸下回仓；战斗物品槽继续以保留数量引用消耗品堆叠。
+/// 装备采用移动所有权：穿上即从仓库移除，卸下回仓；
+/// 战斗物品槽是共享真实库存的快捷栏，只记录 ItemId，不扣除、不预留库存。
 /// </summary>
 [DefaultExecutionOrder(-70)]
 public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
@@ -190,53 +191,64 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
         PublishChanged(unitId);
     }
 
-    public bool SetBattleItem(string unitId, int slot, string itemId)
+    /// <summary>
+    /// 配置战斗物品快捷栏。空 itemId 表示清空槽位，直接成功；
+    /// 其余分支复用 GetBattleItemAssignResult 的唯一判定。
+    /// </summary>
+    public BF_BattleItemAssignResult SetBattleItem(string unitId, int slot, string itemId)
+    {
+        BF_BattleItemAssignResult result = GetBattleItemAssignResult(unitId, slot, itemId);
+        if (result != BF_BattleItemAssignResult.Success)
+        {
+            return result;
+        }
+
+        Get(unitId).BattleItemIds[slot] = itemId;
+        PublishChanged(unitId);
+        return BF_BattleItemAssignResult.Success;
+    }
+
+    /// <summary>
+    /// 战斗物品配置结果的唯一判定入口：
+    /// 无效角色或槽位、无效物品、当前槽重复、同角色跨槽重复和新配置时真实库存为零。
+    /// 不限制其他角色配置同一物品。
+    /// </summary>
+    public BF_BattleItemAssignResult GetBattleItemAssignResult(string unitId, int slot, string itemId)
     {
         BF_UnitRuntimeData data = Get(unitId);
         if (data == null || slot < 0 || slot >= data.BattleItemIds.Length)
         {
-            return false;
+            return BF_BattleItemAssignResult.InvalidTarget;
+        }
+
+        if (string.IsNullOrEmpty(itemId))
+        {
+            return BF_BattleItemAssignResult.Success;
         }
 
         if (data.BattleItemIds[slot] == itemId)
         {
-            return true;
+            return BF_BattleItemAssignResult.CurrentSlotAlreadyAssigned;
         }
 
-        if (!string.IsNullOrEmpty(itemId))
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        BF_ItemConfigSO item = inventory != null ? inventory.GetItem(itemId) : null;
+        if (item == null || item.ItemType != BF_ItemType.Consumable)
         {
-            BF_InventoryService inventory = BF_InventoryService.Instance;
-            BF_ItemConfigSO item = inventory != null ? inventory.GetItem(itemId) : null;
-            int available = inventory != null
-                ? inventory.GetCount(itemId) - GetReservedCount(itemId)
-                : 0;
+            return BF_BattleItemAssignResult.InvalidItem;
+        }
 
-            if (item == null || item.ItemType != BF_ItemType.Consumable || available <= 0)
+        for (int i = 0; i < data.BattleItemIds.Length; i++)
+        {
+            if (i != slot && data.BattleItemIds[i] == itemId)
             {
-                return false;
+                return BF_BattleItemAssignResult.AlreadyAssignedToUnit;
             }
         }
 
-        data.BattleItemIds[slot] = itemId;
-        PublishChanged(unitId);
-        return true;
-    }
-
-    /// <summary>
-    /// 物品被战斗物品槽保留的数量。装备已改为移动所有权，不再参与保留计算。
-    /// </summary>
-    public int GetReservedCount(string itemId)
-    {
-        int count = 0;
-        foreach (BF_UnitRuntimeData unit in _units)
-        {
-            for (int i = 0; i < unit.BattleItemIds.Length; i++)
-            {
-                count += unit.BattleItemIds[i] == itemId ? 1 : 0;
-            }
-        }
-
-        return count;
+        return inventory.GetCount(itemId) > 0
+            ? BF_BattleItemAssignResult.Success
+            : BF_BattleItemAssignResult.ItemUnavailable;
     }
 
     /// <summary>
@@ -301,7 +313,7 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
                 || string.IsNullOrEmpty(unit.ConfigId)
                 || !ids.Add(unit.UnitId)
                 || unit.BattleItemIds == null
-                || unit.BattleItemIds.Length != 4
+                || unit.BattleItemIds.Length != BF_GameConstants.BattleItemSlotCount
                 || unit.Level < 1
                 || unit.CurrentExp < 0)
             {

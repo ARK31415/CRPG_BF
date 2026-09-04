@@ -19,6 +19,7 @@ public class BF_BattleUnit : MonoBehaviour
     private string _unitId;
     private BF_SkillConfigSO _skill01;
     private BF_SkillConfigSO _skill02;
+    private BF_ItemConfigSO[] _battleItems;
     private int _maxHP;
     private int _attack;
     private int _defense;
@@ -93,6 +94,16 @@ public class BF_BattleUnit : MonoBehaviour
             AddEquipment(inventory.GetItem(runtimeData.ShoesItemId));
         }
 
+        // 本场战斗物品快捷栏快照；战斗期间快捷栏配置不可变是该快照成立的前提。
+        _battleItems = new BF_ItemConfigSO[BF_GameConstants.BattleItemSlotCount];
+        if (runtimeData != null && runtimeData.BattleItemIds != null)
+        {
+            for (int i = 0; i < _battleItems.Length && i < runtimeData.BattleItemIds.Length; i++)
+            {
+                _battleItems[i] = inventory != null ? inventory.GetItem(runtimeData.BattleItemIds[i]) : null;
+            }
+        }
+
         _skill01 = runtimeData != null ? _config.GetSkill(runtimeData.Skill01Id) : _config.Skill01;
         _skill02 = runtimeData != null ? _config.GetSkill(runtimeData.Skill02Id) : _config.Skill02;
 
@@ -145,7 +156,7 @@ public class BF_BattleUnit : MonoBehaviour
         return IsAlive && !IsTurnEnded && !IsMoving && !IsActing && CurrentAP >= cost;
     }
 
-    public bool SpendAP(int cost)
+    public bool SpendAP(int cost, bool publish = true)
     {
         if (cost < 0 || !CanPay(cost))
         {
@@ -159,7 +170,11 @@ public class BF_BattleUnit : MonoBehaviour
             HasActed = true;
         }
 
-        PublishStats();
+        if (publish)
+        {
+            PublishStats();
+        }
+
         return true;
     }
 
@@ -270,25 +285,56 @@ public class BF_BattleUnit : MonoBehaviour
         PublishStats();
     }
 
-    public IEnumerator UseItem(BF_ItemConfigSO item)
+    /// <summary>
+    /// 读取本场战斗物品快捷栏快照；快照在 Init 时由整备 ItemId 解析固定。
+    /// </summary>
+    public BF_ItemConfigSO GetBattleItem(int slot)
     {
+        return _battleItems != null && slot >= 0 && slot < _battleItems.Length
+            ? _battleItems[slot]
+            : null;
+    }
+
+    /// <summary>
+    /// 单位级道具使用规则：槽位与物品有效、存活未结束行动、不在移动或执行中、
+    /// AP 足够、使用者未满血且真实库存至少为 1。
+    /// 玩家阶段、战斗结束与当前单位由 UI / Controller 判断。
+    /// </summary>
+    public bool CanUseBattleItem(int slot)
+    {
+        BF_ItemConfigSO item = GetBattleItem(slot);
         BF_InventoryService inventory = BF_InventoryService.Instance;
-        if (item == null
-            || item.ItemType != BF_ItemType.Consumable
-            || inventory == null
-            || CurrentHP >= MaxHP
-            || !CanPay(item.APCost)
-            || inventory.GetCount(item.Id) <= 0)
+        return item != null
+            && item.ItemType == BF_ItemType.Consumable
+            && CanPay(item.APCost)
+            && CurrentHP < MaxHP
+            && inventory != null
+            && inventory.GetCount(item.Id) > 0;
+    }
+
+    public IEnumerator UseBattleItem(int slot)
+    {
+        if (!CanUseBattleItem(slot))
         {
             yield break;
         }
 
-        SpendAP(item.APCost);
+        BF_ItemConfigSO item = GetBattleItem(slot);
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (inventory == null || !inventory.TryRemove(item.Id, 1, false))
+        {
+            yield break;
+        }
+
+        // 库存扣除成功后，扣 AP、恢复 HP 在无 yield 的同一同步段内完成；
+        // 全部业务修改结束后才广播库存与属性，订阅者不会观察到中间状态。
+        SpendAP(item.APCost, false);
         IsActing = true;
         GameEventBus.Instance?.Publish(new BF_PlaySFXEvent(BF_SFX.Item));
         CurrentHP = Mathf.Min(MaxHP, CurrentHP + item.HealAmount);
-        inventory.TryRemove(item.Id, 1);
+        inventory.NotifyChanged();
         PublishStats();
+
         yield return null;
         IsActing = false;
         PublishStats();

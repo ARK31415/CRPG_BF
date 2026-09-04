@@ -55,13 +55,12 @@ public class BF_ItemContextMenu : MonoBehaviour
 
         bool isEquipment = item != null && item.ItemType == BF_ItemType.Equipment;
         _primaryText.text = isEquipment ? "装备" : "放入物品栏";
-        _primaryButton.interactable = CanUsePrimary();
+        string blockedReason = GetPrimaryBlockedReason();
+        _primaryButton.interactable = blockedReason == null;
         _discardButton.interactable = GetAvailableCount() > 0;
-        if (!_primaryButton.interactable)
+        if (blockedReason != null)
         {
-            _messageText.text = item != null && item.ItemType == BF_ItemType.Consumable && battleItemSlot < 0
-                ? "先选择角色底部的物品格"
-                : "可用数量为 0";
+            _messageText.text = blockedReason;
         }
 
         gameObject.SetActive(true);
@@ -74,45 +73,63 @@ public class BF_ItemContextMenu : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private bool CanUsePrimary()
+    /// <summary>
+    /// 主操作失败原因；null 表示可执行。装备保持原有判定，
+    /// 消耗品消费 BF_UnitRuntimeService 的唯一配置结果，UI 只映射文案。
+    /// </summary>
+    private string GetPrimaryBlockedReason()
     {
-        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (_item == null || _data == null)
+        {
+            return "无法配置该物品";
+        }
+
         BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
-        if (_item == null || _data == null || inventory == null || runtime == null)
+        if (runtime == null)
         {
-            return false;
+            return "无法配置该物品";
         }
 
-        if (_item.ItemType == BF_ItemType.Consumable && _battleItemSlot < 0)
+        if (_item.ItemType == BF_ItemType.Equipment)
         {
-            return false;
+            return runtime.GetEquipment(_data.UnitId, _item.EquipmentSlot) == _item.Id
+                || GetAvailableCount() > 0
+                ? null
+                : "可用数量为 0";
         }
 
-        string current = _item.ItemType == BF_ItemType.Equipment
-            ? runtime.GetEquipment(_data.UnitId, _item.EquipmentSlot)
-            : _data.BattleItemIds[_battleItemSlot];
-        return current == _item.Id || GetAvailableCount() > 0;
+        if (_battleItemSlot < 0)
+        {
+            return "先选择角色底部的物品格";
+        }
+
+        return MapAssignResult(runtime.GetBattleItemAssignResult(_data.UnitId, _battleItemSlot, _item.Id));
+    }
+
+    private string MapAssignResult(BF_BattleItemAssignResult result)
+    {
+        return result switch
+        {
+            BF_BattleItemAssignResult.Success => null,
+            BF_BattleItemAssignResult.CurrentSlotAlreadyAssigned => "当前格已配置此物品",
+            BF_BattleItemAssignResult.AlreadyAssignedToUnit => "该角色已配置此物品",
+            BF_BattleItemAssignResult.ItemUnavailable => "当前没有该物品",
+            _ => "无法配置该物品"
+        };
     }
 
     private int GetAvailableCount()
     {
         BF_InventoryService inventory = BF_InventoryService.Instance;
-        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
-        if (_item == null || inventory == null || runtime == null)
-        {
-            return 0;
-        }
-
-        return inventory.GetCount(_item.Id) - runtime.GetReservedCount(_item.Id);
+        return _item != null && inventory != null ? inventory.GetCount(_item.Id) : 0;
     }
 
     private void UsePrimary()
     {
-        if (!CanUsePrimary())
+        string blockedReason = GetPrimaryBlockedReason();
+        if (blockedReason != null)
         {
-            _messageText.text = _item != null && _item.ItemType == BF_ItemType.Consumable
-                ? "先选择角色底部的物品格"
-                : "没有可用数量";
+            _messageText.text = blockedReason;
             return;
         }
 
@@ -130,9 +147,10 @@ public class BF_ItemContextMenu : MonoBehaviour
                 return;
             }
         }
-        else
+        else if (runtime.SetBattleItem(_data.UnitId, _battleItemSlot, _item.Id) != BF_BattleItemAssignResult.Success)
         {
-            runtime.SetBattleItem(_data.UnitId, _battleItemSlot, _item.Id);
+            // GetPrimaryBlockedReason 已使用同一判定，这里只做防御。
+            return;
         }
 
         Hide();
@@ -143,7 +161,7 @@ public class BF_ItemContextMenu : MonoBehaviour
         BF_InventoryService inventory = BF_InventoryService.Instance;
         if (inventory == null || GetAvailableCount() <= 0 || !inventory.TryRemove(_item.Id, 1))
         {
-            _messageText.text = "物品正在使用，不能丢弃";
+            _messageText.text = "当前没有该物品";
             _discardButton.interactable = false;
             return;
         }

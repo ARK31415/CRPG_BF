@@ -18,8 +18,8 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
     [SerializeField] private Image _portrait;
     [SerializeField] private Button _deployButton;
     [SerializeField] private TMP_Text _deployButtonText;
-    [SerializeField] private BF_ItemSlot[] _equipmentSlots = new BF_ItemSlot[4];
-    [SerializeField] private BF_ItemSlot[] _itemSlots = new BF_ItemSlot[4];
+    [SerializeField] private BF_ItemSlot[] _equipmentSlots = new BF_ItemSlot[EquipmentSlots.Length];
+    [SerializeField] private BF_ItemSlot[] _itemSlots = new BF_ItemSlot[BF_GameConstants.BattleItemSlotCount];
 
     private BF_UnitRuntimeData _data;
     private BF_UnitConfigSO _config;
@@ -114,13 +114,13 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         {
             int slot = i;
             BF_ItemConfigSO item = inventory.GetItem(_data.BattleItemIds[i]);
-            int count = item != null ? 1 : 0;
             _itemSlots[i].Setup(
                 item,
-                count,
+                0,
                 _ => SelectBattleItemSlot(slot),
                 emptyText: $"物品 {i + 1}",
-                allowEmptyClick: true);
+                allowEmptyClick: true,
+                showCount: false);
             _itemSlots[i].SetSelected(i == _selectedBattleItemSlot);
         }
 

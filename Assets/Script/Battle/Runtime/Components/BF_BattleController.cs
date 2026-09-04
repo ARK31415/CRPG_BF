@@ -370,20 +370,7 @@ public class BF_BattleController : MonoBehaviour
             return;
         }
 
-        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
-        BF_InventoryService inventory = BF_InventoryService.Instance;
-        BF_UnitRuntimeData data = runtime != null ? runtime.Get(CurrentUnit.UnitId) : null;
-
-        if (data == null || requestEvent.Slot < 0 || requestEvent.Slot >= data.BattleItemIds.Length)
-        {
-            return;
-        }
-
-        BF_ItemConfigSO item = inventory != null ? inventory.GetItem(data.BattleItemIds[requestEvent.Slot]) : null;
-        if (item != null)
-        {
-            StartCoroutine(UseItemRoutine(CurrentUnit, item));
-        }
+        StartCoroutine(UseItemRoutine(CurrentUnit, requestEvent.Slot));
     }
 
     private IEnumerator FinishUnitRoutine(BF_BattleUnit unit)
@@ -394,9 +381,9 @@ public class BF_BattleController : MonoBehaviour
         SelectFirstPlayerUnit();
     }
 
-    private IEnumerator UseItemRoutine(BF_BattleUnit unit, BF_ItemConfigSO item)
+    private IEnumerator UseItemRoutine(BF_BattleUnit unit, int itemSlot)
     {
-        yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateItem(unit, item));
+        yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateItem(unit, itemSlot));
         OnUnitActionFinished(unit);
     }
 

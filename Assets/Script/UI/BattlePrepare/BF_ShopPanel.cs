@@ -120,7 +120,19 @@ public class BF_ShopPanel : MonoBehaviour
 
     private void Buy()
     {
-        _tradeText.text = _shop.TryBuy(_selected) ? "购买成功" : "金币不足或仓库已满";
+        _tradeText.text = MapBuyResult(_shop.Buy(_selected));
+    }
+
+    private string MapBuyResult(BF_ShopBuyResult result)
+    {
+        return result switch
+        {
+            BF_ShopBuyResult.Success => "购买成功",
+            BF_ShopBuyResult.InvalidItem => "商品无效",
+            BF_ShopBuyResult.NotEnoughGold => "金币不足",
+            BF_ShopBuyResult.InventoryFull => "仓库容量已满",
+            _ => "该物品堆叠数量已满"
+        };
     }
 
     private void Sell()

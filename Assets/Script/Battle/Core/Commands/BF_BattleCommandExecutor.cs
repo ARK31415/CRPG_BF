@@ -24,7 +24,7 @@ public class BF_BattleCommandExecutor
                 break;
 
             case BF_BattleCommandType.Item:
-                yield return request.Actor.UseItem(request.Item);
+                yield return request.Actor.UseBattleItem(request.ItemSlot);
                 break;
 
             case BF_BattleCommandType.EndTurn:
