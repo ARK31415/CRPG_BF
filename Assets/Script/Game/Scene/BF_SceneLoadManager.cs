@@ -6,6 +6,11 @@ using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
 
+/// <summary>
+/// 管理唯一内容场景的 Addressables 加载、卸载和 Loading 遮罩。
+/// 首次加载由 Persistent 的 GameStartup 发起；本类不决定新游戏或存档初始化。
+/// Inspector 必须绑定完整的 FadeController。
+/// </summary>
 public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
 {
     private const string MenuAddress = "Menu";
@@ -23,9 +28,14 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
 
     public bool IsLoading { get; private set; }
 
-    private async void Start()
+    /// <summary>
+    /// 供 GameStartup 等待首次菜单加载；失败时保留启动遮罩。
+    /// 页面返回菜单仍使用 LoadMenu，不进入首次失败策略。
+    /// </summary>
+    /// <returns>加载和遮罩收尾完成为 true；忙碌拒绝或失败为 false。</returns>
+    public async Awaitable<bool> LoadMenuAsync()
     {
-        await LoadContent(MenuAddress, BF_GameMode.Menu);
+        return await LoadContent(MenuAddress, BF_GameMode.Menu, isStartup: true);
     }
 
     public async void LoadMenu()
@@ -48,11 +58,13 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
         await LoadContent(BattlePrepareAddress, BF_GameMode.Menu);
     }
 
-    private async Awaitable LoadContent(string address, BF_GameMode targetMode)
+    private async Awaitable<bool> LoadContent(
+        string address, BF_GameMode targetMode, bool isStartup = false)
     {
         if (IsLoading)
         {
-            return;
+            // 尚未取得加载所有权，不得改变正在执行的请求状态。
+            return false;
         }
 
         IsLoading = true;
@@ -60,16 +72,19 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
         if (gameModeManager == null)
         {
             IsLoading = false;
-            return;
+            Debug.LogError("[BF] Load scene failed: GameModeManager is missing.", this);
+            return false;
         }
 
-        gameModeManager.NormalizeTimeScale();
         BF_GameMode previousMode = gameModeManager.CurrentGameMode;
-        gameModeManager.SetGameMode(BF_GameMode.Loading);
-        await _fadeController.Show();
+        AsyncOperationHandle<SceneInstance> loadHandle = default;
 
         try
         {
+            gameModeManager.NormalizeTimeScale();
+            gameModeManager.SetGameMode(BF_GameMode.Loading);
+            await _fadeController.Show();
+
             bool hasContentScene = _hasContentScene;
             float loadStart = hasContentScene ? UnloadProgressEnd : 0f;
 
@@ -94,7 +109,7 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
             }
 
             Debug.Log($"[BF] Load content: {address}");
-            AsyncOperationHandle<SceneInstance> loadHandle = Addressables.LoadSceneAsync(
+            loadHandle = Addressables.LoadSceneAsync(
                 address,
                 LoadSceneMode.Additive,
                 true);
@@ -104,28 +119,50 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
 
             if (loadHandle.Status != AsyncOperationStatus.Succeeded)
             {
-                Addressables.Release(loadHandle);
                 throw new InvalidOperationException($"Addressable scene load failed: {address}");
             }
 
             _contentHandle = loadHandle;
             _contentScene = loadHandle.Result.Scene;
             _hasContentScene = true;
-            SceneManager.SetActiveScene(loadHandle.Result.Scene);
+            if (!SceneManager.SetActiveScene(_contentScene))
+            {
+                throw new InvalidOperationException($"Cannot activate scene: {address}");
+            }
             _fadeController.SetProgress(1f);
             _fadeController.SetLoadingText("加载完成");
             gameModeManager.SetGameMode(targetMode);
+            await _fadeController.Hide();
+            return true;
         }
         catch (Exception exception)
         {
             Debug.LogError($"[BF] Load scene failed: {address}");
             Debug.LogException(exception);
-            _fadeController.SetLoadingText("加载失败");
-            gameModeManager.SetGameMode(previousMode);
+            // 等待任务本身也可能抛异常；失败句柄在此统一释放，不依赖后面的 Status 分支。
+            if (loadHandle.IsValid() && loadHandle.Status != AsyncOperationStatus.Succeeded)
+            {
+                Addressables.Release(loadHandle);
+            }
+
+            if (isStartup)
+            {
+                gameModeManager.SetGameMode(BF_GameMode.Loading);
+                await _fadeController.Show();
+                _fadeController.SetLoadingText("启动失败，请重新启动游戏");
+            }
+            else
+            {
+                // 保留原有非首次失败行为；旧内容已卸载时，恢复模式不等于恢复旧页面。
+                _fadeController.SetLoadingText("加载失败");
+                gameModeManager.SetGameMode(previousMode);
+                await _fadeController.Hide();
+            }
+
+            return false;
         }
         finally
         {
-            await _fadeController.Hide();
             IsLoading = false;
         }
     }
@@ -169,7 +206,10 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
             await Task.Yield();
         }
 
-        _fadeController.SetProgress(end);
         await handle.Task;
+        if (handle.Status == AsyncOperationStatus.Succeeded)
+        {
+            _fadeController.SetProgress(end);
+        }
     }
 }
