@@ -8,18 +8,25 @@ using UnityEngine.EventSystems;
 /// </summary>
 public class BF_UnitMoveController : MonoBehaviour
 {
-    [SerializeField] private BF_BoardManager _board;
-    [SerializeField] private LineRenderer _pathLine;
+    #region 序列化配置与引用
 
-    private readonly Dictionary<Vector2Int, Vector2Int> _cameFrom = new();
-    private readonly Dictionary<Vector2Int, int> _cost = new();
-    private readonly HashSet<Vector2Int> _targetable = new();
-    private readonly HashSet<Vector2Int> _affected = new();
-    private HashSet<Vector2Int> _reachable = new();
-    private List<Vector2Int> _path = new();
-    private Camera _camera;
-    private Material _pathMaterial;
+    [Header("棋盘引用")]
+    [SerializeField]
+    private BF_BoardManager _board;
+
+    [Header("路径线")]
+    [SerializeField]
+    private LineRenderer _pathLine;
+
+    #endregion
+
+    #region 运行时数据
+
+    // 运行时引用
     private BF_BattleController _battleController;
+    private Camera _camera;
+
+    // 当前选中状态
     private BF_BattleUnit _unit;
     private BF_SkillConfigSO _skill;
     private BF_BoardCell _targetCell;
@@ -27,9 +34,33 @@ public class BF_UnitMoveController : MonoBehaviour
     private bool _isSelected;
     private bool _hasHoverPos;
 
+    // 寻路缓存
+    private readonly Dictionary<Vector2Int, Vector2Int> _cameFrom = new();
+    private readonly Dictionary<Vector2Int, int> _cost = new();
+    private HashSet<Vector2Int> _reachable = new();
+    private List<Vector2Int> _path = new();
+
+    // 高亮缓存
+    private readonly HashSet<Vector2Int> _targetable = new();
+    private readonly HashSet<Vector2Int> _affected = new();
+
+    // 运行时创建的路径线材质；OnDestroy 中销毁。
+    private Material _pathMaterial;
+
+    #endregion
+
+    #region 对外接口
+
+    // 选中单位
     public BF_BattleUnit Unit => _unit;
+
+    // 行动模式与完成状态
     public BF_PlayerActionMode Mode { get; private set; } = BF_PlayerActionMode.Move;
     public bool ActionDone { get; private set; }
+
+    #endregion
+
+    #region 生命周期
 
     private void Start()
     {
@@ -112,6 +143,11 @@ public class BF_UnitMoveController : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region 单位选择与模式
+
+    // 单位绑定与刷新
     public void SetBattleController(BF_BattleController battleController)
     {
         _battleController = battleController;
@@ -146,6 +182,21 @@ public class BF_UnitMoveController : MonoBehaviour
         GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(0, 0));
     }
 
+    public void RefreshSelection()
+    {
+        ClearSelection();
+
+        if (_unit == null || !_unit.IsAlive || _unit.IsTurnEnded)
+        {
+            return;
+        }
+
+        _skill = null;
+        Mode = BF_PlayerActionMode.Move;
+        SelectUnit();
+    }
+
+    // 技能模式切换
     public bool EnterSkillMode(BF_SkillConfigSO skill)
     {
         if (_unit == null || skill == null || !_unit.CanPay(skill.APCost))
@@ -195,19 +246,9 @@ public class BF_UnitMoveController : MonoBehaviour
         return true;
     }
 
-    public void RefreshSelection()
-    {
-        ClearSelection();
+    #endregion
 
-        if (_unit == null || !_unit.IsAlive || _unit.IsTurnEnded)
-        {
-            return;
-        }
-
-        _skill = null;
-        Mode = BF_PlayerActionMode.Move;
-        SelectUnit();
-    }
+    #region 移动
 
     private void TryMove()
     {
@@ -222,33 +263,15 @@ public class BF_UnitMoveController : MonoBehaviour
         StartCoroutine(MoveUnit(movePath));
     }
 
-    private void SelectUnit()
+    private IEnumerator MoveUnit(List<Vector2Int> path)
     {
-        _reachable = BF_Pathfinder.FindReachable(
-            _board,
-            _unit.GridPos,
-            _unit.CurrentAP,
-            _cameFrom,
-            _cost);
-
-        foreach (Vector2Int pos in _reachable)
-        {
-            if (_board.TryGetCell(pos, out BF_BoardCell cell))
-            {
-                cell.SetReachable(true);
-            }
-        }
-
-        if (_board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell))
-        {
-            unitCell.SetSelected(true);
-        }
-
-        _isSelected = true;
-        _hasHoverPos = false;
-        GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(0, _unit.CurrentAP));
+        BF_BattleUnit unit = _unit;
+        yield return _battleController.CommandExecutor.Execute(BF_BattleCommandRequest.CreateMove(unit, path));
+        ActionDone = true;
+        _battleController.OnUnitActionFinished(unit);
     }
 
+    // 路径预览
     private void UpdatePath(Vector2Int pos)
     {
         if (_hasHoverPos && pos == _hoverPos)
@@ -279,6 +302,77 @@ public class BF_UnitMoveController : MonoBehaviour
         GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(pathCost, _unit.CurrentAP - pathCost));
     }
 
+    // 路径线表现
+    private void SetupPathLine()
+    {
+        _pathLine.useWorldSpace = true;
+        _pathLine.startWidth = 0.08f;
+        _pathLine.endWidth = 0.08f;
+        _pathLine.startColor = Color.yellow;
+        _pathLine.endColor = Color.yellow;
+        _pathLine.sortingLayerName = "Middle";
+        _pathLine.sortingOrder = 4;
+
+        if (_pathLine.sharedMaterial != null)
+        {
+            return;
+        }
+
+        Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default")
+            ?? Shader.Find("Sprites/Default");
+
+        if (shader != null)
+        {
+            _pathMaterial = new Material(shader);
+            _pathLine.sharedMaterial = _pathMaterial;
+        }
+    }
+
+    private void ShowPath()
+    {
+        _pathLine.positionCount = _path.Count + 1;
+        _pathLine.SetPosition(0, _board.GridToWorld(_unit.GridPos));
+
+        for (int i = 0; i < _path.Count; i++)
+        {
+            _pathLine.SetPosition(i + 1, _board.GridToWorld(_path[i]));
+        }
+
+        _pathLine.enabled = true;
+    }
+
+    private void HidePath()
+    {
+        _pathLine.enabled = false;
+        _pathLine.positionCount = 0;
+    }
+
+    #endregion
+
+    #region 技能
+
+    private void TrySkill(Vector2Int pos)
+    {
+        if (!_targetable.Contains(pos) || !IsValidTarget(pos))
+        {
+            return;
+        }
+
+        BF_BattleUnit unit = _unit;
+        BF_SkillConfigSO skill = _skill;
+        ClearSelection();
+        Mode = BF_PlayerActionMode.Executing;
+        StartCoroutine(UseSkill(unit, skill, pos));
+    }
+
+    private IEnumerator UseSkill(BF_BattleUnit unit, BF_SkillConfigSO skill, Vector2Int pos)
+    {
+        yield return _battleController.CommandExecutor.Execute(BF_BattleCommandRequest.CreateSkill(unit, skill, pos));
+        ActionDone = true;
+        _battleController.OnUnitActionFinished(unit);
+    }
+
+    // 预览与目标校验
     private void UpdateSkillPreview(Vector2Int pos)
     {
         if (_hasHoverPos && pos == _hoverPos)
@@ -312,20 +406,6 @@ public class BF_UnitMoveController : MonoBehaviour
         }
     }
 
-    private void TrySkill(Vector2Int pos)
-    {
-        if (!_targetable.Contains(pos) || !IsValidTarget(pos))
-        {
-            return;
-        }
-
-        BF_BattleUnit unit = _unit;
-        BF_SkillConfigSO skill = _skill;
-        ClearSelection();
-        Mode = BF_PlayerActionMode.Executing;
-        StartCoroutine(UseSkill(unit, skill, pos));
-    }
-
     private bool IsValidTarget(Vector2Int pos)
     {
         if (_skill.TargetType != BF_SkillTargetType.Unit)
@@ -344,59 +424,39 @@ public class BF_UnitMoveController : MonoBehaviour
             && _unit.CanTarget(target, skill.TargetGroup);
     }
 
-    private IEnumerator MoveUnit(List<Vector2Int> path)
-    {
-        BF_BattleUnit unit = _unit;
-        yield return _battleController.CommandExecutor.Execute(BF_BattleCommandRequest.CreateMove(unit, path));
-        ActionDone = true;
-        _battleController.OnUnitActionFinished(unit);
-    }
+    #endregion
 
-    private IEnumerator UseSkill(BF_BattleUnit unit, BF_SkillConfigSO skill, Vector2Int pos)
-    {
-        yield return _battleController.CommandExecutor.Execute(BF_BattleCommandRequest.CreateSkill(unit, skill, pos));
-        ActionDone = true;
-        _battleController.OnUnitActionFinished(unit);
-    }
+    #region 棋盘高亮
 
-    private void ShowPath()
+    // 高亮建立
+    private void SelectUnit()
     {
-        _pathLine.positionCount = _path.Count + 1;
-        _pathLine.SetPosition(0, _board.GridToWorld(_unit.GridPos));
+        _reachable = BF_Pathfinder.FindReachable(
+            _board,
+            _unit.GridPos,
+            _unit.CurrentAP,
+            _cameFrom,
+            _cost);
 
-        for (int i = 0; i < _path.Count; i++)
+        foreach (Vector2Int pos in _reachable)
         {
-            _pathLine.SetPosition(i + 1, _board.GridToWorld(_path[i]));
+            if (_board.TryGetCell(pos, out BF_BoardCell cell))
+            {
+                cell.SetReachable(true);
+            }
         }
 
-        _pathLine.enabled = true;
-    }
-
-    private void SetupPathLine()
-    {
-        _pathLine.useWorldSpace = true;
-        _pathLine.startWidth = 0.08f;
-        _pathLine.endWidth = 0.08f;
-        _pathLine.startColor = Color.yellow;
-        _pathLine.endColor = Color.yellow;
-        _pathLine.sortingLayerName = "Middle";
-        _pathLine.sortingOrder = 4;
-
-        if (_pathLine.sharedMaterial != null)
+        if (_board.TryGetCell(_unit.GridPos, out BF_BoardCell unitCell))
         {
-            return;
+            unitCell.SetSelected(true);
         }
 
-        Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default")
-            ?? Shader.Find("Sprites/Default");
-
-        if (shader != null)
-        {
-            _pathMaterial = new Material(shader);
-            _pathLine.sharedMaterial = _pathMaterial;
-        }
+        _isSelected = true;
+        _hasHoverPos = false;
+        GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(0, _unit.CurrentAP));
     }
 
+    // 高亮清理
     private void ClearSelection()
     {
         foreach (Vector2Int pos in _reachable)
@@ -464,9 +524,5 @@ public class BF_UnitMoveController : MonoBehaviour
         }
     }
 
-    private void HidePath()
-    {
-        _pathLine.enabled = false;
-        _pathLine.positionCount = 0;
-    }
+    #endregion
 }

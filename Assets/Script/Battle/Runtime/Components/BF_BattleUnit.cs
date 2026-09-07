@@ -7,6 +7,8 @@ using UnityEngine;
 /// </summary>
 public class BF_BattleUnit : MonoBehaviour
 {
+    #region 常量与静态缓存
+
     private static readonly int IsMovingId = Animator.StringToHash("IsMoving");
     private static readonly int AttackId = Animator.StringToHash("Attack");
     private static readonly int Skill01Id = Animator.StringToHash("Skill01");
@@ -14,49 +16,83 @@ public class BF_BattleUnit : MonoBehaviour
     private static readonly int HurtId = Animator.StringToHash("Hurt");
     private static readonly int IsDeadId = Animator.StringToHash("IsDead");
 
-    private BF_BoardManager _board;
-    private BF_UnitConfigSO _config;
-    private string _unitId;
-    private BF_SkillConfigSO _skill01;
-    private BF_SkillConfigSO _skill02;
-    private BF_ItemConfigSO[] _battleItems;
-    private int _maxHP;
-    private int _attack;
-    private int _defense;
-    private int _maxAP;
+    #endregion
 
+    #region 序列化配置与引用
+
+    [Header("动画与精灵")]
     [SerializeField]
     private Animator _animator;
 
     [SerializeField]
     private SpriteRenderer _sprite;
 
+    [Header("世界 UI 锚点")]
     [SerializeField]
     private Transform _worldUIAnchor;
 
     [SerializeField]
     private Transform _damagePopupAnchor;
 
-    public Vector2Int GridPos { get; private set; }
+    #endregion
+
+    #region 运行时数据
+
+    // 本关依赖
+    private BF_BoardManager _board;
+
+    // 身份配置
+    private BF_UnitConfigSO _config;
+    private string _unitId;
+
+    // 本场数值、技能与物品快照
+    private int _maxHP;
+    private int _attack;
+    private int _defense;
+    private int _maxAP;
+    private BF_SkillConfigSO _skill01;
+    private BF_SkillConfigSO _skill02;
+    private BF_ItemConfigSO[] _battleItems;
+
+    #endregion
+
+    #region 对外接口
+
+    // 身份与配置
     public BF_UnitTeam Team { get; private set; }
     public BF_UnitConfigSO Config => _config;
     public string UnitId => _unitId;
     public string DisplayName => _config != null && !string.IsNullOrEmpty(_config.DisplayName) ? _config.DisplayName : gameObject.name;
+
+    // 位置
+    public Vector2Int GridPos { get; private set; }
+
+    // 数值
     public int MaxHP => _maxHP;
     public int MaxAP => _maxAP;
     public int Attack => _attack;
     public int Defense => _defense;
-    public BF_SkillConfigSO Skill01 => _skill01;
-    public BF_SkillConfigSO Skill02 => _skill02;
-    public Transform WorldUIAnchor => _worldUIAnchor;
-    public Transform DamagePopupAnchor => _damagePopupAnchor;
     public int CurrentHP { get; private set; }
     public int CurrentAP { get; private set; }
     public bool IsAlive => CurrentHP > 0;
+
+    // 技能
+    public BF_SkillConfigSO Skill01 => _skill01;
+    public BF_SkillConfigSO Skill02 => _skill02;
+
+    // 表现锚点
+    public Transform WorldUIAnchor => _worldUIAnchor;
+    public Transform DamagePopupAnchor => _damagePopupAnchor;
+
+    // 行动状态
     public bool IsMoving { get; private set; }
     public bool IsActing { get; private set; }
     public bool IsTurnEnded { get; private set; }
     public bool HasActed { get; private set; }
+
+    #endregion
+
+    #region 初始化
 
     public void Init(
         BF_BoardManager board,
@@ -130,6 +166,23 @@ public class BF_BattleUnit : MonoBehaviour
         PublishStats();
     }
 
+    private void AddEquipment(BF_ItemConfigSO item)
+    {
+        if (item == null || item.ItemType != BF_ItemType.Equipment)
+        {
+            return;
+        }
+
+        _maxHP += item.MaxHPBonus;
+        _attack += item.AttackBonus;
+        _defense += item.DefenseBonus;
+        _maxAP += item.MaxAPBonus;
+    }
+
+    #endregion
+
+    #region 回合状态
+
     public void ResetTurn()
     {
         if (!IsAlive)
@@ -151,6 +204,7 @@ public class BF_BattleUnit : MonoBehaviour
         PublishStats();
     }
 
+    // AP 支付
     public bool CanPay(int cost)
     {
         return IsAlive && !IsTurnEnded && !IsMoving && !IsActing && CurrentAP >= cost;
@@ -177,6 +231,10 @@ public class BF_BattleUnit : MonoBehaviour
 
         return true;
     }
+
+    #endregion
+
+    #region 移动
 
     /// <summary>
     /// 沿不包含起点的逻辑路径逐格移动，完成后提交棋盘占用。
@@ -234,6 +292,10 @@ public class BF_BattleUnit : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region 技能
+
     public IEnumerator UseSkill(BF_SkillConfigSO skill, Vector2Int targetPos)
     {
         if (skill == null || _board == null || !CanPay(skill.APCost))
@@ -285,15 +347,22 @@ public class BF_BattleUnit : MonoBehaviour
         PublishStats();
     }
 
-    /// <summary>
-    /// 读取本场战斗物品快捷栏快照；快照在 Init 时由整备 ItemId 解析固定。
-    /// </summary>
-    public BF_ItemConfigSO GetBattleItem(int slot)
+    public bool CanTarget(BF_BattleUnit target, BF_SkillTargetGroup group)
     {
-        return _battleItems != null && slot >= 0 && slot < _battleItems.Length
-            ? _battleItems[slot]
-            : null;
+        if (target == this)
+        {
+            return (group & BF_SkillTargetGroup.Self) != 0;
+        }
+
+        BF_SkillTargetGroup targetGroup = target.Team == Team
+            ? BF_SkillTargetGroup.Ally
+            : BF_SkillTargetGroup.Enemy;
+        return (group & targetGroup) != 0;
     }
+
+    #endregion
+
+    #region 道具
 
     /// <summary>
     /// 单位级道具使用规则：槽位与物品有效、存活未结束行动、不在移动或执行中、
@@ -340,18 +409,19 @@ public class BF_BattleUnit : MonoBehaviour
         PublishStats();
     }
 
-    public bool CanTarget(BF_BattleUnit target, BF_SkillTargetGroup group)
+    /// <summary>
+    /// 读取本场战斗物品快捷栏快照；快照在 Init 时由整备 ItemId 解析固定。
+    /// </summary>
+    public BF_ItemConfigSO GetBattleItem(int slot)
     {
-        if (target == this)
-        {
-            return (group & BF_SkillTargetGroup.Self) != 0;
-        }
-
-        BF_SkillTargetGroup targetGroup = target.Team == Team
-            ? BF_SkillTargetGroup.Ally
-            : BF_SkillTargetGroup.Enemy;
-        return (group & targetGroup) != 0;
+        return _battleItems != null && slot >= 0 && slot < _battleItems.Length
+            ? _battleItems[slot]
+            : null;
     }
+
+    #endregion
+
+    #region 伤害与死亡
 
     public void TakeDamage(int damage)
     {
@@ -380,15 +450,25 @@ public class BF_BattleUnit : MonoBehaviour
         }
     }
 
-    // 迁移来的动画保留了旧事件；当前伤害时点由 SkillSO.HitDelay 统一控制。
-    public void OnAnimationAttackHit()
+    private void Die()
     {
+        CurrentAP = 0;
+        IsTurnEnded = true;
+        HasActed = true;
+        _board?.TryVacate(GridPos, gameObject);
+
+        if (_animator != null)
+        {
+            _animator.SetBool(IsMovingId, false);
+            _animator.SetBool(IsDeadId, true);
+        }
+
+        GameEventBus.Instance?.Publish(new BF_PlaySFXEvent(BF_SFX.UnitDeath));
     }
 
-    public void OnAnimationDeathFinished()
-    {
-        gameObject.SetActive(false);
-    }
+    #endregion
+
+    #region 表现
 
     private void SetFacing(bool faceRight)
     {
@@ -445,37 +525,26 @@ public class BF_BattleUnit : MonoBehaviour
         }
     }
 
-    private void Die()
+    // 动画事件回调
+
+    // 迁移来的动画保留了旧事件；当前伤害时点由 SkillSO.HitDelay 统一控制。
+    public void OnAnimationAttackHit()
     {
-        CurrentAP = 0;
-        IsTurnEnded = true;
-        HasActed = true;
-        _board?.TryVacate(GridPos, gameObject);
-
-        if (_animator != null)
-        {
-            _animator.SetBool(IsMovingId, false);
-            _animator.SetBool(IsDeadId, true);
-        }
-
-        GameEventBus.Instance?.Publish(new BF_PlaySFXEvent(BF_SFX.UnitDeath));
     }
 
-    private void AddEquipment(BF_ItemConfigSO item)
+    public void OnAnimationDeathFinished()
     {
-        if (item == null || item.ItemType != BF_ItemType.Equipment)
-        {
-            return;
-        }
-
-        _maxHP += item.MaxHPBonus;
-        _attack += item.AttackBonus;
-        _defense += item.DefenseBonus;
-        _maxAP += item.MaxAPBonus;
+        gameObject.SetActive(false);
     }
+
+    #endregion
+
+    #region 属性广播
 
     private void PublishStats()
     {
         GameEventBus.Instance?.Publish(new BF_UnitStatsChangedEvent(this));
     }
+
+    #endregion
 }

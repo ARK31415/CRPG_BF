@@ -4,20 +4,49 @@ using UnityEngine.UI;
 
 public class BF_ItemContextMenu : MonoBehaviour
 {
-    [SerializeField] private Button _primaryButton;
-    [SerializeField] private TMP_Text _primaryText;
-    [SerializeField] private Button _discardButton;
-    [SerializeField] private Button _closeButton;
-    [SerializeField] private TMP_Text _messageText;
+    #region 序列化配置与引用
 
+    [Header("操作按钮")]
+    [SerializeField]
+    private Button _primaryButton;
+
+    [SerializeField]
+    private TMP_Text _primaryText;
+
+    [SerializeField]
+    private Button _discardButton;
+
+    [SerializeField]
+    private Button _closeButton;
+
+    [Header("结果提示")]
+    [SerializeField]
+    private TMP_Text _messageText;
+
+    #endregion
+
+    #region 运行时数据
+
+    // 布局缓存
     private RectTransform _rect;
     private RectTransform _canvasRect;
+
+    // 绑定上下文
     private BF_ItemConfigSO _item;
     private BF_UnitRuntimeData _data;
     private BF_UnitConfigSO _config;
     private int _battleItemSlot;
 
+    #endregion
+
+    #region 对外接口
+
+    // 面板开关状态
     public bool IsOpen => gameObject.activeSelf;
+
+    #endregion
+
+    #region 生命周期
 
     private void Awake()
     {
@@ -39,6 +68,10 @@ public class BF_ItemContextMenu : MonoBehaviour
         _discardButton.onClick.RemoveListener(Discard);
         _closeButton.onClick.RemoveListener(Hide);
     }
+
+    #endregion
+
+    #region 显示定位
 
     public void Show(
         BF_ItemConfigSO item,
@@ -72,6 +105,84 @@ public class BF_ItemContextMenu : MonoBehaviour
     {
         gameObject.SetActive(false);
     }
+
+    private void SetPosition(Vector2 screenPos)
+    {
+        if (_rect == null || _canvasRect == null)
+        {
+            return;
+        }
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            _canvasRect,
+            screenPos,
+            null,
+            out Vector2 pos);
+
+        float halfWidth = _rect.rect.width * 0.5f;
+        float halfHeight = _rect.rect.height * 0.5f;
+        Rect canvas = _canvasRect.rect;
+        pos.x = Mathf.Clamp(pos.x, canvas.xMin + halfWidth, canvas.xMax - halfWidth);
+        pos.y = Mathf.Clamp(pos.y, canvas.yMin + halfHeight, canvas.yMax - halfHeight);
+        _rect.anchoredPosition = pos;
+    }
+
+    #endregion
+
+    #region 主操作
+
+    private void UsePrimary()
+    {
+        string blockedReason = GetPrimaryBlockedReason();
+        if (blockedReason != null)
+        {
+            _messageText.text = blockedReason;
+            return;
+        }
+
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        if (runtime == null)
+        {
+            return;
+        }
+
+        if (_item.ItemType == BF_ItemType.Equipment)
+        {
+            if (!runtime.SetEquipment(_data.UnitId, _item.EquipmentSlot, _item.Id))
+            {
+                _messageText.text = "没有可用数量";
+                return;
+            }
+        }
+        else if (runtime.SetBattleItem(_data.UnitId, _battleItemSlot, _item.Id) != BF_BattleItemAssignResult.Success)
+        {
+            // GetPrimaryBlockedReason 已使用同一判定，这里只做防御。
+            return;
+        }
+
+        Hide();
+    }
+
+    #endregion
+
+    #region 丢弃
+
+    private void Discard()
+    {
+        BF_InventoryService inventory = BF_InventoryService.Instance;
+        if (inventory == null || GetAvailableCount() <= 0 || !inventory.TryRemove(_item.Id, 1))
+        {
+            _messageText.text = "当前没有该物品";
+            _discardButton.interactable = false;
+            return;
+        }
+
+        Hide();
+    }
+
+    #endregion
+
+    #region 判定与失败提示
 
     /// <summary>
     /// 主操作失败原因；null 表示可执行。装备保持原有判定，
@@ -124,69 +235,5 @@ public class BF_ItemContextMenu : MonoBehaviour
         return _item != null && inventory != null ? inventory.GetCount(_item.Id) : 0;
     }
 
-    private void UsePrimary()
-    {
-        string blockedReason = GetPrimaryBlockedReason();
-        if (blockedReason != null)
-        {
-            _messageText.text = blockedReason;
-            return;
-        }
-
-        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
-        if (runtime == null)
-        {
-            return;
-        }
-
-        if (_item.ItemType == BF_ItemType.Equipment)
-        {
-            if (!runtime.SetEquipment(_data.UnitId, _item.EquipmentSlot, _item.Id))
-            {
-                _messageText.text = "没有可用数量";
-                return;
-            }
-        }
-        else if (runtime.SetBattleItem(_data.UnitId, _battleItemSlot, _item.Id) != BF_BattleItemAssignResult.Success)
-        {
-            // GetPrimaryBlockedReason 已使用同一判定，这里只做防御。
-            return;
-        }
-
-        Hide();
-    }
-
-    private void Discard()
-    {
-        BF_InventoryService inventory = BF_InventoryService.Instance;
-        if (inventory == null || GetAvailableCount() <= 0 || !inventory.TryRemove(_item.Id, 1))
-        {
-            _messageText.text = "当前没有该物品";
-            _discardButton.interactable = false;
-            return;
-        }
-
-        Hide();
-    }
-
-    private void SetPosition(Vector2 screenPos)
-    {
-        if (_rect == null || _canvasRect == null)
-        {
-            return;
-        }
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            _canvasRect,
-            screenPos,
-            null,
-            out Vector2 pos);
-
-        float halfWidth = _rect.rect.width * 0.5f;
-        float halfHeight = _rect.rect.height * 0.5f;
-        Rect canvas = _canvasRect.rect;
-        pos.x = Mathf.Clamp(pos.x, canvas.xMin + halfWidth, canvas.xMax - halfWidth);
-        pos.y = Mathf.Clamp(pos.y, canvas.yMin + halfHeight, canvas.yMax - halfHeight);
-        _rect.anchoredPosition = pos;
-    }
+    #endregion
 }

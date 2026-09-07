@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class BF_UnitLoadoutPanel : MonoBehaviour
 {
+    #region 常量与静态缓存
+
     private static readonly BF_EquipmentSlot[] EquipmentSlots =
     {
         BF_EquipmentSlot.Weapon,
@@ -13,21 +15,60 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         BF_EquipmentSlot.Shoes
     };
 
-    [SerializeField] private TMP_Text _unitNameText;
-    [SerializeField] private TMP_Text _statsText;
-    [SerializeField] private Image _portrait;
-    [SerializeField] private Button _deployButton;
-    [SerializeField] private TMP_Text _deployButtonText;
-    [SerializeField] private BF_ItemSlot[] _equipmentSlots = new BF_ItemSlot[EquipmentSlots.Length];
-    [SerializeField] private BF_ItemSlot[] _itemSlots = new BF_ItemSlot[BF_GameConstants.BattleItemSlotCount];
+    #endregion
 
+    #region 序列化配置与引用
+
+    [Header("角色信息")]
+    [SerializeField]
+    private TMP_Text _unitNameText;
+
+    [SerializeField]
+    private TMP_Text _statsText;
+
+    [SerializeField]
+    private Image _portrait;
+
+    [Header("出战控制")]
+    [SerializeField]
+    private Button _deployButton;
+
+    [SerializeField]
+    private TMP_Text _deployButtonText;
+
+    [Header("装备栏")]
+    [SerializeField]
+    private BF_ItemSlot[] _equipmentSlots = new BF_ItemSlot[EquipmentSlots.Length];
+
+    [Header("物品快捷栏")]
+    [SerializeField]
+    private BF_ItemSlot[] _itemSlots = new BF_ItemSlot[BF_GameConstants.BattleItemSlotCount];
+
+    #endregion
+
+    #region 运行时数据
+
+    // 绑定数据
     private BF_UnitRuntimeData _data;
     private BF_UnitConfigSO _config;
+
+    // 选中状态
     private int _selectedBattleItemSlot = -1;
+
+    // 订阅句柄
     private IDisposable _unitSubscription;
     private IDisposable _inventorySubscription;
 
+    #endregion
+
+    #region 对外接口
+
+    // 选中物品格
     public int SelectedBattleItemSlot => _selectedBattleItemSlot;
+
+    #endregion
+
+    #region 生命周期
 
     private void OnEnable()
     {
@@ -49,6 +90,10 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         _inventorySubscription = null;
         _deployButton?.onClick.RemoveListener(ToggleDeployed);
     }
+
+    #endregion
+
+    #region 绑定与刷新
 
     public void ShowUnit(BF_UnitRuntimeData data, BF_UnitConfigSO config)
     {
@@ -127,6 +172,10 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         UpdateDeployButton();
     }
 
+    #endregion
+
+    #region 装备与快捷栏交互
+
     private void ClearEquipment(BF_EquipmentSlot slot)
     {
         BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
@@ -161,13 +210,21 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         }
     }
 
-    private void OnUnitChanged(BF_UnitRuntimeChangedEvent evt)
+    private string GetSlotName(BF_EquipmentSlot slot)
     {
-        if (_data != null && evt.UnitId == _data.UnitId)
+        return slot switch
         {
-            Refresh();
-        }
+            BF_EquipmentSlot.Weapon => "武器",
+            BF_EquipmentSlot.Head => "头部",
+            BF_EquipmentSlot.Armor => "护甲",
+            BF_EquipmentSlot.Shoes => "鞋",
+            _ => "装备"
+        };
     }
+
+    #endregion
+
+    #region 出战
 
     private void ToggleDeployed()
     {
@@ -214,15 +271,17 @@ public class BF_UnitLoadoutPanel : MonoBehaviour
         }
     }
 
-    private string GetSlotName(BF_EquipmentSlot slot)
+    #endregion
+
+    #region 事件处理
+
+    private void OnUnitChanged(BF_UnitRuntimeChangedEvent evt)
     {
-        return slot switch
+        if (_data != null && evt.UnitId == _data.UnitId)
         {
-            BF_EquipmentSlot.Weapon => "武器",
-            BF_EquipmentSlot.Head => "头部",
-            BF_EquipmentSlot.Armor => "护甲",
-            BF_EquipmentSlot.Shoes => "鞋",
-            _ => "装备"
-        };
+            Refresh();
+        }
     }
+
+    #endregion
 }

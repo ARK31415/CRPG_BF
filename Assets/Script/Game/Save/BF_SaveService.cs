@@ -2,15 +2,36 @@ using System;
 using System.IO;
 using UnityEngine;
 
+/// <summary>
+/// 本地存档持久化入口：按槽位读写 JSON 快照，协调关卡进度、库存与角色数据的校验与恢复。
+/// 保存先写临时文件再原子替换，失败时保留原存档；读取按版本号校验，失败视为无档。
+/// </summary>
 [DefaultExecutionOrder(-50)]
 public class BF_SaveService : Singleton<BF_SaveService>
 {
+    #region 常量与静态缓存
+
     private const int SaveVersion = 1;
     private const int SlotCount = 3;
 
-    [SerializeField] private BF_LevelProgress _levelProgress;
+    #endregion
 
+    #region 序列化配置与引用
+
+    [Header("关卡进度")]
+    [SerializeField]
+    private BF_LevelProgress _levelProgress;
+
+    #endregion
+
+    #region 对外接口
+
+    // 当前槽位
     public int CurrentSlot { get; private set; }
+
+    #endregion
+
+    #region 槽位查询
 
     public bool HasSave(int slot)
     {
@@ -36,6 +57,10 @@ public class BF_SaveService : Singleton<BF_SaveService>
         info.SavedAt = data.SavedAt;
         return info;
     }
+
+    #endregion
+
+    #region 新游戏与恢复
 
     public bool StartNewGame(int slot, Action createInitialUnits)
     {
@@ -100,6 +125,10 @@ public class BF_SaveService : Singleton<BF_SaveService>
         return true;
     }
 
+    #endregion
+
+    #region 保存提交
+
     public bool Save()
     {
         if (!IsReady() || !IsValidSlot(CurrentSlot))
@@ -142,6 +171,10 @@ public class BF_SaveService : Singleton<BF_SaveService>
         }
     }
 
+    #endregion
+
+    #region 删除
+
     public bool Delete(int slot)
     {
         if (!IsValidSlot(slot))
@@ -179,6 +212,10 @@ public class BF_SaveService : Singleton<BF_SaveService>
         }
     }
 
+    #endregion
+
+    #region 快照组装
+
     private BF_SaveData BuildData()
     {
         BF_InventoryService inventory = BF_InventoryService.Instance;
@@ -214,6 +251,10 @@ public class BF_SaveService : Singleton<BF_SaveService>
 
         return data;
     }
+
+    #endregion
+
+    #region 读入与通用校验
 
     private bool TryRead(int slot, out BF_SaveData data, bool logError)
     {
@@ -273,6 +314,10 @@ public class BF_SaveService : Singleton<BF_SaveService>
         return slot >= 1 && slot <= SlotCount;
     }
 
+    #endregion
+
+    #region 路径工具
+
     private string GetSaveFolder()
     {
         return Path.Combine(Application.persistentDataPath, "SaveData");
@@ -282,4 +327,6 @@ public class BF_SaveService : Singleton<BF_SaveService>
     {
         return Path.Combine(GetSaveFolder(), $"save_{slot:00}.json");
     }
+
+    #endregion
 }

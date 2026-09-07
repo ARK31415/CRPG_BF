@@ -68,7 +68,7 @@ public class BF_UnitMovementPlayModeTests {
         SetField(config, "_moveSpeed", 1000f);
         SetField(unit, "_board", board);
         SetField(unit, "_config", config);
-        SetField(unit, "_startPos", Vector2Int.zero);
+        unit.Init(board, config, BF_UnitTeam.Player, Vector2Int.zero);
         unitObject.SetActive(true);
         yield return null;
 

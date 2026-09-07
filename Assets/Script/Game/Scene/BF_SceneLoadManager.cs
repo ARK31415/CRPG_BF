@@ -13,20 +13,43 @@ using System.Threading.Tasks;
 /// </summary>
 public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
 {
+    #region 常量与静态缓存
+
+    // 场景地址
     private const string MenuAddress = "Menu";
     private const string LevelSelectAddress = "LevelSelect";
     private const string BattlePrepareAddress = "BattlePrepare";
 
+    // 卸载阶段在 Loading 进度条中的终点占比，其余区间留给加载阶段。
+    private const float UnloadProgressEnd = 0.3f;
+
+    #endregion
+
+    #region 序列化配置与引用
+
+    [Header("过渡遮罩")]
     [SerializeField]
     private BF_FadeController _fadeController;
 
+    #endregion
+
+    #region 运行时数据
+
+    // 内容场景状态
     private AsyncOperationHandle<SceneInstance> _contentHandle;
     private Scene _contentScene;
     private bool _hasContentScene;
 
-    private const float UnloadProgressEnd = 0.3f;
+    #endregion
 
+    #region 对外接口
+
+    // 加载状态
     public bool IsLoading { get; private set; }
+
+    #endregion
+
+    #region 加载接口
 
     /// <summary>
     /// 供 GameStartup 等待首次菜单加载；失败时保留启动遮罩。
@@ -57,6 +80,10 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
     {
         await LoadContent(BattlePrepareAddress, BF_GameMode.Menu);
     }
+
+    #endregion
+
+    #region 执行链
 
     private async Awaitable<bool> LoadContent(
         string address, BF_GameMode targetMode, bool isStartup = false)
@@ -167,6 +194,10 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
         }
     }
 
+    #endregion
+
+    #region 进度等待
+
     private async Task WaitForUnload(AsyncOperationHandle handle, float start, float end)
     {
         while (!handle.IsDone)
@@ -212,4 +243,6 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
             _fadeController.SetProgress(end);
         }
     }
+
+    #endregion
 }

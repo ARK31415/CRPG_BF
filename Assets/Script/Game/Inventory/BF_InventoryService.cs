@@ -8,13 +8,33 @@ using UnityEngine;
 [DefaultExecutionOrder(-80)]
 public class BF_InventoryService : Singleton<BF_InventoryService>
 {
-    [SerializeField] private BF_InventoryConfigSO _config;
+    #region 序列化配置与引用
 
+    [Header("库存配置")]
+    [SerializeField]
+    private BF_InventoryConfigSO _config;
+
+    #endregion
+
+    #region 运行时数据
+
+    // 库存条目
     private readonly List<BF_InventoryEntry> _items = new();
 
+    #endregion
+
+    #region 对外接口
+
+    // 金币与容量
     public int Gold { get; private set; }
     public int Capacity => _config != null ? _config.Capacity : 0;
+
+    // 库存列表
     public IReadOnlyList<BF_InventoryEntry> Items => _items;
+
+    #endregion
+
+    #region 生命周期
 
     protected override void Awake()
     {
@@ -27,6 +47,10 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
 
         ResetToDefaults(false);
     }
+
+    #endregion
+
+    #region 查询
 
     public BF_ItemConfigSO GetItem(string itemId)
     {
@@ -59,6 +83,10 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
 
         return count;
     }
+
+    #endregion
+
+    #region 容量与堆叠判定
 
     /// <summary>
     /// 库存添加判定的唯一入口；容量与 MaxStack 数学只存在这一份。
@@ -104,6 +132,10 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
     {
         return GetAddResult(item, quantity) == BF_InventoryAddResult.Success;
     }
+
+    #endregion
+
+    #region 库存增减
 
     public bool TryAdd(BF_ItemConfigSO item, int quantity, bool publish = true)
     {
@@ -155,32 +187,6 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
         return true;
     }
 
-    /// <summary>
-    /// 最小原子购买入口：金币、容量与堆叠校验通过后，在同一同步段内完成扣金币与加库存，
-    /// 最后只广播一次库存变化。失败时不修改金币、不修改库存。
-    /// </summary>
-    public bool TryPurchase(BF_ItemConfigSO item, int price)
-    {
-        if (item == null || price < 0 || Gold < price || GetAddResult(item, 1) != BF_InventoryAddResult.Success)
-        {
-            return false;
-        }
-
-        Gold -= price;
-        AddEntries(item, 1);
-        PublishChanged();
-        return true;
-    }
-
-    /// <summary>
-    /// 显式通知库存变化。供跨系统同步提交在全部业务修改完成后统一广播使用，
-    /// 保持库存事件的唯一发布入口在库存层。
-    /// </summary>
-    public void NotifyChanged()
-    {
-        PublishChanged();
-    }
-
     private void AddEntries(BF_ItemConfigSO item, int quantity)
     {
         if (item.ItemType == BF_ItemType.Equipment)
@@ -204,6 +210,32 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
         }
     }
 
+    private BF_InventoryEntry FindEntry(string itemId)
+    {
+        return _items.Find(entry => entry.Item != null && entry.Item.Id == itemId);
+    }
+
+    #endregion
+
+    #region 购买与金币
+
+    /// <summary>
+    /// 最小原子购买入口：金币、容量与堆叠校验通过后，在同一同步段内完成扣金币与加库存，
+    /// 最后只广播一次库存变化。失败时不修改金币、不修改库存。
+    /// </summary>
+    public bool TryPurchase(BF_ItemConfigSO item, int price)
+    {
+        if (item == null || price < 0 || Gold < price || GetAddResult(item, 1) != BF_InventoryAddResult.Success)
+        {
+            return false;
+        }
+
+        Gold -= price;
+        AddEntries(item, 1);
+        PublishChanged();
+        return true;
+    }
+
     public bool TrySpendGold(int amount)
     {
         if (amount < 0 || Gold < amount)
@@ -222,10 +254,37 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
         PublishChanged();
     }
 
+    #endregion
+
+    #region 默认初始化
+
     public void ResetToDefaults()
     {
         ResetToDefaults(true);
     }
+
+    private void ResetToDefaults(bool publish)
+    {
+        Gold = _config != null ? _config.StartingGold : 0;
+        _items.Clear();
+
+        if (_config != null)
+        {
+            foreach (BF_StartingItem entry in _config.StartingItems)
+            {
+                TryAdd(entry.Item, entry.Quantity, false);
+            }
+        }
+
+        if (publish)
+        {
+            PublishChanged();
+        }
+    }
+
+    #endregion
+
+    #region 存档恢复
 
     public bool CanLoadData(int gold, IReadOnlyList<BF_InventorySaveEntry> items)
     {
@@ -275,32 +334,23 @@ public class BF_InventoryService : Singleton<BF_InventoryService>
         return true;
     }
 
-    private void ResetToDefaults(bool publish)
+    #endregion
+
+    #region 通知
+
+    /// <summary>
+    /// 显式通知库存变化。供跨系统同步提交在全部业务修改完成后统一广播使用，
+    /// 保持库存事件的唯一发布入口在库存层。
+    /// </summary>
+    public void NotifyChanged()
     {
-        Gold = _config != null ? _config.StartingGold : 0;
-        _items.Clear();
-
-        if (_config != null)
-        {
-            foreach (BF_StartingItem entry in _config.StartingItems)
-            {
-                TryAdd(entry.Item, entry.Quantity, false);
-            }
-        }
-
-        if (publish)
-        {
-            PublishChanged();
-        }
-    }
-
-    private BF_InventoryEntry FindEntry(string itemId)
-    {
-        return _items.Find(entry => entry.Item != null && entry.Item.Id == itemId);
+        PublishChanged();
     }
 
     private void PublishChanged()
     {
         GameEventBus.Instance.Publish(new BF_InventoryChangedEvent());
     }
+
+    #endregion
 }

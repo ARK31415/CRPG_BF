@@ -5,28 +5,67 @@ using UnityEngine.UI;
 
 public class BF_MenuController : MonoBehaviour
 {
-    [Header("Main")]
-    [SerializeField] private Button _newGameButton;
-    [SerializeField] private Button _continueButton;
-    [SerializeField] private Button _exitButton;
-    [SerializeField] private Button _settingsButton;
+    #region 序列化配置与引用
 
-    [Header("Save Slots")]
-    [SerializeField] private GameObject _slotPanel;
-    [SerializeField] private BF_SaveSlotView[] _slotViews;
-    [SerializeField] private Button _backButton;
+    [Header("主入口")]
+    [SerializeField]
+    private Button _newGameButton;
 
-    [Header("Confirm")]
-    [SerializeField] private GameObject _confirmPanel;
-    [SerializeField] private TMP_Text _confirmText;
-    [SerializeField] private Button _confirmButton;
-    [SerializeField] private Button _cancelButton;
+    [SerializeField]
+    private Button _continueButton;
 
+    [SerializeField]
+    private Button _exitButton;
+
+    [SerializeField]
+    private Button _settingsButton;
+
+    [Header("存档槽位")]
+    [SerializeField]
+    private GameObject _slotPanel;
+
+    [SerializeField]
+    private BF_SaveSlotView[] _slotViews;
+
+    [SerializeField]
+    private Button _backButton;
+
+    [Header("确认弹窗")]
+    [SerializeField]
+    private GameObject _confirmPanel;
+
+    [SerializeField]
+    private TMP_Text _confirmText;
+
+    [SerializeField]
+    private Button _confirmButton;
+
+    [SerializeField]
+    private Button _cancelButton;
+
+    #endregion
+
+    #region 运行时数据
+
+    // 槽位页模式：本次进入槽位列表的目的（新游戏或继续）。
     private SlotAction _slotAction;
+
+    // 确认弹窗待执行动作：覆盖或删除，与槽位页模式是两个独立控制维度。
     private ConfirmAction _confirmAction;
+
+    // 确认弹窗针对的存档槽
     private int _selectedSlot;
 
+    #endregion
+
+    #region 对外接口
+
+    // 确认弹窗状态
     public bool IsConfirmOpen => _confirmPanel != null && _confirmPanel.activeSelf;
+
+    #endregion
+
+    #region 生命周期
 
     private void OnEnable()
     {
@@ -50,6 +89,10 @@ public class BF_MenuController : MonoBehaviour
         _confirmButton.onClick.RemoveListener(Confirm);
         _cancelButton.onClick.RemoveListener(CancelConfirm);
     }
+
+    #endregion
+
+    #region 主入口
 
     private void ShowMain()
     {
@@ -82,6 +125,32 @@ public class BF_MenuController : MonoBehaviour
     {
         ShowSlots(SlotAction.Continue);
     }
+
+    private void SetMainVisible(bool visible)
+    {
+        _newGameButton.gameObject.SetActive(visible);
+        _continueButton.gameObject.SetActive(visible);
+        _exitButton.gameObject.SetActive(visible);
+        _settingsButton?.gameObject.SetActive(visible);
+    }
+
+    private void OnExitClicked()
+    {
+#if UNITY_EDITOR
+        Debug.Log("[BF] Exit requested. Application.Quit runs in Player build.");
+#else
+        Application.Quit();
+#endif
+    }
+
+    private void OpenSettings()
+    {
+        BF_UIManager.Instance?.OpenSettingsPanel();
+    }
+
+    #endregion
+
+    #region 槽位选择
 
     private void ShowSlots(SlotAction action)
     {
@@ -139,6 +208,29 @@ public class BF_MenuController : MonoBehaviour
         ShowConfirm(slot, ConfirmAction.Delete, $"删除存档 {slot}？\n此操作无法撤销。");
     }
 
+    private void StartNewGame(int slot)
+    {
+        BF_SaveService saveService = BF_SaveService.Instance;
+        BF_BattleService battleService = BF_BattleService.Instance;
+        if (saveService != null
+            && battleService != null
+            && saveService.StartNewGame(slot, battleService.CreateInitialUnits))
+        {
+            EnterLevelSelect();
+        }
+    }
+
+    private void EnterLevelSelect()
+    {
+        _newGameButton.interactable = false;
+        _continueButton.interactable = false;
+        BF_SceneLoadManager.Instance?.LoadLevelSelect();
+    }
+
+    #endregion
+
+    #region 确认动作
+
     private void ShowConfirm(int slot, ConfirmAction action, string message)
     {
         _selectedSlot = slot;
@@ -178,32 +270,9 @@ public class BF_MenuController : MonoBehaviour
         CancelConfirm();
     }
 
-    private void StartNewGame(int slot)
-    {
-        BF_SaveService saveService = BF_SaveService.Instance;
-        BF_BattleService battleService = BF_BattleService.Instance;
-        if (saveService != null
-            && battleService != null
-            && saveService.StartNewGame(slot, battleService.CreateInitialUnits))
-        {
-            EnterLevelSelect();
-        }
-    }
+    #endregion
 
-    private void EnterLevelSelect()
-    {
-        _newGameButton.interactable = false;
-        _continueButton.interactable = false;
-        BF_SceneLoadManager.Instance?.LoadLevelSelect();
-    }
-
-    private void SetMainVisible(bool visible)
-    {
-        _newGameButton.gameObject.SetActive(visible);
-        _continueButton.gameObject.SetActive(visible);
-        _exitButton.gameObject.SetActive(visible);
-        _settingsButton?.gameObject.SetActive(visible);
-    }
+    #region 输入焦点
 
     private void SelectButton(Button button)
     {
@@ -213,19 +282,9 @@ public class BF_MenuController : MonoBehaviour
         }
     }
 
-    private void OnExitClicked()
-    {
-#if UNITY_EDITOR
-        Debug.Log("[BF] Exit requested. Application.Quit runs in Player build.");
-#else
-        Application.Quit();
-#endif
-    }
+    #endregion
 
-    private void OpenSettings()
-    {
-        BF_UIManager.Instance?.OpenSettingsPanel();
-    }
+    #region 私有类型
 
     private enum SlotAction
     {
@@ -240,4 +299,6 @@ public class BF_MenuController : MonoBehaviour
         Overwrite,
         Delete
     }
+
+    #endregion
 }

@@ -4,6 +4,9 @@ using UnityEngine.UI;
 
 public class BF_ActionPanel : MonoBehaviour
 {
+    #region 序列化配置与引用
+
+    [Header("普通攻击")]
     [SerializeField]
     private Button _attackButton;
 
@@ -13,6 +16,7 @@ public class BF_ActionPanel : MonoBehaviour
     [SerializeField]
     private TMP_Text _attackCostText;
 
+    [Header("技能槽一")]
     [SerializeField]
     private Button _skillSlot01Button;
 
@@ -25,6 +29,7 @@ public class BF_ActionPanel : MonoBehaviour
     [SerializeField]
     private TMP_Text _skillSlot01CostText;
 
+    [Header("技能槽二")]
     [SerializeField]
     private Button _skillSlot02Button;
 
@@ -37,17 +42,34 @@ public class BF_ActionPanel : MonoBehaviour
     [SerializeField]
     private TMP_Text _skillSlot02CostText;
 
+    [Header("物品快捷栏")]
+    [SerializeField]
+    private Button[] _itemButtons = new Button[BF_GameConstants.BattleItemSlotCount];
+
+    [SerializeField]
+    private Image[] _itemIcons = new Image[BF_GameConstants.BattleItemSlotCount];
+
+    [SerializeField]
+    private TMP_Text[] _itemCountTexts = new TMP_Text[BF_GameConstants.BattleItemSlotCount];
+
+    [Header("结束行动")]
     [SerializeField]
     private Button _endUnitButton;
 
-    [Header("Items")]
-    [SerializeField] private Button[] _itemButtons = new Button[BF_GameConstants.BattleItemSlotCount];
-    [SerializeField] private Image[] _itemIcons = new Image[BF_GameConstants.BattleItemSlotCount];
-    [SerializeField] private TMP_Text[] _itemCountTexts = new TMP_Text[BF_GameConstants.BattleItemSlotCount];
+    #endregion
 
+    #region 运行时数据
+
+    // 绑定单位
     private BF_BattleUnit _unit;
+
+    // 流程状态
     private bool _isPlayerPhase;
     private bool _isBattleActive = true;
+
+    #endregion
+
+    #region 生命周期
 
     private void OnEnable()
     {
@@ -83,6 +105,10 @@ public class BF_ActionPanel : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region 显示与流程状态
+
     public void Show(BF_BattleUnit unit)
     {
         _unit = unit;
@@ -106,6 +132,10 @@ public class BF_ActionPanel : MonoBehaviour
         _isBattleActive = isActive;
         Refresh();
     }
+
+    #endregion
+
+    #region 刷新
 
     public void Refresh()
     {
@@ -136,26 +166,6 @@ public class BF_ActionPanel : MonoBehaviour
         RefreshItems(canAct);
     }
 
-    private void OnAttackClicked()
-    {
-        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Config.BasicAttack));
-    }
-
-    private void OnSkill01Clicked()
-    {
-        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Skill01));
-    }
-
-    private void OnSkill02Clicked()
-    {
-        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Skill02));
-    }
-
-    private void OnItemClicked(int slot)
-    {
-        GameEventBus.Instance.Publish(new BF_ItemRequestEvent(slot));
-    }
-
     private void RefreshItems(bool canAct)
     {
         BF_InventoryService inventory = BF_InventoryService.Instance;
@@ -178,11 +188,6 @@ public class BF_ActionPanel : MonoBehaviour
         }
     }
 
-    private void OnEndUnitClicked()
-    {
-        GameEventBus.Instance.Publish(new BF_EndUnitRequestEvent());
-    }
-
     private void RefreshSkill(
         Image icon,
         TMP_Text nameText,
@@ -194,4 +199,35 @@ public class BF_ActionPanel : MonoBehaviour
         nameText.text = skill != null ? skill.DisplayName : string.Empty;
         costText.text = skill != null ? $"{skill.APCost} AP" : string.Empty;
     }
+
+    #endregion
+
+    #region 点击请求
+
+    private void OnAttackClicked()
+    {
+        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Config.BasicAttack));
+    }
+
+    private void OnSkill01Clicked()
+    {
+        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Skill01));
+    }
+
+    private void OnSkill02Clicked()
+    {
+        GameEventBus.Instance.Publish(new BF_SkillRequestEvent(_unit.Skill02));
+    }
+
+    private void OnItemClicked(int slot)
+    {
+        GameEventBus.Instance.Publish(new BF_ItemRequestEvent(slot));
+    }
+
+    private void OnEndUnitClicked()
+    {
+        GameEventBus.Instance.Publish(new BF_EndUnitRequestEvent());
+    }
+
+    #endregion
 }

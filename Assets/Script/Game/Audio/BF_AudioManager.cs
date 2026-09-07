@@ -2,23 +2,39 @@ using System;
 using UnityEngine;
 using UnityEngine.Audio;
 
+/// <summary>
+/// Persistent 场景的音频播放入口：按配置播放 BGM/Stinger/SFX，应用混音器或音源音量，并按 GameMode 切换 BGM。
+/// </summary>
 [DefaultExecutionOrder(-90)]
 public class BF_AudioManager : Singleton<BF_AudioManager>
 {
+    #region 序列化配置与引用
+
+    [Header("音频配置")]
     [SerializeField]
     private BF_AudioConfigSO _config;
 
+    [Header("音源")]
     [SerializeField]
     private AudioSource _bgmSource;
 
     [SerializeField]
     private AudioSource _sfxSource;
 
+    #endregion
+
+    #region 运行时数据
+
+    // 订阅句柄
     private IDisposable _bgmSubscription;
     private IDisposable _stingerSubscription;
     private IDisposable _sfxSubscription;
     private IDisposable _settingsSubscription;
     private IDisposable _gameModeSubscription;
+
+    #endregion
+
+    #region 生命周期
 
     protected override void Awake()
     {
@@ -70,6 +86,36 @@ public class BF_AudioManager : Singleton<BF_AudioManager>
         _gameModeSubscription = null;
     }
 
+    #endregion
+
+    #region 音源初始化
+
+    private void SetupSources()
+    {
+        if (_bgmSource != null)
+        {
+            _bgmSource.playOnAwake = false;
+            _bgmSource.loop = true;
+            if (_config != null && _config.BGMGroup != null)
+            {
+                _bgmSource.outputAudioMixerGroup = _config.BGMGroup;
+            }
+        }
+
+        if (_sfxSource != null)
+        {
+            _sfxSource.playOnAwake = false;
+            if (_config != null && _config.SFXGroup != null)
+            {
+                _sfxSource.outputAudioMixerGroup = _config.SFXGroup;
+            }
+        }
+    }
+
+    #endregion
+
+    #region 播放
+
     public void PlayBGM(BF_BGM track)
     {
         AudioClip clip = _config != null ? _config.GetBGM(track) : null;
@@ -110,27 +156,25 @@ public class BF_AudioManager : Singleton<BF_AudioManager>
         _sfxSource.PlayOneShot(clip);
     }
 
-    private void SetupSources()
+    // 事件回调
+    private void OnPlayBGM(BF_PlayBGMEvent gameEvent)
     {
-        if (_bgmSource != null)
-        {
-            _bgmSource.playOnAwake = false;
-            _bgmSource.loop = true;
-            if (_config != null && _config.BGMGroup != null)
-            {
-                _bgmSource.outputAudioMixerGroup = _config.BGMGroup;
-            }
-        }
-
-        if (_sfxSource != null)
-        {
-            _sfxSource.playOnAwake = false;
-            if (_config != null && _config.SFXGroup != null)
-            {
-                _sfxSource.outputAudioMixerGroup = _config.SFXGroup;
-            }
-        }
+        PlayBGM(gameEvent.Track);
     }
+
+    private void OnPlayStinger(BF_PlayStingerEvent gameEvent)
+    {
+        PlayStinger(gameEvent.Stinger);
+    }
+
+    private void OnPlaySFX(BF_PlaySFXEvent gameEvent)
+    {
+        PlaySFX(gameEvent.SFX);
+    }
+
+    #endregion
+
+    #region 设置应用
 
     private void ApplySettings()
     {
@@ -190,20 +234,9 @@ public class BF_AudioManager : Singleton<BF_AudioManager>
         return _config.Mixer.SetFloat(parameter, decibels);
     }
 
-    private void OnPlayBGM(BF_PlayBGMEvent gameEvent)
-    {
-        PlayBGM(gameEvent.Track);
-    }
+    #endregion
 
-    private void OnPlayStinger(BF_PlayStingerEvent gameEvent)
-    {
-        PlayStinger(gameEvent.Stinger);
-    }
-
-    private void OnPlaySFX(BF_PlaySFXEvent gameEvent)
-    {
-        PlaySFX(gameEvent.SFX);
-    }
+    #region 模式音乐
 
     private void OnGameModeChanged(BF_GameModeChangedEvent gameEvent)
     {
@@ -221,4 +254,6 @@ public class BF_AudioManager : Singleton<BF_AudioManager>
             PlayBGM(BF_BGM.Menu);
         }
     }
+
+    #endregion
 }

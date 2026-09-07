@@ -10,9 +10,38 @@ using UnityEngine;
 [DefaultExecutionOrder(-70)]
 public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
 {
+    #region 运行时数据
+
+    // 角色集合
     private readonly List<BF_UnitRuntimeData> _units = new();
 
+    #endregion
+
+    #region 对外接口
+
+    // 角色集合与状态
     public IReadOnlyList<BF_UnitRuntimeData> Units => _units;
+
+    public int DeployedCount
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < _units.Count; i++)
+            {
+                if (_units[i].IsDeployed)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    #endregion
+
+    #region 角色查询与创建
 
     public BF_UnitRuntimeData AddUnit(
         string configId,
@@ -50,23 +79,6 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
         return _units.Find(unit => unit.UnitId == unitId);
     }
 
-    public int DeployedCount
-    {
-        get
-        {
-            int count = 0;
-            for (int i = 0; i < _units.Count; i++)
-            {
-                if (_units[i].IsDeployed)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-    }
-
     public List<BF_UnitRuntimeData> GetDeployedUnits()
     {
         List<BF_UnitRuntimeData> deployed = new();
@@ -81,6 +93,10 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
         return deployed;
     }
 
+    #endregion
+
+    #region 出战
+
     public bool SetDeployed(string unitId, bool isDeployed)
     {
         BF_UnitRuntimeData data = Get(unitId);
@@ -93,6 +109,10 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
         PublishChanged(unitId);
         return true;
     }
+
+    #endregion
+
+    #region 装备
 
     public string GetEquipment(string unitId, BF_EquipmentSlot slot)
     {
@@ -171,6 +191,10 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
         return true;
     }
 
+    #endregion
+
+    #region 技能
+
     public void SetSkill(string unitId, int slot, string skillId)
     {
         BF_UnitRuntimeData data = Get(unitId);
@@ -190,6 +214,10 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
 
         PublishChanged(unitId);
     }
+
+    #endregion
+
+    #region 物品快捷栏
 
     /// <summary>
     /// 配置战斗物品快捷栏。空 itemId 表示清空槽位，直接成功；
@@ -251,6 +279,10 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
             : BF_BattleItemAssignResult.ItemUnavailable;
     }
 
+    #endregion
+
+    #region 成长
+
     /// <summary>
     /// 为角色增加经验并处理升级循环，返回实际生效的经验值。
     /// expRequired 由调用方传入角色的升级经验曲线（满级返回 0）；
@@ -296,6 +328,10 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
         PublishChanged(unitId);
         return applied;
     }
+
+    #endregion
+
+    #region 存档恢复
 
     public bool CanLoadUnits(IReadOnlyList<BF_UnitRuntimeData> units)
     {
@@ -350,8 +386,14 @@ public class BF_UnitRuntimeService : Singleton<BF_UnitRuntimeService>
         }
     }
 
+    #endregion
+
+    #region 状态通知
+
     private void PublishChanged(string unitId)
     {
         GameEventBus.Instance.Publish(new BF_UnitRuntimeChangedEvent(unitId));
     }
+
+    #endregion
 }

@@ -5,6 +5,9 @@ using UnityEngine.SceneManagement;
 [DefaultExecutionOrder(10)]
 public class BF_UIManager : Singleton<BF_UIManager>
 {
+    #region 序列化配置与引用
+
+    [Header("全局界面节点")]
     [SerializeField]
     private GameObject _battleUI;
 
@@ -14,6 +17,7 @@ public class BF_UIManager : Singleton<BF_UIManager>
     [SerializeField]
     private GameObject _pauseUI;
 
+    [Header("全局面板引用")]
     [SerializeField]
     private BF_SettingsPanel _settingsPanel;
 
@@ -23,7 +27,16 @@ public class BF_UIManager : Singleton<BF_UIManager>
     [SerializeField]
     private BF_TutorialPanel _tutorialPanel;
 
+    #endregion
+
+    #region 运行时数据
+
+    // 订阅句柄
     private IDisposable _gameModeSubscription;
+
+    #endregion
+
+    #region 生命周期
 
     private void OnEnable()
     {
@@ -47,10 +60,9 @@ public class BF_UIManager : Singleton<BF_UIManager>
         _gameModeSubscription = null;
     }
 
-    private void OnGameModeChanged(BF_GameModeChangedEvent gameEvent)
-    {
-        Refresh(gameEvent.CurrentMode, gameEvent.PreviousMode);
-    }
+    #endregion
+
+    #region Esc 路由
 
     private void Update()
     {
@@ -127,6 +139,19 @@ public class BF_UIManager : Singleton<BF_UIManager>
         }
     }
 
+    #endregion
+
+    #region 事件处理
+
+    private void OnGameModeChanged(BF_GameModeChangedEvent gameEvent)
+    {
+        Refresh(gameEvent.CurrentMode, gameEvent.PreviousMode);
+    }
+
+    #endregion
+
+    #region 设置面板开关
+
     public void OpenSettingsPanel()
     {
         _settingsPanel?.Open();
@@ -136,6 +161,10 @@ public class BF_UIManager : Singleton<BF_UIManager>
     {
         _settingsPanel?.Close();
     }
+
+    #endregion
+
+    #region GameMode 刷新
 
     private void Refresh(BF_GameMode gameMode, BF_GameMode previousMode)
     {
@@ -154,4 +183,6 @@ public class BF_UIManager : Singleton<BF_UIManager>
             _settingsPanel?.Close();
         }
     }
+
+    #endregion
 }

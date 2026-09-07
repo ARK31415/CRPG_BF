@@ -6,20 +6,55 @@ using UnityEngine.UI;
 
 public class BF_SkillLoadoutPanel : MonoBehaviour
 {
-    [SerializeField] private BF_SkillSlot _basicAttackSlot;
-    [SerializeField] private BF_SkillSlot[] _skillSlots = new BF_SkillSlot[2];
-    [SerializeField] private BF_SkillSlot _availableSlotPrefab;
-    [SerializeField] private Transform _availableContent;
-    [SerializeField] private Image _detailIcon;
-    [SerializeField] private TMP_Text _detailNameText;
-    [SerializeField] private TMP_Text _detailInfoText;
-    [SerializeField] private TMP_Text _detailDescriptionText;
+    #region 序列化配置与引用
 
+    [Header("已装备技能")]
+    [SerializeField]
+    private BF_SkillSlot _basicAttackSlot;
+
+    [SerializeField]
+    private BF_SkillSlot[] _skillSlots = new BF_SkillSlot[2];
+
+    [Header("候选技能")]
+    [SerializeField]
+    private BF_SkillSlot _availableSlotPrefab;
+
+    [SerializeField]
+    private Transform _availableContent;
+
+    [Header("技能详情")]
+    [SerializeField]
+    private Image _detailIcon;
+
+    [SerializeField]
+    private TMP_Text _detailNameText;
+
+    [SerializeField]
+    private TMP_Text _detailInfoText;
+
+    [SerializeField]
+    private TMP_Text _detailDescriptionText;
+
+    #endregion
+
+    #region 运行时数据
+
+    // 生成格缓存
     private readonly List<BF_SkillSlot> _availableSlots = new();
+
+    // 绑定数据
     private BF_UnitRuntimeData _data;
     private BF_UnitConfigSO _config;
+
+    // 选择状态：-2 表示当前查看普通攻击（不可替换），0/1 为技能槽索引。
     private int _selectedSlot = -2;
+
+    // 订阅句柄
     private IDisposable _subscription;
+
+    #endregion
+
+    #region 生命周期
 
     private void OnEnable()
     {
@@ -36,6 +71,10 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
         _subscription?.Dispose();
         _subscription = null;
     }
+
+    #endregion
+
+    #region 绑定与刷新
 
     public void ShowUnit(BF_UnitRuntimeData data, BF_UnitConfigSO config)
     {
@@ -68,6 +107,10 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
         RefreshAvailable();
     }
 
+    #endregion
+
+    #region 槽位选择
+
     private void SelectBasicAttack()
     {
         _selectedSlot = -2;
@@ -95,6 +138,10 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
         BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
         runtime?.SetSkill(_data.UnitId, _selectedSlot, current == skill.Id ? string.Empty : skill.Id);
     }
+
+    #endregion
+
+    #region 候选技能刷新
 
     private void RefreshAvailable()
     {
@@ -155,6 +202,10 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region 技能详情
+
     private void ShowDetail(BF_SkillConfigSO skill)
     {
         _detailIcon.sprite = skill != null ? skill.Icon : null;
@@ -166,6 +217,10 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
         _detailDescriptionText.text = skill != null ? skill.Description : string.Empty;
     }
 
+    #endregion
+
+    #region 事件处理
+
     private void OnUnitChanged(BF_UnitRuntimeChangedEvent evt)
     {
         if (_data != null && evt.UnitId == _data.UnitId)
@@ -173,4 +228,6 @@ public class BF_SkillLoadoutPanel : MonoBehaviour
             Refresh();
         }
     }
+
+    #endregion
 }

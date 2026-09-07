@@ -5,31 +5,57 @@ using UnityEngine;
 [DefaultExecutionOrder(-60)]
 public class BF_BattleService : Singleton<BF_BattleService>
 {
+    #region 序列化配置与引用
+
+    [Header("关卡配置")]
     [SerializeField]
     private BF_LevelProgress _levelProgress;
 
     [SerializeField]
     private BF_LevelConfigSO[] _levels;
 
-    [Header("Unit Config")]
+    [Header("角色目录")]
     [SerializeField]
     private BF_UnitConfigSO[] _unitCatalog;
 
+    [Header("初始阵容")]
     [SerializeField]
     private BF_UnitConfigSO[] _initialUnits;
 
+    #endregion
+
+    #region 运行时数据
+
+    // 订阅句柄
     private IDisposable _resultSubscription;
     private IDisposable _confirmSubscription;
     private IDisposable _abandonSubscription;
+
+    // 出战阵容快照
     private readonly List<string> _battlePartyUnitIds = new();
+
+    // 结算状态
     private bool _isResultActive;
 
+    #endregion
+
+    #region 对外接口
+
+    // 关卡与进度
     public int CurrentLevel { get; private set; } = 1;
-    public BF_BattleResult LastResult { get; private set; }
-    public BF_LevelProgress LevelProgress => _levelProgress;
-    public BF_BattleReward LastReward { get; } = new();
     public BF_LevelConfigSO CurrentLevelConfig => GetLevelConfig(CurrentLevel);
+    public BF_LevelProgress LevelProgress => _levelProgress;
+
+    // 战斗结果与奖励
+    public BF_BattleResult LastResult { get; private set; }
+    public BF_BattleReward LastReward { get; } = new();
+
+    // 出战阵容快照
     public IReadOnlyList<string> BattlePartyUnitIds => _battlePartyUnitIds;
+
+    #endregion
+
+    #region 生命周期
 
     protected override void Awake()
     {
@@ -41,28 +67,6 @@ public class BF_BattleService : Singleton<BF_BattleService>
         }
 
         CreateInitialUnits();
-    }
-
-    public void CreateInitialUnits()
-    {
-        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
-        if (unitRuntime == null || unitRuntime.Units.Count > 0 || _initialUnits == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < _initialUnits.Length; i++)
-        {
-            BF_UnitConfigSO config = _initialUnits[i];
-            if (config == null)
-            {
-                continue;
-            }
-
-            string skill01 = config.Skill01 != null ? config.Skill01.Id : string.Empty;
-            string skill02 = config.Skill02 != null ? config.Skill02.Id : string.Empty;
-            unitRuntime.AddUnit(config.Id, skill01, skill02, true);
-        }
     }
 
     private void OnEnable()
@@ -86,6 +90,36 @@ public class BF_BattleService : Singleton<BF_BattleService>
         _confirmSubscription = null;
         _abandonSubscription = null;
     }
+
+    #endregion
+
+    #region 角色初始化
+
+    public void CreateInitialUnits()
+    {
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
+        if (unitRuntime == null || unitRuntime.Units.Count > 0 || _initialUnits == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _initialUnits.Length; i++)
+        {
+            BF_UnitConfigSO config = _initialUnits[i];
+            if (config == null)
+            {
+                continue;
+            }
+
+            string skill01 = config.Skill01 != null ? config.Skill01.Id : string.Empty;
+            string skill02 = config.Skill02 != null ? config.Skill02.Id : string.Empty;
+            unitRuntime.AddUnit(config.Id, skill01, skill02, true);
+        }
+    }
+
+    #endregion
+
+    #region 准备与进入
 
     public void PrepareLevel(int level)
     {
@@ -127,6 +161,48 @@ public class BF_BattleService : Singleton<BF_BattleService>
         _isResultActive = false;
         sceneLoad.LoadBattle(battleAddress);
     }
+
+    private bool TryBuildBattleParty(BF_LevelConfigSO level)
+    {
+        _battlePartyUnitIds.Clear();
+        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
+        if (level == null || unitRuntime == null)
+        {
+            return false;
+        }
+
+        List<BF_UnitRuntimeData> deployed = unitRuntime.GetDeployedUnits();
+        for (int i = 0; i < deployed.Count; i++)
+        {
+            _battlePartyUnitIds.Add(deployed[i].UnitId);
+        }
+
+        return _battlePartyUnitIds.Count > 0
+            && _battlePartyUnitIds.Count <= level.PlayerSpawns.Count;
+    }
+
+    private bool TryGetBattleAddress(int level, out string address)
+    {
+        switch (level)
+        {
+            case 1:
+                address = "Battle_Level_01";
+                return true;
+            case 2:
+                address = "Battle_Level_02";
+                return true;
+            case 3:
+                address = "Battle_Level_03";
+                return true;
+            default:
+                address = string.Empty;
+                return false;
+        }
+    }
+
+    #endregion
+
+    #region 配置查询
 
     public BF_UnitConfigSO GetUnitConfig(string configId)
     {
@@ -178,39 +254,33 @@ public class BF_BattleService : Singleton<BF_BattleService>
         return null;
     }
 
-    private void OnBattleResult(BF_BattleResultEvent gameEvent)
+    private BF_LevelConfigSO GetLevelConfig(int level)
     {
-        if (_isResultActive || gameEvent.Result == BF_BattleResult.None)
-        {
-            return;
-        }
-
-        LastResult = gameEvent.Result;
-        _isResultActive = true;
-
-        if (LastResult == BF_BattleResult.Victory)
-        {
-            GiveReward();
-            _levelProgress.CompleteLevel(CurrentLevel);
-        }
-
-        BF_Stinger stinger = LastResult == BF_BattleResult.Defeat
-            ? BF_Stinger.Defeat
-            : CurrentLevel == 3 ? BF_Stinger.Complete : BF_Stinger.Victory;
-        GameEventBus.Instance.Publish(new BF_PlayStingerEvent(stinger));
-
-        BF_SaveService saveService = BF_SaveService.Instance;
-        if (saveService != null && saveService.CurrentSlot > 0)
-        {
-            saveService.Save();
-        }
-
-        BF_GameModeManager gameModeManager = BF_GameModeManager.Instance;
-        if (gameModeManager != null)
-        {
-            gameModeManager.SetGameMode(BF_GameMode.Result);
-        }
+        int index = level - 1;
+        return _levels != null && index >= 0 && index < _levels.Length ? _levels[index] : null;
     }
+
+    private BF_UnitConfigSO FindConfig(BF_UnitConfigSO[] configs, string configId)
+    {
+        if (configs == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < configs.Length; i++)
+        {
+            if (configs[i] != null && configs[i].Id == configId)
+            {
+                return configs[i];
+            }
+        }
+
+        return null;
+    }
+
+    #endregion
+
+    #region 奖励结算
 
     private void GiveReward()
     {
@@ -323,47 +393,42 @@ public class BF_BattleService : Singleton<BF_BattleService>
         }
     }
 
-    private bool TryBuildBattleParty(BF_LevelConfigSO level)
+    #endregion
+
+    #region 结果处理与确认
+
+    private void OnBattleResult(BF_BattleResultEvent gameEvent)
     {
-        _battlePartyUnitIds.Clear();
-        BF_UnitRuntimeService unitRuntime = BF_UnitRuntimeService.Instance;
-        if (level == null || unitRuntime == null)
+        if (_isResultActive || gameEvent.Result == BF_BattleResult.None)
         {
-            return false;
+            return;
         }
 
-        List<BF_UnitRuntimeData> deployed = unitRuntime.GetDeployedUnits();
-        for (int i = 0; i < deployed.Count; i++)
+        LastResult = gameEvent.Result;
+        _isResultActive = true;
+
+        if (LastResult == BF_BattleResult.Victory)
         {
-            _battlePartyUnitIds.Add(deployed[i].UnitId);
+            GiveReward();
+            _levelProgress.CompleteLevel(CurrentLevel);
         }
 
-        return _battlePartyUnitIds.Count > 0
-            && _battlePartyUnitIds.Count <= level.PlayerSpawns.Count;
-    }
+        BF_Stinger stinger = LastResult == BF_BattleResult.Defeat
+            ? BF_Stinger.Defeat
+            : CurrentLevel == 3 ? BF_Stinger.Complete : BF_Stinger.Victory;
+        GameEventBus.Instance.Publish(new BF_PlayStingerEvent(stinger));
 
-    private BF_UnitConfigSO FindConfig(BF_UnitConfigSO[] configs, string configId)
-    {
-        if (configs == null)
+        BF_SaveService saveService = BF_SaveService.Instance;
+        if (saveService != null && saveService.CurrentSlot > 0)
         {
-            return null;
+            saveService.Save();
         }
 
-        for (int i = 0; i < configs.Length; i++)
+        BF_GameModeManager gameModeManager = BF_GameModeManager.Instance;
+        if (gameModeManager != null)
         {
-            if (configs[i] != null && configs[i].Id == configId)
-            {
-                return configs[i];
-            }
+            gameModeManager.SetGameMode(BF_GameMode.Result);
         }
-
-        return null;
-    }
-
-    private BF_LevelConfigSO GetLevelConfig(int level)
-    {
-        int index = level - 1;
-        return _levels != null && index >= 0 && index < _levels.Length ? _levels[index] : null;
     }
 
     private void OnConfirmResult(BF_ConfirmBattleResultRequestEvent gameEvent)
@@ -377,6 +442,10 @@ public class BF_BattleService : Singleton<BF_BattleService>
         _isResultActive = false;
         sceneLoad.LoadLevelSelect();
     }
+
+    #endregion
+
+    #region 撤退
 
     public void AbandonBattle()
     {
@@ -412,22 +481,5 @@ public class BF_BattleService : Singleton<BF_BattleService>
         AbandonBattle();
     }
 
-    private bool TryGetBattleAddress(int level, out string address)
-    {
-        switch (level)
-        {
-            case 1:
-                address = "Battle_Level_01";
-                return true;
-            case 2:
-                address = "Battle_Level_02";
-                return true;
-            case 3:
-                address = "Battle_Level_03";
-                return true;
-            default:
-                address = string.Empty;
-                return false;
-        }
-    }
+    #endregion
 }

@@ -7,6 +7,9 @@ using UnityEngine;
 /// </summary>
 public class BF_BattleController : MonoBehaviour
 {
+    #region 序列化配置与引用
+
+    [Header("战斗组件引用")]
     [SerializeField]
     private BF_UnitMoveController _moveController;
 
@@ -16,21 +19,47 @@ public class BF_BattleController : MonoBehaviour
     [SerializeField]
     private BF_EnemyController _enemyController;
 
+    #endregion
+
+    #region 运行时数据
+
+    // 战斗单位集合
     private readonly List<BF_BattleUnit> _units = new();
+
+    // 状态机执行：状态、主循环句柄、循环开关。
     private BF_BattleState _state;
     private Coroutine _battleLoop;
     private bool _running;
+
+    // 玩家阶段控制
     private bool _playerPhaseEnded;
 
-    public IReadOnlyList<BF_BattleUnit> Units => _units;
+    #endregion
+
+    #region 对外接口
+
+    // 场景组件访问
     public BF_UnitMoveController MoveController => _moveController;
     public BF_UnitSpawner UnitSpawner => _unitSpawner;
+
+    // 本控制器创建并持有的命令执行器
     public BF_BattleCommandExecutor CommandExecutor { get; } = new();
+
+    // 单位查询
+    public IReadOnlyList<BF_BattleUnit> Units => _units;
     public BF_BattleUnit CurrentUnit { get; private set; }
-    public BF_BattlePhase CurrentPhase {get; private set; } = BF_BattlePhase.None;
+
+    // 阶段与回合
+    public BF_BattlePhase CurrentPhase { get; private set; } = BF_BattlePhase.None;
     public int Round { get; private set; }
     public bool PlayerPhaseEnded => _playerPhaseEnded;
+
+    // 战斗结果状态
     public bool IsBattleEnded { get; private set; }
+
+    #endregion
+
+    #region 生命周期
 
     private void Awake()
     {
@@ -76,6 +105,21 @@ public class BF_BattleController : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        BF_CameraManager.Instance?.ClearBounds();
+        _running = false;
+
+        if (_battleLoop != null)
+        {
+            StopCoroutine(_battleLoop);
+        }
+    }
+
+    #endregion
+
+    #region 战斗初始化
+
     private IEnumerator StartBattle()
     {
         yield return null;
@@ -85,11 +129,47 @@ public class BF_BattleController : MonoBehaviour
         _battleLoop = StartCoroutine(BattleLoopRoutine());
     }
 
+    public void SetUnits(IReadOnlyList<BF_BattleUnit> units)
+    {
+        _units.Clear();
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            _units.Add(units[i]);
+        }
+    }
+
+    #endregion
+
+    #region 阶段切换
+
+    // 状态机执行
     public void SetState(BF_BattleState nextState)
     {
         _state = nextState;
     }
 
+    private IEnumerator BattleLoopRoutine()
+    {
+        while (_running && _state != null)
+        {
+            BF_BattleState state = _state;
+
+            yield return StartCoroutine(state.Enter());
+            if (state != _state)
+            {
+                yield return StartCoroutine(state.Exit());
+                continue;
+            }
+
+            yield return StartCoroutine(state.Execute());
+            yield return StartCoroutine(state.Exit());
+        }
+
+        _battleLoop = null;
+    }
+
+    // 阶段与回合
     public void SetPhase(BF_BattlePhase phase)
     {
         if (CurrentPhase == phase)
@@ -101,16 +181,6 @@ public class BF_BattleController : MonoBehaviour
         Debug.Log($"[BF] Battle Phase Changed: {CurrentPhase }");
 
         GameEventBus.Instance?.Publish(new BF_BattlePhaseChangeEvent(CurrentPhase, Round));
-    }
-
-    public void SetUnits(IReadOnlyList<BF_BattleUnit> units)
-    {
-        _units.Clear();
-
-        for (int i = 0; i < units.Count; i++)
-        {
-            _units.Add(units[i]);
-        }
     }
 
     public void StartPlayerRound()
@@ -137,6 +207,50 @@ public class BF_BattleController : MonoBehaviour
             }
         }
     }
+
+    public void EndPlayerPhase()
+    {
+        if (_state is not BF_PlayerPhaseState
+            || (CurrentUnit != null && (CurrentUnit.IsMoving || CurrentUnit.IsActing)))
+        {
+            return;
+        }
+
+        ClearCurrentUnit();
+
+        foreach (BF_BattleUnit unit in _units)
+        {
+            if (unit.Team == BF_UnitTeam.Player && unit.IsAlive && !unit.IsTurnEnded)
+            {
+                unit.FinishTurn();
+            }
+        }
+
+        _playerPhaseEnded = true;
+    }
+
+    private void OnEndPlayerPhaseRequested(BF_EndPlayerPhaseRequestEvent requestEvent)
+    {
+        EndPlayerPhase();
+    }
+
+    public IEnumerator RunEnemyPhase()
+    {
+        while (!IsBattleEnded && TryGetNextUnit(BF_UnitTeam.Enemy, out BF_BattleUnit enemy))
+        {
+            yield return _enemyController.RunTurn(
+                enemy,
+                _units,
+                CommandExecutor,
+                CheckBattleResult);
+
+            yield return null;
+        }
+    }
+
+    #endregion
+
+    #region 单位选择
 
     public bool SelectFirstPlayerUnit()
     {
@@ -184,62 +298,6 @@ public class BF_BattleController : MonoBehaviour
         }
     }
 
-    public void FinishUnit(BF_BattleUnit unit)
-    {
-        if (unit == null || unit != CurrentUnit)
-        {
-            return;
-        }
-
-        StartCoroutine(FinishUnitRoutine(unit));
-    }
-
-    public void OnUnitActionFinished(BF_BattleUnit unit)
-    {
-        CheckBattleResult();
-        if (IsBattleEnded || unit == null || unit != CurrentUnit)
-        {
-            return;
-        }
-
-        if (unit.IsTurnEnded || unit.CurrentAP <= 0)
-        {
-            Debug.Log($"[BF] Player Unit AP Empty: {unit.DisplayName}");
-            ClearCurrentUnit();
-            SelectFirstPlayerUnit();
-            return;
-        }
-
-        _moveController.RefreshSelection();
-        GameEventBus.Instance?.Publish(new BF_UnitSelectedEvent(unit));
-    }
-
-    public bool AreAllUnitsDone(BF_UnitTeam team)
-    {
-        return !TryGetNextUnit(team, out _);
-    }
-
-    public void EndPlayerPhase()
-    {
-        if (_state is not BF_PlayerPhaseState
-            || (CurrentUnit != null && (CurrentUnit.IsMoving || CurrentUnit.IsActing)))
-        {
-            return;
-        }
-
-        ClearCurrentUnit();
-
-        foreach (BF_BattleUnit unit in _units)
-        {
-            if (unit.Team == BF_UnitTeam.Player && unit.IsAlive && !unit.IsTurnEnded)
-            {
-                unit.FinishTurn();
-            }
-        }
-
-        _playerPhaseEnded = true;
-    }
-
     public void CancelSelection()
     {
         if (_state is not BF_PlayerPhaseState
@@ -266,6 +324,7 @@ public class BF_BattleController : MonoBehaviour
         GameEventBus.Instance?.Publish(new BF_UnitSelectedEvent(null));
     }
 
+    // 单位查询
     public bool TryGetNextUnit(BF_UnitTeam team, out BF_BattleUnit unit)
     {
         for (int i = 0; i < _units.Count; i++)
@@ -285,19 +344,87 @@ public class BF_BattleController : MonoBehaviour
         return false;
     }
 
-    public IEnumerator RunEnemyPhase()
+    public bool AreAllUnitsDone(BF_UnitTeam team)
     {
-        while (!IsBattleEnded && TryGetNextUnit(BF_UnitTeam.Enemy, out BF_BattleUnit enemy))
-        {
-            yield return _enemyController.RunTurn(
-                enemy,
-                _units,
-                CommandExecutor,
-                CheckBattleResult);
+        return !TryGetNextUnit(team, out _);
+    }
 
-            yield return null;
+    #endregion
+
+    #region 命令请求与执行
+
+    // 技能与物品请求
+    private void OnSkillRequested(BF_SkillRequestEvent requestEvent)
+    {
+        if (!IsBattleEnded && _state is BF_PlayerPhaseState && CurrentUnit != null)
+        {
+            _moveController.EnterSkillMode(requestEvent.Skill);
         }
     }
+
+    private void OnItemRequested(BF_ItemRequestEvent requestEvent)
+    {
+        if (IsBattleEnded || _state is not BF_PlayerPhaseState || CurrentUnit == null)
+        {
+            return;
+        }
+
+        StartCoroutine(UseItemRoutine(CurrentUnit, requestEvent.Slot));
+    }
+
+    private IEnumerator UseItemRoutine(BF_BattleUnit unit, int itemSlot)
+    {
+        yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateItem(unit, itemSlot));
+        OnUnitActionFinished(unit);
+    }
+
+    // 行动结束
+    private void OnEndUnitRequested(BF_EndUnitRequestEvent requestEvent)
+    {
+        FinishUnit(CurrentUnit);
+    }
+
+    public void FinishUnit(BF_BattleUnit unit)
+    {
+        if (unit == null || unit != CurrentUnit)
+        {
+            return;
+        }
+
+        StartCoroutine(FinishUnitRoutine(unit));
+    }
+
+    private IEnumerator FinishUnitRoutine(BF_BattleUnit unit)
+    {
+        yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateEndTurn(unit));
+        Debug.Log($"[BF] Player Unit Ended: {unit.DisplayName}");
+        ClearCurrentUnit();
+        SelectFirstPlayerUnit();
+    }
+
+    public void OnUnitActionFinished(BF_BattleUnit unit)
+    {
+        CheckBattleResult();
+        if (IsBattleEnded || unit == null || unit != CurrentUnit)
+        {
+            return;
+        }
+
+        if (unit.IsTurnEnded || unit.CurrentAP <= 0)
+        {
+            Debug.Log($"[BF] Player Unit AP Empty: {unit.DisplayName}");
+            ClearCurrentUnit();
+            SelectFirstPlayerUnit();
+            return;
+        }
+
+        _moveController.RefreshSelection();
+        GameEventBus.Instance?.Publish(new BF_UnitSelectedEvent(unit));
+    }
+
+    #endregion
+
+    #region 胜负结算
 
     public void CheckBattleResult()
     {
@@ -312,79 +439,6 @@ public class BF_BattleController : MonoBehaviour
         {
             EndBattle(BF_BattleResult.Defeat);
         }
-    }
-
-    private IEnumerator BattleLoopRoutine()
-    {
-        while (_running && _state != null)
-        {
-            BF_BattleState state = _state;
-
-            yield return StartCoroutine(state.Enter());
-            if (state != _state)
-            {
-                yield return StartCoroutine(state.Exit());
-                continue;
-            }
-
-            yield return StartCoroutine(state.Execute());
-            yield return StartCoroutine(state.Exit());
-        }
-
-        _battleLoop = null;
-    }
-
-    private void OnDestroy()
-    {
-        BF_CameraManager.Instance?.ClearBounds();
-        _running = false;
-
-        if (_battleLoop != null)
-        {
-            StopCoroutine(_battleLoop);
-        }
-    }
-
-    private void OnEndPlayerPhaseRequested(BF_EndPlayerPhaseRequestEvent requestEvent)
-    {
-        EndPlayerPhase();
-    }
-
-    private void OnSkillRequested(BF_SkillRequestEvent requestEvent)
-    {
-        if (!IsBattleEnded && _state is BF_PlayerPhaseState && CurrentUnit != null)
-        {
-            _moveController.EnterSkillMode(requestEvent.Skill);
-        }
-    }
-
-    private void OnEndUnitRequested(BF_EndUnitRequestEvent requestEvent)
-    {
-        FinishUnit(CurrentUnit);
-    }
-
-    private void OnItemRequested(BF_ItemRequestEvent requestEvent)
-    {
-        if (IsBattleEnded || _state is not BF_PlayerPhaseState || CurrentUnit == null)
-        {
-            return;
-        }
-
-        StartCoroutine(UseItemRoutine(CurrentUnit, requestEvent.Slot));
-    }
-
-    private IEnumerator FinishUnitRoutine(BF_BattleUnit unit)
-    {
-        yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateEndTurn(unit));
-        Debug.Log($"[BF] Player Unit Ended: {unit.DisplayName}");
-        ClearCurrentUnit();
-        SelectFirstPlayerUnit();
-    }
-
-    private IEnumerator UseItemRoutine(BF_BattleUnit unit, int itemSlot)
-    {
-        yield return CommandExecutor.Execute(BF_BattleCommandRequest.CreateItem(unit, itemSlot));
-        OnUnitActionFinished(unit);
     }
 
     private bool HasLivingUnit(BF_UnitTeam team)
@@ -415,4 +469,6 @@ public class BF_BattleController : MonoBehaviour
         Debug.Log($"[BF] Battle End: {result}");
         _running = false;
     }
+
+    #endregion
 }

@@ -4,31 +4,74 @@ using UnityEngine.UI;
 
 public class BF_BattlePrepareController : MonoBehaviour
 {
-    [Header("Pages")]
-    [SerializeField] private GameObject _warehousePage;
-    [SerializeField] private GameObject _skillPage;
-    [SerializeField] private GameObject _shopPage;
-    [SerializeField] private Button _warehouseButton;
-    [SerializeField] private Button _skillButton;
-    [SerializeField] private Button _shopButton;
+    #region 序列化配置与引用
 
-    [Header("Unit")]
-    [SerializeField] private TMP_Text _unitNameText;
-    [SerializeField] private TMP_Text _rosterCountText;
-    [SerializeField] private TMP_Text _rosterMessageText;
-    [SerializeField] private Button _prevUnitButton;
-    [SerializeField] private Button _nextUnitButton;
-    [SerializeField] private BF_UnitLoadoutPanel _unitLoadoutPanel;
-    [SerializeField] private BF_SkillLoadoutPanel _skillLoadoutPanel;
-    [SerializeField] private BF_WarehousePanel _warehousePanel;
-    [SerializeField] private BF_ItemContextMenu _itemContextMenu;
+    [Header("页面切换")]
+    [SerializeField]
+    private GameObject _warehousePage;
 
-    [Header("Flow")]
-    [SerializeField] private Button _backButton;
-    [SerializeField] private Button _startButton;
+    [SerializeField]
+    private GameObject _skillPage;
 
+    [SerializeField]
+    private GameObject _shopPage;
+
+    [SerializeField]
+    private Button _warehouseButton;
+
+    [SerializeField]
+    private Button _skillButton;
+
+    [SerializeField]
+    private Button _shopButton;
+
+    [Header("人物导航")]
+    [SerializeField]
+    private TMP_Text _unitNameText;
+
+    [SerializeField]
+    private TMP_Text _rosterCountText;
+
+    [SerializeField]
+    private TMP_Text _rosterMessageText;
+
+    [SerializeField]
+    private Button _prevUnitButton;
+
+    [SerializeField]
+    private Button _nextUnitButton;
+
+    [Header("子面板引用")]
+    [SerializeField]
+    private BF_UnitLoadoutPanel _unitLoadoutPanel;
+
+    [SerializeField]
+    private BF_SkillLoadoutPanel _skillLoadoutPanel;
+
+    [SerializeField]
+    private BF_WarehousePanel _warehousePanel;
+
+    [SerializeField]
+    private BF_ItemContextMenu _itemContextMenu;
+
+    [Header("场景流转")]
+    [SerializeField]
+    private Button _backButton;
+
+    [SerializeField]
+    private Button _startButton;
+
+    #endregion
+
+    #region 运行时数据
+
+    // 选中索引与订阅
     private int _unitIndex;
     private System.IDisposable _unitSubscription;
+
+    #endregion
+
+    #region 派生查询
 
     private BF_UnitRuntimeData CurrentData
     {
@@ -46,6 +89,10 @@ public class BF_BattlePrepareController : MonoBehaviour
     private BF_UnitConfigSO CurrentConfig => CurrentData != null && BF_BattleService.Instance != null
         ? BF_BattleService.Instance.GetUnitConfig(CurrentData.ConfigId)
         : null;
+
+    #endregion
+
+    #region 生命周期
 
     private void OnEnable()
     {
@@ -76,6 +123,38 @@ public class BF_BattlePrepareController : MonoBehaviour
         _unitSubscription?.Dispose();
         _unitSubscription = null;
     }
+
+    #endregion
+
+    #region 页面切换
+
+    private void ShowWarehouse()
+    {
+        _warehousePage.SetActive(true);
+        _skillPage.SetActive(false);
+        _shopPage.SetActive(false);
+        _itemContextMenu.Hide();
+    }
+
+    private void ShowSkill()
+    {
+        _warehousePage.SetActive(false);
+        _skillPage.SetActive(true);
+        _shopPage.SetActive(false);
+        _itemContextMenu.Hide();
+    }
+
+    private void ShowShop()
+    {
+        _warehousePage.SetActive(false);
+        _skillPage.SetActive(false);
+        _shopPage.SetActive(true);
+        _itemContextMenu.Hide();
+    }
+
+    #endregion
+
+    #region 人物选择
 
     private void SelectUnit(int index)
     {
@@ -113,85 +192,6 @@ public class BF_BattlePrepareController : MonoBehaviour
         SelectUnit(_unitIndex + 1);
     }
 
-    private void ShowWarehouse()
-    {
-        _warehousePage.SetActive(true);
-        _skillPage.SetActive(false);
-        _shopPage.SetActive(false);
-        _itemContextMenu.Hide();
-    }
-
-    private void ShowSkill()
-    {
-        _warehousePage.SetActive(false);
-        _skillPage.SetActive(true);
-        _shopPage.SetActive(false);
-        _itemContextMenu.Hide();
-    }
-
-    private void ShowShop()
-    {
-        _warehousePage.SetActive(false);
-        _skillPage.SetActive(false);
-        _shopPage.SetActive(true);
-        _itemContextMenu.Hide();
-    }
-
-    private void OpenItemMenu(BF_ItemConfigSO item, Vector2 screenPos)
-    {
-        _itemContextMenu.Show(
-            item,
-            CurrentData,
-            CurrentConfig,
-            _unitLoadoutPanel.SelectedBattleItemSlot,
-            screenPos);
-    }
-
-    private void Back()
-    {
-        _backButton.interactable = false;
-        SaveCurrentSlot();
-        BF_SceneLoadManager.Instance?.LoadLevelSelect();
-    }
-
-    private void StartBattle()
-    {
-        _startButton.interactable = false;
-        SaveCurrentSlot();
-        BF_BattleService.Instance?.StartPreparedLevel();
-    }
-
-    private void SaveCurrentSlot()
-    {
-        BF_SaveService saveService = BF_SaveService.Instance;
-        if (saveService != null && saveService.CurrentSlot > 0)
-        {
-            saveService.Save();
-        }
-    }
-
-    private void OnUnitChanged(BF_UnitRuntimeChangedEvent gameEvent)
-    {
-        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
-        string selectedId = CurrentData != null ? CurrentData.UnitId : string.Empty;
-        if (runtime == null || runtime.Units.Count == 0)
-        {
-            SelectUnit(0);
-            return;
-        }
-
-        for (int i = 0; i < runtime.Units.Count; i++)
-        {
-            if (runtime.Units[i].UnitId == selectedId)
-            {
-                _unitIndex = i;
-                break;
-            }
-        }
-
-        SelectUnit(_unitIndex);
-    }
-
     private void RefreshRoster()
     {
         BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
@@ -220,4 +220,69 @@ public class BF_BattlePrepareController : MonoBehaviour
             _startButton.interactable = count > 0 && count <= limit;
         }
     }
+
+    private void OnUnitChanged(BF_UnitRuntimeChangedEvent gameEvent)
+    {
+        BF_UnitRuntimeService runtime = BF_UnitRuntimeService.Instance;
+        string selectedId = CurrentData != null ? CurrentData.UnitId : string.Empty;
+        if (runtime == null || runtime.Units.Count == 0)
+        {
+            SelectUnit(0);
+            return;
+        }
+
+        for (int i = 0; i < runtime.Units.Count; i++)
+        {
+            if (runtime.Units[i].UnitId == selectedId)
+            {
+                _unitIndex = i;
+                break;
+            }
+        }
+
+        SelectUnit(_unitIndex);
+    }
+
+    #endregion
+
+    #region 物品菜单
+
+    private void OpenItemMenu(BF_ItemConfigSO item, Vector2 screenPos)
+    {
+        _itemContextMenu.Show(
+            item,
+            CurrentData,
+            CurrentConfig,
+            _unitLoadoutPanel.SelectedBattleItemSlot,
+            screenPos);
+    }
+
+    #endregion
+
+    #region 场景流转
+
+    private void Back()
+    {
+        _backButton.interactable = false;
+        SaveCurrentSlot();
+        BF_SceneLoadManager.Instance?.LoadLevelSelect();
+    }
+
+    private void StartBattle()
+    {
+        _startButton.interactable = false;
+        SaveCurrentSlot();
+        BF_BattleService.Instance?.StartPreparedLevel();
+    }
+
+    private void SaveCurrentSlot()
+    {
+        BF_SaveService saveService = BF_SaveService.Instance;
+        if (saveService != null && saveService.CurrentSlot > 0)
+        {
+            saveService.Save();
+        }
+    }
+
+    #endregion
 }
