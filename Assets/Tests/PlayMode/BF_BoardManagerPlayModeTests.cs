@@ -58,11 +58,86 @@ public class BF_BoardManagerPlayModeTests
         Component manager = CreateManager(
             width: 2,
             height: 2,
-            blockedCells: new List<Vector2Int> { new(1, 1) });
+            terrainCells: new Dictionary<Vector2Int, string>
+            {
+                { new Vector2Int(1, 1), nameof(TerrainType.Blocked) }
+            });
 
         Assert.That(Invoke<bool>(manager, "IsBlocked", new object[] { new Vector2Int(1, 1) }), Is.True);
         Assert.That(Invoke<bool>(manager, "CanEnter", new object[] { new Vector2Int(1, 1) }), Is.False);
         Assert.That(Invoke<bool>(manager, "IsOccupied", new object[] { new Vector2Int(1, 1) }), Is.False);
+    }
+
+    [Test]
+    public void TerrainCosts_ComeFromSharedRulesAndLevelOverrides()
+    {
+        Component manager = CreateManager(
+            width: 2,
+            height: 2,
+            terrainCells: new Dictionary<Vector2Int, string>
+            {
+                { new Vector2Int(1, 0), nameof(TerrainType.Swamp) },
+                { new Vector2Int(0, 1), nameof(TerrainType.Blocked) }
+            });
+
+        object[] normalArgs = { new Vector2Int(0, 0), 0 };
+        Assert.That(Invoke<bool>(manager, "TryGetMoveCost", normalArgs), Is.True);
+        Assert.That(normalArgs[1], Is.EqualTo(1), "Default Normal terrain costs 1 AP.");
+
+        object[] swampArgs = { new Vector2Int(1, 0), 0 };
+        Assert.That(Invoke<bool>(manager, "TryGetMoveCost", swampArgs), Is.True);
+        Assert.That(swampArgs[1], Is.EqualTo(4), "Swamp override costs 4 AP from the shared rules.");
+
+        object[] blockedArgs = { new Vector2Int(0, 1), 0 };
+        Assert.That(Invoke<bool>(manager, "TryGetMoveCost", blockedArgs), Is.False, "Blocked cell is not enterable.");
+    }
+
+    [Test]
+    public void ValidateMovePath_RejectsBrokenPathsAndAccumulatesRealCost()
+    {
+        Component manager = CreateManager(
+            width: 3,
+            height: 2,
+            terrainCells: new Dictionary<Vector2Int, string>
+            {
+                { new Vector2Int(1, 0), nameof(TerrainType.Blocked) }
+            });
+        GameObject occupant = Track(new GameObject("Occupant"));
+        Invoke<bool>(manager, "TryOccupy", new object[] { new Vector2Int(1, 1), occupant });
+        Vector2Int start = Vector2Int.zero;
+
+        AssertValidPath(manager, start, new List<Vector2Int> { new(1, 0) }, 0, false,
+            "Path entering the blocked cell at (1,0) must be rejected.");
+
+        AssertValidPath(manager, start, new List<Vector2Int> { new(0, 1), new(1, 1) }, 0, false,
+            "Path entering the occupied cell at (1,1) must be rejected.");
+
+        AssertValidPath(manager, start, new List<Vector2Int> { new(0, 1), new(2, 1) }, 0, false,
+            "Non-adjacent jump must be rejected.");
+
+        AssertValidPath(manager, start, new List<Vector2Int> { new(0, 1), new(0, 2) }, 0, false,
+            "Out of bounds cell must be rejected.");
+
+        AssertValidPath(manager, start, new List<Vector2Int> { new(0, 1) }, 1, true,
+            "Valid single step must report total cost 1.");
+    }
+
+    private static void AssertValidPath(
+        Component manager,
+        Vector2Int start,
+        List<Vector2Int> path,
+        int expectedCost,
+        bool expectedResult,
+        string message)
+    {
+        object[] arguments = { start, path, 0, null };
+        bool result = Invoke<bool>(manager, "TryValidateMovePath", arguments);
+        Assert.That(result, Is.EqualTo(expectedResult), message);
+
+        if (expectedResult)
+        {
+            Assert.That(arguments[2], Is.EqualTo(expectedCost));
+        }
     }
 
     [Test]
@@ -93,7 +168,10 @@ public class BF_BoardManagerPlayModeTests
         Component manager = CreateManager(
             width: 3,
             height: 1,
-            blockedCells: new List<Vector2Int> { new(2, 0) });
+            terrainCells: new Dictionary<Vector2Int, string>
+            {
+                { new Vector2Int(2, 0), nameof(TerrainType.Blocked) }
+            });
         GameObject occupant = Track(new GameObject("Occupant"));
         GameObject other = Track(new GameObject("Other"));
         Vector2Int source = Vector2Int.zero;
@@ -160,14 +238,17 @@ public class BF_BoardManagerPlayModeTests
     private Component CreateManager(
         int width,
         int height,
-        List<Vector2Int> blockedCells = null,
+        Dictionary<Vector2Int, string> terrainCells = null,
         Vector2? cellSize = null,
         Vector3? position = null,
         bool includeConfig = true)
     {
         Type configType = RequireRuntimeType("BF_LevelConfigSO");
+        Type rulesType = RequireRuntimeType("BF_TerrainRuleSetSO");
+        Type terrainCellType = RequireRuntimeType("BF_TerrainCellData");
         Type cellType = RequireRuntimeType("BF_BoardCell");
         Type managerType = RequireRuntimeType("BF_BoardManager");
+        Type terrainType = typeof(TerrainType);
 
         ScriptableObject config = null;
         if (includeConfig)
@@ -175,7 +256,25 @@ public class BF_BoardManagerPlayModeTests
             config = Track(ScriptableObject.CreateInstance(configType));
             SetField(config, "_width", width);
             SetField(config, "_height", height);
-            SetField(config, "_blockedCells", blockedCells ?? new List<Vector2Int>());
+            SetField(config, "_terrainRules", Track(ScriptableObject.CreateInstance(rulesType)));
+
+            Type listType = typeof(List<>).MakeGenericType(terrainCellType);
+            IList terrainList = (IList)Activator.CreateInstance(listType);
+            if (terrainCells != null)
+            {
+                foreach (KeyValuePair<Vector2Int, string> entry in terrainCells)
+                {
+                    object data = Activator.CreateInstance(terrainCellType);
+                    FieldInfo positionField = terrainCellType.GetField("Position", BindingFlags.Instance | BindingFlags.Public);
+                    positionField.SetValue(data, entry.Key);
+                    object terrain = Enum.Parse(terrainType, entry.Value);
+                    FieldInfo terrainField = terrainCellType.GetField("TerrainType", BindingFlags.Instance | BindingFlags.Public);
+                    terrainField.SetValue(data, terrain);
+                    terrainList.Add(data);
+                }
+            }
+
+            SetField(config, "_terrainCells", terrainList);
         }
 
         GameObject cellPrefabObject = Track(new GameObject("CellPrefab"));

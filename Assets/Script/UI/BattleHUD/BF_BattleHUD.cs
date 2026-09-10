@@ -27,6 +27,19 @@ public class BF_BattleHUD : MonoBehaviour
     [SerializeField]
     private TMP_Text _pathCostText;
 
+    [Header("Terrain Info")]
+    [SerializeField]
+    private GameObject _terrainInfoPanelRoot;
+
+    [SerializeField]
+    private TMP_Text _terrainNameText;
+
+    [SerializeField]
+    private TMP_Text _terrainCostText;
+
+    [SerializeField]
+    private TMP_Text _terrainStatusText;
+
     private BF_BattleUnit _unit;
 
     private void Awake()
@@ -35,6 +48,7 @@ public class BF_BattleHUD : MonoBehaviour
         GameEventBus.Instance?.Subscribe<BF_UnitSelectedEvent>(OnUnitSelected).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_UnitStatsChangedEvent>(OnUnitStatsChanged).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_PathCostChangedEvent>(OnPathCostChanged).UnRegisterWhenGameObjectDestroyed(gameObject);
+        GameEventBus.Instance?.Subscribe<BF_BoardCellHoveredEvent>(OnCellHovered).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_InventoryChangedEvent>(_ => _actionPanel.Refresh()).UnRegisterWhenGameObjectDestroyed(gameObject);
         ResetView();
     }
@@ -90,11 +104,59 @@ public class BF_BattleHUD : MonoBehaviour
             : string.Empty;
     }
 
+    private void OnCellHovered(BF_BoardCellHoveredEvent gameEvent)
+    {
+        if (_terrainInfoPanelRoot == null)
+        {
+            return;
+        }
+
+        if (!gameEvent.HasCell)
+        {
+            _terrainInfoPanelRoot.SetActive(false);
+            return;
+        }
+
+        _terrainInfoPanelRoot.SetActive(true);
+
+        if (_terrainNameText != null)
+        {
+            _terrainNameText.text = $"{TerrainName(gameEvent.Terrain)}  ({gameEvent.Position.x},{gameEvent.Position.y})";
+        }
+
+        if (_terrainCostText != null)
+        {
+            _terrainCostText.text = gameEvent.Passable ? $"进入 {gameEvent.MoveCost} AP" : "进入 — AP";
+        }
+
+        if (_terrainStatusText != null)
+        {
+            _terrainStatusText.text = gameEvent.IsOccupied ? "已占用" : gameEvent.Passable ? "可通行" : "阻挡";
+        }
+    }
+
+    private static string TerrainName(TerrainType terrainType)
+    {
+        return terrainType switch
+        {
+            TerrainType.Normal => "普通地面",
+            TerrainType.Difficult => "复杂地形",
+            TerrainType.Swamp => "沼泽",
+            TerrainType.Blocked => "阻挡",
+            _ => "未知地形"
+        };
+    }
+
     public void ResetView()
     {
         _phaseText.text = string.Empty;
         _roundText.text = string.Empty;
         _pathCostText.text = string.Empty;
+        if (_terrainInfoPanelRoot != null)
+        {
+            _terrainInfoPanelRoot.SetActive(false);
+        }
+
         _endTurnButton.interactable = false;
         _actionPanel.SetBattleActive(true);
         _actionPanel.SetPlayerPhase(false);

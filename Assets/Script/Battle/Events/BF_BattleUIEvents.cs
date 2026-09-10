@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public class BF_UnitSelectedEvent : IGameEvent
 {
     public BF_BattleUnit Unit;
@@ -39,6 +41,40 @@ public class BF_PathCostChangedEvent : IGameEvent
     {
         Cost = cost;
         RemainingAP = remainingAP;
+    }
+}
+
+/// <summary>
+/// 指针进入/离开棋盘格时发布。HasCell 为 false 表示离开棋盘或进入 UI，用于隐藏地形信息。
+/// 数据直接来自运行时 BF_BoardCell 已解析结果，不重新解释 TerrainRuleSet。
+/// </summary>
+public class BF_BoardCellHoveredEvent : IGameEvent
+{
+    public bool HasCell;
+    public Vector2Int Position;
+    public TerrainType Terrain;
+    public int MoveCost;
+    public bool Passable;
+    public bool IsOccupied;
+
+    public BF_BoardCellHoveredEvent()
+    {
+        HasCell = false;
+    }
+
+    public BF_BoardCellHoveredEvent(
+        Vector2Int position,
+        TerrainType terrain,
+        int moveCost,
+        bool passable,
+        bool isOccupied)
+    {
+        HasCell = true;
+        Position = position;
+        Terrain = terrain;
+        MoveCost = moveCost;
+        Passable = passable;
+        IsOccupied = isOccupied;
     }
 }
 

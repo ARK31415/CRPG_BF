@@ -35,19 +35,39 @@ public class BF_BattleCommandExecutor
 
     private IEnumerator Move(BF_BattleCommandRequest request)
     {
-        if (request.Path == null
-            || request.Path.Count == 0
-            || !request.Actor.CanPay(request.Path.Count))
+        BF_BattleUnit actor = request.Actor;
+        BF_BoardManager board = actor?.Board;
+
+        if (actor == null
+            || board == null
+            || !board.IsInitialized
+            || request.Path == null
+            || request.Path.Count == 0)
         {
+            Debug.LogWarning("[BF] Move rejected: actor, board or path is unavailable.");
+            yield break;
+        }
+
+        // 执行前根据当前 Board 重新验证整条路径并计算真实地形成本，不信任预览成本。
+        if (!board.TryValidateMovePath(actor.GridPos, request.Path, out int totalCost, out string failReason))
+        {
+            Debug.LogWarning($"[BF] Move rejected for {actor.DisplayName}: {failReason}");
+            yield break;
+        }
+
+        if (!actor.CanPay(totalCost))
+        {
+            Debug.LogWarning($"[BF] Move rejected for {actor.DisplayName}: cannot pay {totalCost} AP.");
             yield break;
         }
 
         Vector2Int target = request.Path[request.Path.Count - 1];
-        yield return request.Actor.Move(request.Path);
+        yield return actor.Move(request.Path);
 
-        if (request.Actor.GridPos == target)
+        // 到达目标后按执行端验证的实际成本扣 AP；未到达不扣费。
+        if (actor.GridPos == target)
         {
-            request.Actor.SpendAP(request.Path.Count);
+            actor.SpendAP(totalCost);
         }
     }
 }

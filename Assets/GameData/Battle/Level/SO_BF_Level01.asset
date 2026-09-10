@@ -14,9 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: CRPG_BF.Runtime::BF_LevelConfigSO
   _width: 8
   _height: 6
-  _blockedCells:
-  - {x: 3, y: 2}
-  - {x: 4, y: 2}
+  _terrainRules: {fileID: 11400000, guid: d788ce54012e06646a970e8e3e6d001f, type: 2}
+  _defaultTerrain: 0
+  _terrainCells:
+  - Position: {x: 3, y: 2}
+    TerrainType: 3
+  - Position: {x: 4, y: 2}
+    TerrainType: 3
+  - Position: {x: 3, y: 1}
+    TerrainType: 2
+  - Position: {x: 5, y: 0}
+    TerrainType: 1
   _playerSpawns:
   - {x: 1, y: 1}
   - {x: 1, y: 2}

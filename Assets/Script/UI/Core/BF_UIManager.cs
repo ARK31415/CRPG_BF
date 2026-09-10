@@ -119,6 +119,13 @@ public class BF_UIManager : Singleton<BF_UIManager>
 
         if (gameModeManager.CurrentGameMode == BF_GameMode.Battle)
         {
+            // 战斗上下文优先消费 Esc：技能 → 路径预览 → 单位选择。
+            BF_BattleController battleController = FindFirstObjectByType<BF_BattleController>();
+            if (battleController != null && battleController.TryCancelBattleContext())
+            {
+                return;
+            }
+
             gameModeManager.PauseBattle();
         }
         else if (gameModeManager.CurrentGameMode == BF_GameMode.Paused)

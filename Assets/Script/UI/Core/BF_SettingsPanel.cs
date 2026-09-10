@@ -22,6 +22,9 @@ public class BF_SettingsPanel : MonoBehaviour
     private TMP_Dropdown _resolutionDropdown;
 
     [SerializeField]
+    private TMP_Dropdown _pathPlanningDropdown;
+
+    [SerializeField]
     private Button _defaultsButton;
 
     [SerializeField]
@@ -40,6 +43,7 @@ public class BF_SettingsPanel : MonoBehaviour
         _sfxSlider?.onValueChanged.AddListener(OnSFXChanged);
         _fullscreenToggle?.onValueChanged.AddListener(OnFullscreenChanged);
         _resolutionDropdown?.onValueChanged.AddListener(OnResolutionChanged);
+        _pathPlanningDropdown?.onValueChanged.AddListener(OnPathPlanningChanged);
         _defaultsButton?.onClick.AddListener(ResetDefaults);
         _closeButton?.onClick.AddListener(Close);
         Refresh();
@@ -54,6 +58,7 @@ public class BF_SettingsPanel : MonoBehaviour
         _sfxSlider?.onValueChanged.RemoveListener(OnSFXChanged);
         _fullscreenToggle?.onValueChanged.RemoveListener(OnFullscreenChanged);
         _resolutionDropdown?.onValueChanged.RemoveListener(OnResolutionChanged);
+        _pathPlanningDropdown?.onValueChanged.RemoveListener(OnPathPlanningChanged);
         _defaultsButton?.onClick.RemoveListener(ResetDefaults);
         _closeButton?.onClick.RemoveListener(Close);
     }
@@ -99,6 +104,16 @@ public class BF_SettingsPanel : MonoBehaviour
         }
 
         RefreshResolutions(settings);
+
+        if (_pathPlanningDropdown != null)
+        {
+            // 每次刷新重建确定选项列表，避免依赖“已有两个选项”的状态。
+            _pathPlanningDropdown.ClearOptions();
+            _pathPlanningDropdown.AddOptions(new List<string> { "自动最低消耗", "手动绘制" });
+            _pathPlanningDropdown.SetValueWithoutNotify((int)settings.PathPlanningMode);
+            _pathPlanningDropdown.RefreshShownValue();
+        }
+
         _refreshing = false;
     }
 
@@ -121,6 +136,7 @@ public class BF_SettingsPanel : MonoBehaviour
         if (options.Count > 0)
         {
             _resolutionDropdown.SetValueWithoutNotify(settings.GetResolutionIndex());
+            _resolutionDropdown.RefreshShownValue();
         }
     }
 
@@ -161,6 +177,14 @@ public class BF_SettingsPanel : MonoBehaviour
         if (!_refreshing)
         {
             BF_SettingsService.Instance?.SetResolution(index);
+        }
+    }
+
+    private void OnPathPlanningChanged(int index)
+    {
+        if (!_refreshing)
+        {
+            BF_SettingsService.Instance?.SetPathPlanningMode((BF_PathPlanningMode)index);
         }
     }
 

@@ -106,7 +106,7 @@ public class BF_EnemyController : MonoBehaviour
 
         Vector2Int bestPos = enemy.GridPos;
         int bestDistance = GetDistance(enemy.GridPos, target.GridPos);
-        int bestCost = int.MaxValue;
+        int bestCost = 0;
         bool canAttack = false;
 
         foreach (Vector2Int pos in reachable)
@@ -116,31 +116,53 @@ public class BF_EnemyController : MonoBehaviour
             bool attackFromPos = distance <= skill.TargetRange
                 && cost + skill.APCost <= enemy.CurrentAP;
 
-            if (attackFromPos)
-            {
-                if (!canAttack || cost < bestCost)
-                {
-                    bestPos = pos;
-                    bestCost = cost;
-                    canAttack = true;
-                }
-
-                continue;
-            }
-
-            if (!canAttack
-                && (distance < bestDistance
-                    || (bestPos != enemy.GridPos
-                        && distance == bestDistance
-                        && cost < bestCost)))
+            if (IsBetterCandidate(
+                    attackFromPos, distance, cost, pos,
+                    canAttack, bestDistance, bestCost, bestPos))
             {
                 bestPos = pos;
                 bestDistance = distance;
                 bestCost = cost;
+                canAttack = attackFromPos;
             }
         }
 
         return BF_Pathfinder.BuildPath(enemy.GridPos, bestPos, _cameFrom);
+    }
+
+    // 确定性决胜：可攻击优先，再按距离、累计成本、坐标升序。
+    // 只有严格更优才替换，保证相同棋盘输入的候选结果可重复。
+    private static bool IsBetterCandidate(
+        bool canAttack,
+        int distance,
+        int cost,
+        Vector2Int pos,
+        bool bestCanAttack,
+        int bestDistance,
+        int bestCost,
+        Vector2Int bestPos)
+    {
+        if (canAttack != bestCanAttack)
+        {
+            return canAttack;
+        }
+
+        if (distance != bestDistance)
+        {
+            return distance < bestDistance;
+        }
+
+        if (cost != bestCost)
+        {
+            return cost < bestCost;
+        }
+
+        if (pos.x != bestPos.x)
+        {
+            return pos.x < bestPos.x;
+        }
+
+        return pos.y < bestPos.y;
     }
 
     private void LogCommand(BF_BattleCommandRequest request)

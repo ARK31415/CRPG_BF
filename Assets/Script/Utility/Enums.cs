@@ -8,11 +8,33 @@ using UnityEngine;
 /// <summary>
 /// 棋盘格的静态地形类型。
 /// 动态单位占用不属于地形，由 BF_BoardCell 单独维护。
+/// 枚举值为长期序列化合同：新增地形必须追加显式数值，不能重排已有成员。
 /// </summary>
 public enum TerrainType
 {
+    [InspectorName("普通地面")]
     Normal = 0,
-    Blocked = 1,
+
+    [InspectorName("复杂地形")]
+    Difficult = 1,
+
+    [InspectorName("沼泽")]
+    Swamp = 2,
+
+    [InspectorName("阻挡")]
+    Blocked = 3,
+}
+
+/// <summary>
+/// 移动路线规划模式。属于玩家操作偏好，由 BF_SettingsService 保存，不进入角色存档。
+/// </summary>
+public enum BF_PathPlanningMode
+{
+    [InspectorName("自动最低消耗")]
+    Automatic = 0,
+
+    [InspectorName("手动绘制")]
+    Manual = 1,
 }
 
 public enum BF_UnitTeam

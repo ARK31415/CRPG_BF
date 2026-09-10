@@ -6,6 +6,19 @@ using UnityEngine;
 /// </summary>
 public class BF_BattleCommandRequest
 {
+    #region 对外接口
+
+    public BF_BattleCommandType Type { get; }
+    public BF_BattleUnit Actor { get; }
+    public BF_SkillConfigSO Skill { get; }
+    public int ItemSlot { get; }
+    public Vector2Int TargetPos { get; }
+    public IReadOnlyList<Vector2Int> Path { get; }
+
+    #endregion
+
+    #region 构造
+
     private BF_BattleCommandRequest(
         BF_BattleCommandType type,
         BF_BattleUnit actor,
@@ -22,12 +35,9 @@ public class BF_BattleCommandRequest
         Path = path;
     }
 
-    public BF_BattleCommandType Type { get; }
-    public BF_BattleUnit Actor { get; }
-    public BF_SkillConfigSO Skill { get; }
-    public int ItemSlot { get; }
-    public Vector2Int TargetPos { get; }
-    public IReadOnlyList<Vector2Int> Path { get; }
+    #endregion
+
+    #region 工厂方法
 
     public static BF_BattleCommandRequest CreateMove(
         BF_BattleUnit actor,
@@ -60,4 +70,6 @@ public class BF_BattleCommandRequest
     {
         return new BF_BattleCommandRequest(BF_BattleCommandType.EndTurn, actor);
     }
+
+    #endregion
 }

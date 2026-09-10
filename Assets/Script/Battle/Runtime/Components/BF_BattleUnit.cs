@@ -67,6 +67,9 @@ public class BF_BattleUnit : MonoBehaviour
     // 位置
     public Vector2Int GridPos { get; private set; }
 
+    // 执行校验用的只读棋盘上下文
+    public BF_BoardManager Board => _board;
+
     // 数值
     public int MaxHP => _maxHP;
     public int MaxAP => _maxAP;

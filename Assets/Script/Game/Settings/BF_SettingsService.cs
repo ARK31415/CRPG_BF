@@ -9,11 +9,13 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
     private const string FullscreenKey = "BF_Settings_Fullscreen";
     private const string WidthKey = "BF_Settings_Width";
     private const string HeightKey = "BF_Settings_Height";
+    private const string PathPlanningModeKey = "BF_Settings_PathPlanningMode";
 
     public float MasterVolume { get; private set; } = 1f;
     public float BGMVolume { get; private set; } = 1f;
     public float SFXVolume { get; private set; } = 1f;
     public bool Fullscreen { get; private set; } = true;
+    public BF_PathPlanningMode PathPlanningMode { get; private set; } = BF_PathPlanningMode.Automatic;
 
     protected override void Awake()
     {
@@ -78,6 +80,18 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         SaveAndNotify();
     }
 
+    public void SetPathPlanningMode(BF_PathPlanningMode mode)
+    {
+        if (PathPlanningMode == mode)
+        {
+            return;
+        }
+
+        PathPlanningMode = mode;
+        PlayerPrefs.SetInt(PathPlanningModeKey, (int)mode);
+        SaveAndNotify();
+    }
+
     public void SetResolution(int index)
     {
         Resolution[] resolutions = GetResolutions();
@@ -99,6 +113,7 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         BGMVolume = 1f;
         SFXVolume = 1f;
         Fullscreen = true;
+        PathPlanningMode = BF_PathPlanningMode.Automatic;
         Screen.fullScreen = true;
 
         Resolution current = Screen.currentResolution;
@@ -109,6 +124,7 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         PlayerPrefs.DeleteKey(FullscreenKey);
         PlayerPrefs.DeleteKey(WidthKey);
         PlayerPrefs.DeleteKey(HeightKey);
+        PlayerPrefs.DeleteKey(PathPlanningModeKey);
         SaveAndNotify();
     }
 
@@ -118,6 +134,9 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         BGMVolume = PlayerPrefs.GetFloat(BGMKey, 1f);
         SFXVolume = PlayerPrefs.GetFloat(SFXKey, 1f);
         Fullscreen = PlayerPrefs.GetInt(FullscreenKey, 1) == 1;
+        PathPlanningMode = (BF_PathPlanningMode)PlayerPrefs.GetInt(
+            PathPlanningModeKey,
+            (int)BF_PathPlanningMode.Automatic);
 
         int width = PlayerPrefs.GetInt(WidthKey, Screen.currentResolution.width);
         int height = PlayerPrefs.GetInt(HeightKey, Screen.currentResolution.height);

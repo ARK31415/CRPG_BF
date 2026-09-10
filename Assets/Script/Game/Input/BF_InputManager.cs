@@ -13,10 +13,11 @@ public class BF_InputManager : Singleton<BF_InputManager>
     public Vector2 CameraMove => _actions.Player.CameraMove.ReadValue<Vector2>();
     public float CameraZoom => _actions.Player.CameraZoom.ReadValue<Vector2>().y;
     public bool ClickPressed => _actions.Player.Click.WasPressedThisFrame();
+    public bool ClickHeld => _actions.Player.Click.IsPressed();
+    public bool ClickReleased => _actions.Player.Click.WasReleasedThisFrame();
     public bool MovePressed => _actions.Player.Move.WasPressedThisFrame();
     public bool AttackPressed => _actions.Player.Attack.WasPressedThisFrame();
     public bool NextUnitPressed => _actions.Player.NextUnit.WasPressedThisFrame();
-    public bool CancelSelectionPressed => !PausePressed && _actions.Player.CancelSelection.WasPressedThisFrame();
     public bool EndPlayerPhasePressed => _actions.Player.EndPlayerPhase.WasPressedThisFrame();
     public bool PausePressed => _actions.Global.Pause.WasPressedThisFrame();
 

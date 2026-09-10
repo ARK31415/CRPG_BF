@@ -40,6 +40,13 @@ public class BF_UnitMoveController : MonoBehaviour
     private HashSet<Vector2Int> _reachable = new();
     private List<Vector2Int> _path = new();
 
+    // 手动绘制状态
+    private int _manualPathCost;
+
+    // 格子悬停信息状态
+    private bool _hoverInfoHidden = true;
+    private Vector2Int _lastHoverInfoPos;
+
     // 高亮缓存
     private readonly HashSet<Vector2Int> _targetable = new();
     private readonly HashSet<Vector2Int> _affected = new();
@@ -67,6 +74,8 @@ public class BF_UnitMoveController : MonoBehaviour
         _camera = Camera.main;
         SetupPathLine();
         HidePath();
+        GameEventBus.Instance?.Subscribe<BF_SettingsChangedEvent>(OnSettingsChanged)
+            .UnRegisterWhenGameObjectDestroyed(gameObject);
     }
 
     private void Update()
@@ -74,11 +83,40 @@ public class BF_UnitMoveController : MonoBehaviour
         if (_camera == null
             || _board == null
             || BF_InputManager.Instance == null
-            || _unit == null
-            || _unit.IsMoving
-            || _unit.IsActing
             || Mode == BF_PlayerActionMode.Executing)
         {
+            return;
+        }
+
+        bool isPointerOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
+        if (isPointerOverUI)
+        {
+            PublishCellHover(null);
+
+            if (_unit != null && !_unit.IsMoving && !_unit.IsActing)
+            {
+                if (Mode != BF_PlayerActionMode.Move || !IsManualPathPlanning())
+                {
+                    ClearPreview();
+                }
+            }
+
+            return;
+        }
+
+        Vector3 worldPos = _camera.ScreenToWorldPoint(BF_InputManager.Instance.Point);
+        Vector2Int pos = _board.WorldToGrid(worldPos);
+        PublishCellHover(pos);
+
+        if (_unit == null || _unit.IsMoving || _unit.IsActing)
+        {
+            // 无选中单位时仍允许左键点击重新选人。
+            if (_unit == null && BF_InputManager.Instance.ClickPressed)
+            {
+                TrySelectUnitAt(pos);
+            }
+
             return;
         }
 
@@ -87,18 +125,16 @@ public class BF_UnitMoveController : MonoBehaviour
             EnterSkillMode(_unit.Config.BasicAttack);
         }
 
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-        {
-            ClearPreview();
-            return;
-        }
-
-        Vector3 worldPos = _camera.ScreenToWorldPoint(BF_InputManager.Instance.Point);
-        Vector2Int pos = _board.WorldToGrid(worldPos);
-
         if (_isSelected && Mode == BF_PlayerActionMode.Move)
         {
-            UpdatePath(pos);
+            if (IsManualPathPlanning())
+            {
+                UpdateManualInput(pos);
+            }
+            else
+            {
+                UpdatePath(pos);
+            }
         }
         else if (_isSelected && Mode == BF_PlayerActionMode.Skill)
         {
@@ -128,15 +164,13 @@ public class BF_UnitMoveController : MonoBehaviour
             return;
         }
 
-        if (_board.TryGetOccupant(pos, out GameObject occupant)
-            && occupant.TryGetComponent(out BF_BattleUnit unit))
-        {
-            _battleController.TrySelectPlayerUnit(unit);
-        }
+        TrySelectUnitAt(pos);
     }
 
     private void OnDestroy()
     {
+        GameEventBus.Instance?.Publish(new BF_BoardCellHoveredEvent());
+
         if (_pathMaterial != null)
         {
             Destroy(_pathMaterial);
@@ -349,6 +383,190 @@ public class BF_UnitMoveController : MonoBehaviour
 
     #endregion
 
+    #region 手动绘制
+
+    // 手动模式按格子悬停追加，右键统一走 TryMove 确认。
+    private void UpdateManualInput(Vector2Int pos)
+    {
+        if (_hasHoverPos && pos == _hoverPos)
+        {
+            return;
+        }
+
+        _hoverPos = pos;
+        _hasHoverPos = true;
+
+        if (pos == _unit.GridPos)
+        {
+            if (_path.Count > 0)
+            {
+                _path.Clear();
+                _manualPathCost = 0;
+                HidePath();
+                PublishManualPathCost();
+            }
+
+            return;
+        }
+
+        TryAppendManualCell(pos);
+    }
+
+    // 仅在指针进入新格时处理一次；不自动补齐非相邻路径。
+
+
+
+
+    private void TryAppendManualCell(Vector2Int pos)
+    {
+        Vector2Int anchor = _path.Count > 0 ? _path[_path.Count - 1] : _unit.GridPos;
+        if (Mathf.Abs(pos.x - anchor.x) + Mathf.Abs(pos.y - anchor.y) != 1)
+        {
+            return;
+        }
+
+        int nodeIndex = _path.IndexOf(pos);
+        if (nodeIndex >= 0)
+        {
+            if (nodeIndex != _path.Count - 1)
+            {
+                // 回到路径中段：裁掉该格之后的尾部，继续保持绘制。
+                TruncateManualPath(nodeIndex);
+            }
+
+            return;
+        }
+
+        if (!_board.TryGetMoveCost(pos, out int stepCost))
+        {
+            return;
+        }
+
+        if (_manualPathCost + stepCost > _unit.CurrentAP)
+        {
+            return;
+        }
+
+        _path.Add(pos);
+        _manualPathCost += stepCost;
+        ShowPath();
+        PublishManualPathCost();
+    }
+
+    private void TruncateManualPath(int keepCount)
+    {
+        if (keepCount < 0 || keepCount >= _path.Count)
+        {
+            return;
+        }
+
+        _path.RemoveRange(keepCount + 1, _path.Count - keepCount - 1);
+        RecomputeManualCost();
+        ShowPath();
+        PublishManualPathCost();
+    }
+
+    private void RecomputeManualCost()
+    {
+        int total = 0;
+        for (int i = 0; i < _path.Count; i++)
+        {
+            if (_board.TryGetMoveCost(_path[i], out int stepCost))
+            {
+                total += stepCost;
+            }
+        }
+
+        _manualPathCost = total;
+    }
+
+    private void PublishManualPathCost()
+    {
+        GameEventBus.Instance?.Publish(new BF_PathCostChangedEvent(
+            _manualPathCost,
+            Mathf.Max(0, _unit.CurrentAP - _manualPathCost)));
+    }
+
+    // 路线模式读取：属于全局操作偏好，自动模式保持原有悬停行为。
+    private bool IsManualPathPlanning()
+    {
+        BF_SettingsService settings = BF_SettingsService.Instance;
+        return settings != null && settings.PathPlanningMode == BF_PathPlanningMode.Manual;
+    }
+
+    // 战斗中修改路线模式：清理旧路径预览，保留当前选中单位并按新模式刷新可达范围。
+    private void OnSettingsChanged(BF_SettingsChangedEvent gameEvent)
+    {
+        if (_unit == null
+            || _battleController == null
+            || _battleController.IsBattleEnded
+            || _battleController.CurrentUnit != _unit)
+        {
+            return;
+        }
+
+        RefreshSelection();
+    }
+
+    #endregion
+
+    #region 悬停信息与取消
+
+    // 指针进入新格子时发布一次地形悬停事件，离开棋盘或进入 UI 时发布隐藏事件。
+    private void PublishCellHover(Vector2Int? pos)
+    {
+        if (pos.HasValue && _board.TryGetCell(pos.Value, out BF_BoardCell cell))
+        {
+            if (!_hoverInfoHidden && _lastHoverInfoPos == pos.Value)
+            {
+                return;
+            }
+
+            _hoverInfoHidden = false;
+            _lastHoverInfoPos = pos.Value;
+            GameEventBus.Instance?.Publish(new BF_BoardCellHoveredEvent(
+                pos.Value,
+                cell.TerrainType,
+                cell.MoveCost,
+                cell.Passable,
+                cell.IsOccupied));
+            return;
+        }
+
+        if (_hoverInfoHidden)
+        {
+            return;
+        }
+
+        _hoverInfoHidden = true;
+        GameEventBus.Instance?.Publish(new BF_BoardCellHoveredEvent());
+    }
+
+    // 左键点击玩家单位进行选择；无选中单位时也走同一入口。
+    private void TrySelectUnitAt(Vector2Int pos)
+    {
+        if (_battleController != null
+            && _board.TryGetOccupant(pos, out GameObject occupant)
+            && occupant.TryGetComponent(out BF_BattleUnit unit))
+        {
+            _battleController.TrySelectPlayerUnit(unit);
+        }
+    }
+
+    // Esc 上下文路由使用：清除路径预览并保留单位选择与可达范围。
+    public bool TryCancelPathPreview()
+    {
+        if (_path.Count == 0)
+        {
+            return false;
+        }
+
+        ClearPreview();
+        return true;
+    }
+
+    #endregion
+
     #region 技能
 
     private void TrySkill(Vector2Int pos)
@@ -491,6 +709,7 @@ public class BF_UnitMoveController : MonoBehaviour
     private void ClearPreview()
     {
         _hasHoverPos = false;
+        _manualPathCost = 0;
         ClearAffected();
         ClearTarget();
         _path.Clear();

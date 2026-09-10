@@ -12,8 +12,15 @@ public class BF_LevelConfigSO : ScriptableObject
     [SerializeField]
     private int _height = 1;
 
+    [Header("Terrain")]
     [SerializeField]
-    private List<Vector2Int> _blockedCells = new();
+    private BF_TerrainRuleSetSO _terrainRules;
+
+    [SerializeField]
+    private TerrainType _defaultTerrain = TerrainType.Normal;
+
+    [SerializeField]
+    private List<BF_TerrainCellData> _terrainCells = new();
 
     [SerializeField]
     private List<Vector2Int> _playerSpawns = new();
@@ -41,7 +48,9 @@ public class BF_LevelConfigSO : ScriptableObject
 
     public int Width => _width;
     public int Height => _height;
-    public List<Vector2Int> BlockedCells => _blockedCells;
+    public BF_TerrainRuleSetSO TerrainRules => _terrainRules;
+    public TerrainType DefaultTerrain => _defaultTerrain;
+    public IReadOnlyList<BF_TerrainCellData> TerrainCells => _terrainCells;
     public IReadOnlyList<Vector2Int> PlayerSpawns => _playerSpawns;
     public IReadOnlyList<BF_UnitSpawnData> FixedSpawns => _fixedSpawns;
     public int RewardGold => _rewardGold;

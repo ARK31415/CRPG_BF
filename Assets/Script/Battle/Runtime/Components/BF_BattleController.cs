@@ -93,12 +93,6 @@ public class BF_BattleController : MonoBehaviour
             return;
         }
 
-        if (BF_InputManager.Instance.CancelSelectionPressed)
-        {
-            CancelSelection();
-            return;
-        }
-
         if (BF_InputManager.Instance.NextUnitPressed)
         {
             SelectNextPlayerUnit();
@@ -315,6 +309,32 @@ public class BF_BattleController : MonoBehaviour
 
         Debug.Log($"[BF] Player Unit Deselected: {CurrentUnit.DisplayName}");
         ClearCurrentUnit();
+    }
+
+    // Esc 上下文路由：技能 → 路径预览 → 单位选择，逐层消费。
+    // 全部消费返回 true；无可取消内容返回 false，由上层路由交给暂停菜单。
+    public bool TryCancelBattleContext()
+    {
+        if (_state is not BF_PlayerPhaseState
+            || CurrentUnit == null
+            || CurrentUnit.IsMoving
+            || CurrentUnit.IsActing)
+        {
+            return false;
+        }
+
+        if (_moveController.CancelActionMode())
+        {
+            return true;
+        }
+
+        if (_moveController.TryCancelPathPreview())
+        {
+            return true;
+        }
+
+        ClearCurrentUnit();
+        return true;
     }
 
     public void ClearCurrentUnit()
