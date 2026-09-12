@@ -1,8 +1,14 @@
 using UnityEngine;
 
+/// <summary>
+/// Persistent 场景中的设置唯一入口：音量、画面与玩法设置经 PlayerPrefs 持久化，变更后广播设置事件。
+/// </summary>
 [DefaultExecutionOrder(-100)]
 public class BF_SettingsService : Singleton<BF_SettingsService>
 {
+    #region 常量与静态缓存
+
+    // PlayerPrefs 键
     private const string MasterKey = "BF_Settings_MasterVolume";
     private const string BGMKey = "BF_Settings_BGMVolume";
     private const string SFXKey = "BF_Settings_SFXVolume";
@@ -11,11 +17,22 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
     private const string HeightKey = "BF_Settings_Height";
     private const string PathPlanningModeKey = "BF_Settings_PathPlanningMode";
 
+    #endregion
+
+    #region 对外接口
+
+    // 音量
     public float MasterVolume { get; private set; } = 1f;
     public float BGMVolume { get; private set; } = 1f;
     public float SFXVolume { get; private set; } = 1f;
+
+    // 画面与玩法
     public bool Fullscreen { get; private set; } = true;
     public BF_PathPlanningMode PathPlanningMode { get; private set; } = BF_PathPlanningMode.Automatic;
+
+    #endregion
+
+    #region 生命周期
 
     protected override void Awake()
     {
@@ -28,6 +45,10 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
 
         Load();
     }
+
+    #endregion
+
+    #region 查询
 
     public Resolution[] GetResolutions()
     {
@@ -51,6 +72,10 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         return resolutions.Length > 0 ? resolutions.Length - 1 : 0;
     }
 
+    #endregion
+
+    #region 音量设置
+
     public void SetMasterVolume(float value)
     {
         MasterVolume = Mathf.Clamp01(value);
@@ -72,23 +97,15 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         SaveAndNotify();
     }
 
+    #endregion
+
+    #region 画面设置
+
     public void SetFullscreen(bool value)
     {
         Fullscreen = value;
         Screen.fullScreen = value;
         PlayerPrefs.SetInt(FullscreenKey, value ? 1 : 0);
-        SaveAndNotify();
-    }
-
-    public void SetPathPlanningMode(BF_PathPlanningMode mode)
-    {
-        if (PathPlanningMode == mode)
-        {
-            return;
-        }
-
-        PathPlanningMode = mode;
-        PlayerPrefs.SetInt(PathPlanningModeKey, (int)mode);
         SaveAndNotify();
     }
 
@@ -106,6 +123,26 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         PlayerPrefs.SetInt(HeightKey, resolution.height);
         SaveAndNotify();
     }
+
+    #endregion
+
+    #region 玩法设置
+
+    public void SetPathPlanningMode(BF_PathPlanningMode mode)
+    {
+        if (PathPlanningMode == mode)
+        {
+            return;
+        }
+
+        PathPlanningMode = mode;
+        PlayerPrefs.SetInt(PathPlanningModeKey, (int)mode);
+        SaveAndNotify();
+    }
+
+    #endregion
+
+    #region 默认值
 
     public void ResetDefaults()
     {
@@ -128,6 +165,10 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         SaveAndNotify();
     }
 
+    #endregion
+
+    #region 持久化
+
     private void Load()
     {
         MasterVolume = PlayerPrefs.GetFloat(MasterKey, 1f);
@@ -148,4 +189,6 @@ public class BF_SettingsService : Singleton<BF_SettingsService>
         PlayerPrefs.Save();
         GameEventBus.Instance.Publish(new BF_SettingsChangedEvent());
     }
+
+    #endregion
 }

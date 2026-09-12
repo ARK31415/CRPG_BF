@@ -8,11 +8,23 @@ using UnityEngine;
 /// </summary>
 public class BF_EnemyController : MonoBehaviour
 {
+    #region 序列化配置与引用
+
+    [Header("棋盘引用")]
     [SerializeField]
     private BF_BoardManager _board;
 
+    #endregion
+
+    #region 运行时数据
+
+    // 寻路缓存
     private readonly Dictionary<Vector2Int, Vector2Int> _cameFrom = new();
     private readonly Dictionary<Vector2Int, int> _cost = new();
+
+    #endregion
+
+    #region 回合执行
 
     public IEnumerator RunTurn(
         BF_BattleUnit enemy,
@@ -44,6 +56,18 @@ public class BF_EnemyController : MonoBehaviour
         }
     }
 
+    private void LogCommand(BF_BattleCommandRequest request)
+    {
+        string target = request.Type == BF_BattleCommandType.Skill ? $" -> {request.TargetPos}" : string.Empty;
+        int pathCount = request.Path != null ? request.Path.Count : 0;
+        string path = pathCount > 0 ? $", Path={pathCount}" : string.Empty;
+        Debug.Log($"[BF] Enemy Command: {request.Actor.DisplayName} {request.Type}{target}{path}, AP={request.Actor.CurrentAP}");
+    }
+
+    #endregion
+
+    #region 命令构建
+
     private BF_BattleCommandRequest BuildCommand(BF_BattleUnit enemy, BF_BattleUnit target)
     {
         BF_SkillConfigSO skill = enemy.Config.BasicAttack;
@@ -65,6 +89,10 @@ public class BF_EnemyController : MonoBehaviour
             ? BF_BattleCommandRequest.CreateMove(enemy, path)
             : BF_BattleCommandRequest.CreateEndTurn(enemy);
     }
+
+    #endregion
+
+    #region 目标选择
 
     private BF_BattleUnit SelectTarget(
         BF_BattleUnit enemy,
@@ -91,6 +119,10 @@ public class BF_EnemyController : MonoBehaviour
 
         return best;
     }
+
+    #endregion
+
+    #region 移动寻路
 
     private List<Vector2Int> FindMovePath(
         BF_BattleUnit enemy,
@@ -165,16 +197,14 @@ public class BF_EnemyController : MonoBehaviour
         return pos.y < bestPos.y;
     }
 
-    private void LogCommand(BF_BattleCommandRequest request)
-    {
-        string target = request.Type == BF_BattleCommandType.Skill ? $" -> {request.TargetPos}" : string.Empty;
-        int pathCount = request.Path != null ? request.Path.Count : 0;
-        string path = pathCount > 0 ? $", Path={pathCount}" : string.Empty;
-        Debug.Log($"[BF] Enemy Command: {request.Actor.DisplayName} {request.Type}{target}{path}, AP={request.Actor.CurrentAP}");
-    }
+    #endregion
+
+    #region 距离工具
 
     private int GetDistance(Vector2Int a, Vector2Int b)
     {
         return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
+
+    #endregion
 }

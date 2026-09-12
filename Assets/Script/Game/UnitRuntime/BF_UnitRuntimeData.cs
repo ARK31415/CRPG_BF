@@ -6,6 +6,30 @@ using System;
 [Serializable]
 public class BF_UnitRuntimeData
 {
+    // 身份
+    public string UnitId;
+    public string ConfigId;
+
+    // 成长
+    public int Level;
+    public int CurrentExp;
+
+    // 装备
+    public string WeaponItemId;
+    public string HeadItemId;
+    public string ArmorItemId;
+    public string ShoesItemId;
+
+    // 技能
+    public string Skill01Id;
+    public string Skill02Id;
+
+    // 快捷栏
+    public string[] BattleItemIds = new string[BF_GameConstants.BattleItemSlotCount];
+
+    // 出战状态
+    public bool IsDeployed;
+
     public BF_UnitRuntimeData(
         string unitId,
         string configId,
@@ -22,19 +46,6 @@ public class BF_UnitRuntimeData
         CurrentExp = 0;
         IsDeployed = isDeployed;
     }
-
-    public string UnitId;
-    public string ConfigId;
-    public string WeaponItemId;
-    public string HeadItemId;
-    public string ArmorItemId;
-    public string ShoesItemId;
-    public string Skill01Id;
-    public string Skill02Id;
-    public string[] BattleItemIds = new string[BF_GameConstants.BattleItemSlotCount];
-    public int Level;
-    public int CurrentExp;
-    public bool IsDeployed;
 
     public BF_UnitRuntimeData Clone()
     {

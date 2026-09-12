@@ -1,6 +1,0 @@
-diff --git a/01_Wiki/CRPG_BF/README.md b/01_Wiki/CRPG_BF/README.md
---- a/01_Wiki/CRPG_BF/README.md
-+++ b/01_Wiki/CRPG_BF/README.md
-@@ -27,1 +27,1 @@
--- 三个战斗关卡使用逻辑棋盘、BFS、AP、FSM、统一命令、多敌人基础 AI、HUD、血条和伤害跳字。
-+- 三个战斗关卡使用逻辑棋盘、预算 Dijkstra、地形累计 AP、FSM、统一命令、多敌人基础 AI、HUD、地形悬停信息、血条和伤害跳字。

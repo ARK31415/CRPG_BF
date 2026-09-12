@@ -6,15 +6,20 @@ using Unity.Cinemachine;
 /// </summary>
 public class BF_CameraManager : Singleton<BF_CameraManager>
 {
+    #region 序列化配置与引用
+
+    [Header("相机引用")]
     [SerializeField]
     private CinemachineCamera _battleCamera;
 
     [SerializeField]
     private CinemachineConfiner2D _confiner;
 
+    [Header("移动参数")]
     [SerializeField]
     private float _moveSpeed = 6f;
 
+    [Header("缩放参数")]
     [SerializeField]
     private float _zoomStep = 0.5f;
 
@@ -27,7 +32,17 @@ public class BF_CameraManager : Singleton<BF_CameraManager>
     [SerializeField]
     private float _maxZoom = 5f;
 
+    #endregion
+
+    #region 运行时数据
+
+    // 缩放目标值
     private float _zoomTarget;
+
+    #endregion
+
+    #region 生命周期
+
     protected override void Awake()
     {
         base.Awake();
@@ -41,19 +56,6 @@ public class BF_CameraManager : Singleton<BF_CameraManager>
 
             _zoomTarget = _battleCamera.Lens.OrthographicSize;
         }
-    }
-
-    public void Focus(Transform target)
-    {
-        if (_battleCamera == null || target == null)
-        {
-            return;
-        }
-
-        Vector3 pos = target.position;
-        pos.z = _battleCamera.transform.position.z;
-        _battleCamera.transform.position = pos;
-        _battleCamera.ForceCameraPosition(pos, _battleCamera.transform.rotation);
     }
 
     private void Update()
@@ -95,6 +97,27 @@ public class BF_CameraManager : Singleton<BF_CameraManager>
         _confiner?.InvalidateLensCache();
     }
 
+    #endregion
+
+    #region 相机对焦
+
+    public void Focus(Transform target)
+    {
+        if (_battleCamera == null || target == null)
+        {
+            return;
+        }
+
+        Vector3 pos = target.position;
+        pos.z = _battleCamera.transform.position.z;
+        _battleCamera.transform.position = pos;
+        _battleCamera.ForceCameraPosition(pos, _battleCamera.transform.rotation);
+    }
+
+    #endregion
+
+    #region 边界约束
+
     public void BindBounds()
     {
         GameObject bounds = GameObject.FindGameObjectWithTag("Bounds");
@@ -118,4 +141,5 @@ public class BF_CameraManager : Singleton<BF_CameraManager>
         SetBounds(null);
     }
 
+    #endregion
 }

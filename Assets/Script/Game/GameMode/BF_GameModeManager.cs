@@ -1,11 +1,25 @@
 using UnityEngine;
 
+/// <summary>
+/// 全局游戏模式入口：维护当前模式、按模式切换时间缩放并广播模式变更事件。
+/// </summary>
 public class BF_GameModeManager : Singleton<BF_GameModeManager>
 {
-    public BF_GameMode CurrentGameMode { get; private set; }
+    #region 序列化配置与引用
 
+    [Header("默认模式")]
     [SerializeField]
     private BF_GameMode _defaultGameMode = BF_GameMode.Battle;
+
+    #endregion
+
+    #region 对外接口
+
+    public BF_GameMode CurrentGameMode { get; private set; }
+
+    #endregion
+
+    #region 生命周期
 
     protected override void Awake()
     {
@@ -18,6 +32,28 @@ public class BF_GameModeManager : Singleton<BF_GameModeManager>
 
         SetGameMode(_defaultGameMode);
     }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus && CurrentGameMode == BF_GameMode.Battle)
+        {
+            PauseBattle();
+        }
+    }
+
+    protected override void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Time.timeScale = 1f;
+        }
+
+        base.OnDestroy();
+    }
+
+    #endregion
+
+    #region 游戏模式切换
 
     public void SetGameMode(BF_GameMode gameMode)
     {
@@ -54,21 +90,5 @@ public class BF_GameModeManager : Singleton<BF_GameModeManager>
         Time.timeScale = 1f;
     }
 
-    private void OnApplicationFocus(bool hasFocus)
-    {
-        if (!hasFocus && CurrentGameMode == BF_GameMode.Battle)
-        {
-            PauseBattle();
-        }
-    }
-
-    protected override void OnDestroy()
-    {
-        if (Instance == this)
-        {
-            Time.timeScale = 1f;
-        }
-
-        base.OnDestroy();
-    }
+    #endregion
 }

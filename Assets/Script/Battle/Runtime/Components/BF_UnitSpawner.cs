@@ -1,16 +1,27 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 按关卡配置生成敌我单位：玩家方取当前出战阵容，敌方取固定出生点。
+/// </summary>
 public class BF_UnitSpawner : MonoBehaviour
 {
+    #region 序列化配置与引用
+
+    [Header("棋盘引用")]
     [SerializeField]
     private BF_BoardManager _board;
 
+    [Header("单位生成")]
     [SerializeField]
     private BF_BattleUnit _unitPrefab;
 
     [SerializeField]
     private Transform _unitsRoot;
+
+    #endregion
+
+    #region 单位生成
 
     public List<BF_BattleUnit> SpawnUnits()
     {
@@ -66,4 +77,6 @@ public class BF_UnitSpawner : MonoBehaviour
         unit.Init(_board, config, team, pos, runtimeData);
         units.Add(unit);
     }
+
+    #endregion
 }
