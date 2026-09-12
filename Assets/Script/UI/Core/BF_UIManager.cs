@@ -1,9 +1,8 @@
 using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 [DefaultExecutionOrder(10)]
-public class BF_UIManager : Singleton<BF_UIManager>
+public class BF_UIManager : Singleton<BF_UIManager>, IBF_EscapeHandler
 {
     #region 序列化配置与引用
 
@@ -46,6 +45,7 @@ public class BF_UIManager : Singleton<BF_UIManager>
         }
 
         _gameModeSubscription = GameEventBus.Instance.Subscribe<BF_GameModeChangedEvent>(OnGameModeChanged);
+        BF_EscapeRouter.Instance?.Register(this);
 
         BF_GameMode gameMode = BF_GameModeManager.Instance != null
             ? BF_GameModeManager.Instance.CurrentGameMode
@@ -58,92 +58,53 @@ public class BF_UIManager : Singleton<BF_UIManager>
     {
         _gameModeSubscription?.Dispose();
         _gameModeSubscription = null;
+        BF_EscapeRouter.Instance?.Unregister(this);
     }
 
     #endregion
 
-    #region Esc 路由
+    #region Esc 消费
 
-    private void Update()
+    public int EscapePriority => BF_EscapePriorities.UI;
+
+    // 关闭 UI 管理的最上层内容；不改变 GameMode，不处理战斗取消与场景导航。
+    public bool TryConsumeEscape()
     {
-        if (BF_InputManager.Instance == null || !BF_InputManager.Instance.PausePressed)
-        {
-            return;
-        }
-
         _tutorialPanel ??= FindFirstObjectByType<BF_TutorialPanel>();
         if (_tutorialPanel != null && _tutorialPanel.IsOpen)
         {
             _tutorialPanel.Close();
-            return;
+            return true;
         }
 
         if (_settingsPanel != null && _settingsPanel.IsOpen)
         {
             _settingsPanel.Close();
-            return;
+            return true;
         }
 
         BF_ItemContextMenu itemMenu = FindFirstObjectByType<BF_ItemContextMenu>();
         if (itemMenu != null && itemMenu.IsOpen)
         {
             itemMenu.Hide();
-            return;
+            return true;
         }
 
         BF_MenuController menu = FindFirstObjectByType<BF_MenuController>();
         if (menu != null && menu.IsConfirmOpen)
         {
             menu.CloseConfirm();
-            return;
+            return true;
         }
 
         BF_PausePanel pausePanel = FindFirstObjectByType<BF_PausePanel>();
         if (pausePanel != null && pausePanel.IsExitConfirmOpen)
         {
             pausePanel.CloseExitConfirm();
-            return;
+            return true;
         }
 
-        BF_GameModeManager gameModeManager = BF_GameModeManager.Instance;
-        if (gameModeManager == null)
-        {
-            return;
-        }
-
-        BF_SceneLoadManager sceneLoad = BF_SceneLoadManager.Instance;
-        if (sceneLoad != null && sceneLoad.IsLoading)
-        {
-            return;
-        }
-
-        if (gameModeManager.CurrentGameMode == BF_GameMode.Battle)
-        {
-            // 战斗上下文优先消费 Esc：技能 → 路径预览 → 单位选择。
-            BF_BattleController battleController = FindFirstObjectByType<BF_BattleController>();
-            if (battleController != null && battleController.TryCancelBattleContext())
-            {
-                return;
-            }
-
-            gameModeManager.PauseBattle();
-        }
-        else if (gameModeManager.CurrentGameMode == BF_GameMode.Paused)
-        {
-            gameModeManager.ResumeBattle();
-        }
-        else if (gameModeManager.CurrentGameMode == BF_GameMode.Menu)
-        {
-            string sceneName = SceneManager.GetActiveScene().name;
-            if (sceneName == "BattlePrepare")
-            {
-                sceneLoad?.LoadLevelSelect();
-            }
-            else if (sceneName == "LevelSelect")
-            {
-                sceneLoad?.LoadMenu();
-            }
-        }
+        return false;
     }
 
     #endregion

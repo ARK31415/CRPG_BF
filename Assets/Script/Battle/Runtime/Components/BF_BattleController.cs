@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// 控制敌我阶段和回合切换，不处理棋盘细节或单位移动规则。
 /// </summary>
-public class BF_BattleController : MonoBehaviour
+public class BF_BattleController : MonoBehaviour, IBF_EscapeHandler
 {
     #region 序列化配置与引用
 
@@ -64,9 +64,20 @@ public class BF_BattleController : MonoBehaviour
     private void Awake()
     {
         GameEventBus.Instance?.Subscribe<BF_EndPlayerPhaseRequestEvent>(OnEndPlayerPhaseRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
+        GameEventBus.Instance?.Subscribe<BF_NextUnitRequestEvent>(OnNextUnitRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_SkillRequestEvent>(OnSkillRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_EndUnitRequestEvent>(OnEndUnitRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
         GameEventBus.Instance?.Subscribe<BF_ItemRequestEvent>(OnItemRequested).UnRegisterWhenGameObjectDestroyed(gameObject);
+    }
+
+    private void OnEnable()
+    {
+        BF_EscapeRouter.Instance?.Register(this);
+    }
+
+    private void OnDisable()
+    {
+        BF_EscapeRouter.Instance?.Unregister(this);
     }
 
     private void Start()
@@ -74,29 +85,6 @@ public class BF_BattleController : MonoBehaviour
         BF_CameraManager.Instance?.BindBounds();
         _moveController.SetBattleController(this);
         StartCoroutine(StartBattle());
-    }
-
-    private void Update()
-    {
-        if (IsBattleEnded
-            || _playerPhaseEnded
-            || _state is not BF_PlayerPhaseState
-            || BF_InputManager.Instance == null
-            || (CurrentUnit != null && (CurrentUnit.IsMoving || CurrentUnit.IsActing)))
-        {
-            return;
-        }
-
-        if (BF_InputManager.Instance.EndPlayerPhasePressed)
-        {
-            EndPlayerPhase();
-            return;
-        }
-
-        if (BF_InputManager.Instance.NextUnitPressed)
-        {
-            SelectNextPlayerUnit();
-        }
     }
 
     private void OnDestroy()
@@ -225,7 +213,33 @@ public class BF_BattleController : MonoBehaviour
 
     private void OnEndPlayerPhaseRequested(BF_EndPlayerPhaseRequestEvent requestEvent)
     {
+        if (!CanHandlePlayerShortcut())
+        {
+            return;
+        }
+
         EndPlayerPhase();
+    }
+
+    private void OnNextUnitRequested(BF_NextUnitRequestEvent requestEvent)
+    {
+        if (!CanHandlePlayerShortcut())
+        {
+            return;
+        }
+
+        SelectNextPlayerUnit();
+    }
+
+    // 玩家阶段快捷键共享守卫：HUD 按钮与键盘（Backspace / Tab）都必须通过。
+    // 允许 CurrentUnit == null：取消选人后仍可结束阶段或重新选人。
+    private bool CanHandlePlayerShortcut()
+    {
+        return !IsBattleEnded
+            && !_playerPhaseEnded
+            && _state is BF_PlayerPhaseState
+            && (CurrentUnit == null
+                || (!CurrentUnit.IsMoving && !CurrentUnit.IsActing));
     }
 
     public IEnumerator RunEnemyPhase()
@@ -488,6 +502,25 @@ public class BF_BattleController : MonoBehaviour
         GameEventBus.Instance?.Publish(new BF_BattleResultEvent(result));
         Debug.Log($"[BF] Battle End: {result}");
         _running = false;
+    }
+
+    #endregion
+
+    #region Esc 消费
+
+    public int EscapePriority => BF_EscapePriorities.Battle;
+
+    // 只在 Battle 模式参与消费；Paused / Result / None 返回 false，交给 Router 默认行为。
+    public bool TryConsumeEscape()
+    {
+        BF_GameModeManager gameModeManager = BF_GameModeManager.Instance;
+        if (gameModeManager == null
+            || gameModeManager.CurrentGameMode != BF_GameMode.Battle)
+        {
+            return false;
+        }
+
+        return TryCancelBattleContext();
     }
 
     #endregion

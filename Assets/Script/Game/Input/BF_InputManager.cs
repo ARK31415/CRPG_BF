@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Persistent 场景中的全局输入入口。
@@ -16,24 +17,17 @@ public class BF_InputManager : Singleton<BF_InputManager>
 
     #region 对外接口
 
-    // 指针与相机
+    // 指针与相机（持续值，保持轮询）
     public Vector2 Point => _actions.Player.Point.ReadValue<Vector2>();
     public Vector2 CameraMove => _actions.Player.CameraMove.ReadValue<Vector2>();
     public float CameraZoom => _actions.Player.CameraZoom.ReadValue<Vector2>().y;
 
-    // 点击
+    // 上下文动作（依赖指针 / 选中 / UI 状态，保持轮询）
     public bool ClickPressed => _actions.Player.Click.WasPressedThisFrame();
-    public bool ClickHeld => _actions.Player.Click.IsPressed();
-    public bool ClickReleased => _actions.Player.Click.WasReleasedThisFrame();
-
-    // 战斗操作
     public bool MovePressed => _actions.Player.Move.WasPressedThisFrame();
     public bool AttackPressed => _actions.Player.Attack.WasPressedThisFrame();
-    public bool NextUnitPressed => _actions.Player.NextUnit.WasPressedThisFrame();
-    public bool EndPlayerPhasePressed => _actions.Player.EndPlayerPhase.WasPressedThisFrame();
 
-    // 全局
-    public bool PausePressed => _actions.Global.Pause.WasPressedThisFrame();
+    // 全局离散动作（EndPlayerPhase / NextUnit / Pause）改为 performed 回调发布请求事件，不再暴露轮询属性。
 
     #endregion
 
@@ -42,6 +36,9 @@ public class BF_InputManager : Singleton<BF_InputManager>
     private void OnEnable()
     {
         _actions ??= new InputSystem_Actions();
+        _actions.Player.EndPlayerPhase.performed += OnEndPlayerPhasePerformed;
+        _actions.Player.NextUnit.performed += OnNextUnitPerformed;
+        _actions.Global.Pause.performed += OnPausePerformed;
         _gameModeSubscription = GameEventBus.Instance.Subscribe<BF_GameModeChangedEvent>(OnGameModeChanged);
 
         BF_GameMode gameMode = BF_GameModeManager.Instance != null
@@ -54,10 +51,18 @@ public class BF_InputManager : Singleton<BF_InputManager>
 
     private void OnDisable()
     {
-        _gameModeSubscription?.Dispose();
-        _gameModeSubscription = null;
         _actions?.Global.Disable();
         SetPlayerInput(false);
+
+        if (_actions != null)
+        {
+            _actions.Player.EndPlayerPhase.performed -= OnEndPlayerPhasePerformed;
+            _actions.Player.NextUnit.performed -= OnNextUnitPerformed;
+            _actions.Global.Pause.performed -= OnPausePerformed;
+        }
+
+        _gameModeSubscription?.Dispose();
+        _gameModeSubscription = null;
     }
 
     protected override void OnDestroy()
@@ -91,6 +96,26 @@ public class BF_InputManager : Singleton<BF_InputManager>
         {
             _actions.Player.Disable();
         }
+    }
+
+    #endregion
+
+    #region 输入回调
+
+    // 全局离散动作只订阅 performed；回调内只发布请求，不判断业务上下文。
+    private void OnEndPlayerPhasePerformed(InputAction.CallbackContext context)
+    {
+        GameEventBus.Instance?.Publish(new BF_EndPlayerPhaseRequestEvent());
+    }
+
+    private void OnNextUnitPerformed(InputAction.CallbackContext context)
+    {
+        GameEventBus.Instance?.Publish(new BF_NextUnitRequestEvent());
+    }
+
+    private void OnPausePerformed(InputAction.CallbackContext context)
+    {
+        GameEventBus.Instance?.Publish(new BF_EscapeRequestEvent());
     }
 
     #endregion
