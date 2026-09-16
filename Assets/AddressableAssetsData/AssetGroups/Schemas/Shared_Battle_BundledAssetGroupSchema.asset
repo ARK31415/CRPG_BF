@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e5d17a21594effb4e9591490b009e7aa, type: 3}
-  m_Name: Scenes_BundledAssetGroupSchema
+  m_Name: Shared_Battle_BundledAssetGroupSchema
   m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.GroupSchemas.BundledAssetGroupSchema
-  m_Group: {fileID: 11400000, guid: ba7989080acec114ea0aa69f3960d42d, type: 2}
+  m_Group: {fileID: 11400000, guid: 0091989be6b13a14b88122fac27ba175, type: 2}
   m_InternalBundleIdMode: 1
   m_Compression: 1
   m_IncludeAddressInCatalog: 1
@@ -38,7 +38,7 @@ MonoBehaviour:
     m_Id: a08f3176efbf86848b35f47cd7edb7cf
   m_LoadPath:
     m_Id: 29ebc07934fbcec478a2596c31c08e95
-  m_BundleMode: 1
+  m_BundleMode: 0
   m_AssetBundleProviderType:
     m_AssemblyName: Unity.ResourceManager, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     m_ClassName: UnityEngine.ResourceManagement.ResourceProviders.AssetBundleProvider

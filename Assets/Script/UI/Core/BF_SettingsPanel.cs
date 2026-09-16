@@ -22,6 +22,9 @@ public class BF_SettingsPanel : MonoBehaviour
     private TMP_Dropdown _resolutionDropdown;
 
     [SerializeField]
+    private TMP_Dropdown _frameRateDropdown;
+
+    [SerializeField]
     private TMP_Dropdown _pathPlanningDropdown;
 
     [SerializeField]
@@ -43,6 +46,7 @@ public class BF_SettingsPanel : MonoBehaviour
         _sfxSlider?.onValueChanged.AddListener(OnSFXChanged);
         _fullscreenToggle?.onValueChanged.AddListener(OnFullscreenChanged);
         _resolutionDropdown?.onValueChanged.AddListener(OnResolutionChanged);
+        _frameRateDropdown?.onValueChanged.AddListener(OnFrameRateChanged);
         _pathPlanningDropdown?.onValueChanged.AddListener(OnPathPlanningChanged);
         _defaultsButton?.onClick.AddListener(ResetDefaults);
         _closeButton?.onClick.AddListener(Close);
@@ -58,6 +62,7 @@ public class BF_SettingsPanel : MonoBehaviour
         _sfxSlider?.onValueChanged.RemoveListener(OnSFXChanged);
         _fullscreenToggle?.onValueChanged.RemoveListener(OnFullscreenChanged);
         _resolutionDropdown?.onValueChanged.RemoveListener(OnResolutionChanged);
+        _frameRateDropdown?.onValueChanged.RemoveListener(OnFrameRateChanged);
         _pathPlanningDropdown?.onValueChanged.RemoveListener(OnPathPlanningChanged);
         _defaultsButton?.onClick.RemoveListener(ResetDefaults);
         _closeButton?.onClick.RemoveListener(Close);
@@ -104,6 +109,7 @@ public class BF_SettingsPanel : MonoBehaviour
         }
 
         RefreshResolutions(settings);
+        RefreshFrameRates(settings);
 
         if (_pathPlanningDropdown != null)
         {
@@ -124,20 +130,51 @@ public class BF_SettingsPanel : MonoBehaviour
             return;
         }
 
-        Resolution[] resolutions = settings.GetResolutions();
         List<string> options = new();
-        for (int i = 0; i < resolutions.Length; i++)
+        int selectedIndex = 0;
+
+        if (settings.Fullscreen)
         {
-            options.Add($"{resolutions[i].width} x {resolutions[i].height}");
+            // 全屏固定桌面原生分辨率：单项展示，不复用窗口候选与索引。
+            Vector2Int desktop = settings.GetDesktopResolution();
+            options.Add($"{desktop.x} x {desktop.y}");
+        }
+        else
+        {
+            IReadOnlyList<Vector2Int> resolutions = settings.GetWindowResolutionOptions();
+            for (int i = 0; i < resolutions.Count; i++)
+            {
+                options.Add($"{resolutions[i].x} x {resolutions[i].y}");
+            }
+
+            selectedIndex = settings.GetWindowResolutionIndex();
         }
 
         _resolutionDropdown.ClearOptions();
         _resolutionDropdown.AddOptions(options);
-        if (options.Count > 0)
+        _resolutionDropdown.SetValueWithoutNotify(selectedIndex);
+        _resolutionDropdown.RefreshShownValue();
+        _resolutionDropdown.interactable = !settings.Fullscreen;
+    }
+
+    private void RefreshFrameRates(BF_SettingsService settings)
+    {
+        if (_frameRateDropdown == null || settings == null)
         {
-            _resolutionDropdown.SetValueWithoutNotify(settings.GetResolutionIndex());
-            _resolutionDropdown.RefreshShownValue();
+            return;
         }
+
+        IReadOnlyList<int> frameRates = settings.GetTargetFrameRateOptions();
+        List<string> options = new();
+        for (int i = 0; i < frameRates.Count; i++)
+        {
+            options.Add($"{frameRates[i]} FPS");
+        }
+
+        _frameRateDropdown.ClearOptions();
+        _frameRateDropdown.AddOptions(options);
+        _frameRateDropdown.SetValueWithoutNotify(settings.GetTargetFrameRateIndex());
+        _frameRateDropdown.RefreshShownValue();
     }
 
     private void OnMasterChanged(float value)
@@ -174,9 +211,41 @@ public class BF_SettingsPanel : MonoBehaviour
 
     private void OnResolutionChanged(int index)
     {
-        if (!_refreshing)
+        if (_refreshing)
         {
-            BF_SettingsService.Instance?.SetResolution(index);
+            return;
+        }
+
+        BF_SettingsService settings = BF_SettingsService.Instance;
+        if (settings == null)
+        {
+            return;
+        }
+
+        if (!settings.SetWindowResolution(index))
+        {
+            // 全屏守卫或非法索引：回显权威状态。
+            Refresh();
+        }
+    }
+
+    private void OnFrameRateChanged(int index)
+    {
+        if (_refreshing)
+        {
+            return;
+        }
+
+        BF_SettingsService settings = BF_SettingsService.Instance;
+        if (settings == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<int> frameRates = settings.GetTargetFrameRateOptions();
+        if (index >= 0 && index < frameRates.Count)
+        {
+            settings.SetTargetFrameRate(frameRates[index]);
         }
     }
 

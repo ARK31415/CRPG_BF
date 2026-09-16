@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Shared_Battle
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Shared_Battle
+  m_GUID: c40ae756edb301247a7c42e2bf10538f
+  m_SerializeEntries:
+  - m_GUID: 1876b616f42723a40a07280ead579d96
+    m_Address: Assets/Arts/Village/Rule Tiles/Ground_1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 27c0fbdda85535f4e92615ca422b3724
+    m_Address: Assets/GameData/Game/Items/SO_BF_HealingPotion.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a02256450f1c1424e951513fe89503ad
+    m_Address: Assets/Prefabs/Battle/Units/PF_BattleUnit.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b7efed761934e12479bd86366d149452
+    m_Address: Assets/GameData/Battle/Units/SO_BF_Unit_Wizard.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bbc74bbb82280c448b91ff4c44abd3ce
+    m_Address: Assets/Prefabs/Map/BF_BoardCell.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d788ce54012e06646a970e8e3e6d001f
+    m_Address: Assets/GameData/Battle/Terrain/SO_BF_TerrainRules.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fbf9fd7f37173fd489d6408598d61ecb
+    m_Address: Assets/GameData/Battle/Units/SO_BF_Unit_Knight.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 75bcfdac6b1262440a56924cf54694e4, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: d9e0e2274c56aad4bb7236a04c2c22a5, type: 2}
+    - {fileID: 11400000, guid: f1a2d4a18a9e8804b9ab73391804f7cb, type: 2}

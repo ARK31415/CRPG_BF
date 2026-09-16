@@ -5,15 +5,31 @@ using UnityEngine;
 /// </summary>
 public class BF_ShopService : MonoBehaviour
 {
-    [SerializeField] private BF_ShopConfigSO _config;
+    #region 序列化配置与引用
+
+    [Header("商店配置")]
+    [SerializeField]
+    private BF_ShopConfigSO _config;
+
+    #endregion
+
+    #region 对外接口
 
     public BF_ShopConfigSO Config => _config;
+
+    #endregion
+
+    #region 查询
 
     public int GetAvailableCount(BF_ItemConfigSO item)
     {
         BF_InventoryService inventory = BF_InventoryService.Instance;
         return item != null && inventory != null ? inventory.GetCount(item.Id) : 0;
     }
+
+    #endregion
+
+    #region 购买
 
     /// <summary>
     /// 购买结果判定：商品有效性、金币检查由商店负责，容量与堆叠失败映射自库存层唯一结果。
@@ -60,6 +76,10 @@ public class BF_ShopService : MonoBehaviour
             : BF_ShopBuyResult.NotEnoughGold;
     }
 
+    #endregion
+
+    #region 出售
+
     public bool TrySell(BF_ItemConfigSO item)
     {
         BF_InventoryService inventory = BF_InventoryService.Instance;
@@ -76,4 +96,6 @@ public class BF_ShopService : MonoBehaviour
         inventory.AddGold(item.SellPrice);
         return true;
     }
+
+    #endregion
 }
