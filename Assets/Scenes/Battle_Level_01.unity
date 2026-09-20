@@ -150,54 +150,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &554525923
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 554525925}
-  - component: {fileID: 554525924}
-  m_Layer: 0
-  m_Name: SceneTutorial
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &554525924
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 554525923}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a0b7efbdc994554ebb608c982bd702c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: BF.UI::BF_SceneTutorial
-  _title: "\u7B2C\u4E00\u5173\u6218\u6597\u6559\u7A0B"
-  _text: "\u8FD9\u662F\u6218\u68CB\u6218\u6597\u573A\u666F\u3002\n\n\u5DE6\u952E\u9009\u62E9\u6211\u65B9\u5355\u4F4D\uFF0C\u518D\u70B9\u51FB\u76EE\u6807\u683C\u9884\u89C8\u79FB\u52A8\u8303\u56F4\u548C\u8DEF\u5F84\u3002\u79FB\u52A8\u5B8C\u6210\u540E\u53EF\u4EE5\u7EE7\u7EED\u9009\u62E9\u653B\u51FB\u6216\u6280\u80FD\u76EE\u6807\u3002\u79FB\u52A8\u4F1A\u6839\u636E\u8DEF\u5F84\u8DDD\u79BB\u6D88\u8017\u884C\u52A8\u529B\uFF08AP\uFF09\u3002\n\n\u666E\u901A\u653B\u51FB\u548C\u6280\u80FD\u4F1A\u6839\u636E\u5404\u81EA\u7684\u8303\u56F4\u9884\u89C8\u9009\u62E9\u76EE\u6807\uFF0C\u9F20\u6807\u53F3\u952E\u786E\u8BA4\u79FB\u52A8\u6216\u786E\u8BA4\u5F53\u524D\u64CD\u4F5C\u3002\u4E0A\u4E0B\u79FB\u52A8\u4E0D\u4F1A\u6539\u53D8\u89D2\u8272\u671D\u5411\uFF0C\u5DE6\u53F3\u79FB\u52A8\u4F1A\u8BA9\u89D2\u8272\u9762\u5411\u79FB\u52A8\u65B9\u5411\u3002\n\n\u6309
-    Tab \u5207\u6362\u5F53\u524D\u53EF\u884C\u52A8\u89D2\u8272\uFF0C\u6309 Backspace
-    \u7ED3\u675F\u73A9\u5BB6\u56DE\u5408\u3002\u6309 Esc \u6253\u5F00\u6682\u505C\u754C\u9762\u3002"
---- !u!4 &554525925
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 554525923}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &638719005
 GameObject:
   m_ObjectHideFlags: 0
@@ -2682,5 +2634,4 @@ SceneRoots:
   - {fileID: 1009608217}
   - {fileID: 1383326473}
   - {fileID: 345285309}
-  - {fileID: 554525925}
   - {fileID: 1753973445}

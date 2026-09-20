@@ -119,55 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &340830512
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 340830514}
-  - component: {fileID: 340830513}
-  m_Layer: 0
-  m_Name: SceneTutorial
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &340830513
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 340830512}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a0b7efbdc994554ebb608c982bd702c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: BF.UI::BF_SceneTutorial
-  _title: "\u7B2C\u4E8C\u5173\u6218\u6597\u6559\u7A0B"
-  _text: "\u8FD9\u662F\u7B2C\u4E8C\u4E2A\u7EBF\u6027\u6218\u6597\u573A\u666F\u3002\n\n\u5148\u5DE6\u952E\u9009\u62E9\u5F53\u524D\u53EF\u884C\u52A8\u7684\u6211\u65B9\u5355\u4F4D\uFF0C\u518D\u70B9\u51FB\u76EE\u6807\u683C\u9884\u89C8\u79FB\u52A8\u8303\u56F4\u548C\u8DEF\u5F84\u3002\u8DEF\u5F84\u8DDD\u79BB\u4F1A\u6D88\u8017\u884C\u52A8\u529B\uFF08AP\uFF09\uFF0C\u79FB\u52A8\u540E\u4ECD\u53EF\u4F7F\u7528\u5269\u4F59
-    AP \u7EE7\u7EED\u884C\u52A8\u3002\n\n\u666E\u901A\u653B\u51FB\u548C\u6280\u80FD\u90FD\u4F1A\u5148\u663E\u793A\u53EF\u9009\u8303\u56F4\uFF1B\u9F20\u6807\u53F3\u952E\u786E\u8BA4\u79FB\u52A8\u6216\u786E\u8BA4\u5F53\u524D\u64CD\u4F5C\u3002\u6309
-    Tab \u5207\u6362\u53EF\u884C\u52A8\u89D2\u8272\uFF0C\u6309 Backspace \u7ED3\u675F\u73A9\u5BB6\u56DE\u5408\u3002\n\n\u51FB\u8D25\u654C\u4EBA\u540E\u7B49\u5F85\u6218\u6597\u7ED3\u7B97\uFF0C\u518D\u8FD4\u56DE\u9009\u5173\u754C\u9762\u3002\u6309
-    Esc \u6253\u5F00\u6682\u505C\u754C\u9762\u3002"
---- !u!4 &340830514
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 340830512}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &345285308
 GameObject:
   m_ObjectHideFlags: 0
@@ -2683,5 +2634,4 @@ SceneRoots:
   - {fileID: 1009608217}
   - {fileID: 1383326473}
   - {fileID: 345285309}
-  - {fileID: 340830514}
   - {fileID: 1539164515}

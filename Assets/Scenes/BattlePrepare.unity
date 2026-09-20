@@ -8797,7 +8797,6 @@ GameObject:
   - component: {fileID: 1683286144}
   - component: {fileID: 1683286143}
   - component: {fileID: 1683286142}
-  - component: {fileID: 1683286147}
   m_Layer: 0
   m_Name: BattlePrepareUI
   m_TagString: Untagged
@@ -8918,21 +8917,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &1683286147
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1683286141}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a0b7efbdc994554ebb608c982bd702c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: BF.UI::BF_SceneTutorial
-  _title: "\u6218\u6597\u51C6\u5907\u6559\u7A0B"
-  _text: "\u8FD9\u91CC\u53EF\u4EE5\u9009\u62E9\u672C\u5173\u51FA\u6218\u89D2\u8272\uFF0C\u5E76\u914D\u7F6E\u88C5\u5907\u3001\u6280\u80FD\u548C\u6218\u6597\u7269\u54C1\u3002\n\n\u5DE6\u4FA7\u9009\u62E9\u89D2\u8272\u540E\uFF0C\u53EF\u4EE5\u67E5\u770B\u89D2\u8272\u5C5E\u6027\u4E0E\u5F53\u524D\u88C5\u5907\u3002\u70B9\u51FB\u201C\u51FA\u6218\u201D\u51B3\u5B9A\u89D2\u8272\u662F\u5426\u8FDB\u5165\u672C\u5173\u3002\n\n\u4ED3\u5E93\u4E2D\u5DE6\u952E\u67E5\u770B\u7269\u54C1\u8BE6\u60C5\uFF0C\u53F3\u952E\u6253\u5F00\u88C5\u5907\u3001\u653E\u5165\u7269\u54C1\u680F\u6216\u4E22\u5F03\u64CD\u4F5C\u3002\u88C5\u5907\u548C\u7269\u54C1\u680F\u914D\u7F6E\u4F1A\u4FDD\u7559\u5230\u540E\u7EED\u8FDB\u5165\u51C6\u5907\u754C\u9762\u3002\n\n\u51C6\u5907\u5B8C\u6210\u540E\u70B9\u51FB\u5F00\u59CB\u6218\u6597\u8FDB\u5165\u672C\u5173\u3002\u6309
-    Esc \u8FD4\u56DE\u9009\u5173\u754C\u9762\u3002"
 --- !u!1 &1710010094
 GameObject:
   m_ObjectHideFlags: 0

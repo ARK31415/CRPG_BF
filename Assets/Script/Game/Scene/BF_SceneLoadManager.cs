@@ -42,12 +42,15 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
 
     #endregion
 
-    #region 对外接口
+#region 对外接口
 
-    // 加载状态
-    public bool IsLoading { get; private set; }
+// 加载状态
+public bool IsLoading { get; private set; }
 
-    #endregion
+// 当前内容场景地址；没有内容场景时为空字符串。
+public string CurrentContentAddress { get; private set; } = string.Empty;
+
+#endregion
 
     #region 加载接口
 
@@ -132,6 +135,7 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
                 _hasContentScene = false;
                 _contentHandle = default;
                 _contentScene = default;
+                CurrentContentAddress = string.Empty;
                 Debug.Log("[BF] Content unloaded");
             }
 
@@ -159,6 +163,13 @@ public class BF_SceneLoadManager : Singleton<BF_SceneLoadManager>
             _fadeController.SetProgress(1f);
             _fadeController.SetLoadingText("加载完成");
             gameModeManager.SetGameMode(targetMode);
+
+            // 事件位于目标 UI 已按 GameMode 刷新之后、Fade 隐藏之前：
+            // 订阅方可以在遮罩揭示前完成准备，失败路径不会到达此处。
+            CurrentContentAddress = address;
+            GameEventBus.Instance.Publish(
+                new BF_ContentSceneChangedEvent(address, _contentScene.name, targetMode));
+
             await _fadeController.Hide();
             return true;
         }

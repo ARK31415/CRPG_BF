@@ -1,8 +1,11 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 教程显示 View：只渲染 ViewData、复位滚动并显隐自身根节点。
+/// 不判断场景、不做首次显示策略、不查询教程数据。
+/// </summary>
 public class BF_TutorialPanel : MonoBehaviour
 {
     [SerializeField]
@@ -20,9 +23,8 @@ public class BF_TutorialPanel : MonoBehaviour
     [SerializeField]
     private Button _closeButton;
 
-    private readonly HashSet<string> _shownScenes = new();
-
-    public bool IsOpen => _panelRoot != null && _panelRoot.activeSelf;
+    // 只有根节点在整条父链上可见时才算打开；父级被禁用时不得误报显示成功。
+    public bool IsOpen => _panelRoot != null && _panelRoot.activeInHierarchy;
 
     private void Awake()
     {
@@ -39,32 +41,21 @@ public class BF_TutorialPanel : MonoBehaviour
         _closeButton?.onClick.RemoveListener(Close);
     }
 
-    public void ShowFirst(BF_SceneTutorial tutorial)
+    public void Show(BF_TutorialViewData data)
     {
-        if (tutorial == null || _shownScenes.Contains(tutorial.SceneKey))
-        {
-            return;
-        }
-
-        _shownScenes.Add(tutorial.SceneKey);
-        Show(tutorial);
-    }
-
-    public void Show(BF_SceneTutorial tutorial)
-    {
-        if (tutorial == null)
+        if (data == null)
         {
             return;
         }
 
         if (_titleText != null)
         {
-            _titleText.text = tutorial.Title;
+            _titleText.text = data.Title;
         }
 
         if (_bodyText != null)
         {
-            _bodyText.text = tutorial.Text;
+            _bodyText.text = data.Body;
         }
 
         _panelRoot?.SetActive(true);

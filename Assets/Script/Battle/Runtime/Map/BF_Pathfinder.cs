@@ -8,12 +8,19 @@ using UnityEngine;
 /// </summary>
 public static class BF_Pathfinder
 {
+    #region 常量与静态缓存
+
+    // 四方向邻接
     private static readonly Vector2Int[] Directions = {
         Vector2Int.up,
         Vector2Int.right,
         Vector2Int.down,
         Vector2Int.left
     };
+
+    #endregion
+
+    #region 可达搜索
 
     public static HashSet<Vector2Int> FindReachable(
         BF_BoardManager board,
@@ -83,6 +90,10 @@ public static class BF_Pathfinder
         return reachable;
     }
 
+    #endregion
+
+    #region 路径还原
+
     public static List<Vector2Int> BuildPath(
         Vector2Int start,
         Vector2Int target,
@@ -110,6 +121,10 @@ public static class BF_Pathfinder
         path.Reverse();
         return path;
     }
+
+    #endregion
+
+    #region 私有辅助类型
 
     /// <summary>
     /// 按 (成本, 入队序号) 排序的稳定二叉最小堆；只服务本文件中的加权搜索。
@@ -206,4 +221,6 @@ public static class BF_Pathfinder
             (_nodes[a], _nodes[b]) = (_nodes[b], _nodes[a]);
         }
     }
+
+    #endregion
 }

@@ -132,6 +132,36 @@ public class BF_UIManager : Singleton<BF_UIManager>, IBF_EscapeHandler
 
     #endregion
 
+    #region 教程面板开关
+
+    /// <summary>
+    /// 显示教程面板；ViewData 有效、面板引用存在且成功进入显示状态时返回 true。
+    /// </summary>
+    public bool TryShowTutorial(BF_TutorialViewData data)
+    {
+        if (data == null)
+        {
+            return false;
+        }
+
+        _tutorialPanel ??= FindFirstObjectByType<BF_TutorialPanel>();
+        if (_tutorialPanel == null)
+        {
+            return false;
+        }
+
+        _tutorialPanel.Show(data);
+        return _tutorialPanel.IsOpen;
+    }
+
+    public void CloseTutorial()
+    {
+        _tutorialPanel ??= FindFirstObjectByType<BF_TutorialPanel>();
+        _tutorialPanel?.Close();
+    }
+
+    #endregion
+
     #region GameMode 刷新
 
     private void Refresh(BF_GameMode gameMode, BF_GameMode previousMode)
@@ -149,6 +179,7 @@ public class BF_UIManager : Singleton<BF_UIManager>, IBF_EscapeHandler
         if (gameMode == BF_GameMode.Loading || gameMode == BF_GameMode.Result)
         {
             _settingsPanel?.Close();
+            CloseTutorial();
         }
     }
 

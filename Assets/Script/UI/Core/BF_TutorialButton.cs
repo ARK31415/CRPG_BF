@@ -1,6 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 教程重看按钮：只向 BF_TutorialManager 请求打开当前场景教程，
+/// 不查找教程面板或场景教程组件。无教程时请求安全失败。
+/// </summary>
 [RequireComponent(typeof(Button))]
 public class BF_TutorialButton : MonoBehaviour
 {
@@ -23,8 +27,6 @@ public class BF_TutorialButton : MonoBehaviour
 
     private void Open()
     {
-        BF_TutorialPanel panel = FindFirstObjectByType<BF_TutorialPanel>();
-        BF_SceneTutorial tutorial = FindFirstObjectByType<BF_SceneTutorial>();
-        panel?.Show(tutorial);
+        BF_TutorialManager.Instance?.OpenCurrentTutorial();
     }
 }

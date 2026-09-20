@@ -484,7 +484,6 @@ GameObject:
   - component: {fileID: 371255708}
   - component: {fileID: 371255707}
   - component: {fileID: 371255706}
-  - component: {fileID: 371255711}
   m_Layer: 5
   m_Name: LevelSelectCanvas
   m_TagString: Untagged
@@ -604,21 +603,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &371255711
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 371255705}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a0b7efbdc994554ebb608c982bd702c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: BF.UI::BF_SceneTutorial
-  _title: "\u9009\u5173\u754C\u9762\u6559\u7A0B"
-  _text: "\u8FD9\u91CC\u6309\u7EBF\u6027\u987A\u5E8F\u9009\u62E9\u6218\u6597\u5173\u5361\u3002\n\n\u5DF2\u7ECF\u89E3\u9501\u7684\u5173\u5361\u53EF\u4EE5\u8FDB\u5165\u6218\u524D\u51C6\u5907\uFF1B\u672A\u89E3\u9501\u7684\u5173\u5361\u4F1A\u663E\u793A\u4E3A\u4E0D\u53EF\u7528\u3002\u5B8C\u6210\u524D\u4E00\u5173\u540E\uFF0C\u4E0B\u4E00\u5173\u4F1A\u89E3\u9501\u3002\n\n\u70B9\u51FB\u5173\u5361\u5361\u7247\u8FDB\u5165\u6218\u6597\u51C6\u5907\u3002\n\n\u6309
-    Esc \u8FD4\u56DE\u4E3B\u754C\u9762\u3002"
 --- !u!1 &700597683
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,0 +1,47 @@
+{
+    "schemaVersion":  1,
+    "tutorials":  [
+                      {
+                          "tutorialId":  "tutorial_menu",
+                          "sceneAddress":  "Menu",
+                          "title":  "主界面教程",
+                          "body":  "主界面用于管理存档和进入游戏。\n\n点击“新游戏”创建或覆盖一个存档，点击“继续”读取已有进度。进入游戏后会先到选关界面。\n\n“设置”可以调整音量、分辨率和全屏选项。\n\n按 Esc 可以关闭当前弹窗；没有弹窗时，主界面保持在当前页面。",
+                          "autoShow":  true
+                      },
+                      {
+                          "tutorialId":  "tutorial_level_select",
+                          "sceneAddress":  "LevelSelect",
+                          "title":  "选关界面教程",
+                          "body":  "这里按线性顺序选择战斗关卡。\n\n已经解锁的关卡可以进入战前准备；未解锁的关卡会显示为不可用。完成前一关后，下一关会解锁。\n\n点击关卡卡片进入战斗准备。\n\n按 Esc 返回主界面。",
+                          "autoShow":  true
+                      },
+                      {
+                          "tutorialId":  "tutorial_battle_prepare",
+                          "sceneAddress":  "BattlePrepare",
+                          "title":  "战斗准备教程",
+                          "body":  "这里可以选择本关出战角色，并配置装备、技能和战斗物品。\n\n左侧选择角色后，可以查看角色属性与当前装备。点击“出战”决定角色是否进入本关。\n\n仓库中左键查看物品详情，右键打开装备、放入物品栏或丢弃操作。装备和物品栏配置会保留到后续进入准备界面。\n\n准备完成后点击开始战斗进入本关。按 Esc 返回选关界面。",
+                          "autoShow":  true
+                      },
+                      {
+                          "tutorialId":  "tutorial_battle_level_01",
+                          "sceneAddress":  "Battle_Level_01",
+                          "title":  "第一关战斗教程",
+                          "body":  "这是战棋战斗场景。\n\n左键选择我方单位，再点击目标格预览移动范围和路径。移动完成后可以继续选择攻击或技能目标。移动会根据路径距离消耗行动力（AP）。\n\n普通攻击和技能会根据各自的范围预览选择目标，鼠标右键确认移动或确认当前操作。上下移动不会改变角色朝向，左右移动会让角色面向移动方向。\n\n按 Tab 切换当前可行动角色，按 Backspace 结束玩家回合。按 Esc 打开暂停界面。",
+                          "autoShow":  true
+                      },
+                      {
+                          "tutorialId":  "tutorial_battle_level_02",
+                          "sceneAddress":  "Battle_Level_02",
+                          "title":  "第二关战斗教程",
+                          "body":  "这是第二个线性战斗场景。\n\n先左键选择当前可行动的我方单位，再点击目标格预览移动范围和路径。路径距离会消耗行动力（AP），移动后仍可使用剩余 AP 继续行动。\n\n普通攻击和技能都会先显示可选范围；鼠标右键确认移动或确认当前操作。按 Tab 切换可行动角色，按 Backspace 结束玩家回合。\n\n击败敌人后等待战斗结算，再返回选关界面。按 Esc 打开暂停界面。",
+                          "autoShow":  true
+                      },
+                      {
+                          "tutorialId":  "tutorial_battle_level_03",
+                          "sceneAddress":  "Battle_Level_03",
+                          "title":  "第三关战斗教程",
+                          "body":  "这是第三个线性战斗场景，出战角色数量可能增加。\n\n左键选择我方单位，再点击目标格预览移动范围和路径。移动、攻击、技能和物品都会消耗当前角色的行动力（AP），可以使用剩余 AP 继续行动。\n\n使用 Tab 切换角色，鼠标右键确认移动或当前操作；按 Backspace 结束玩家回合。\n\n战斗目标完成后进入结算界面，领取奖励并解锁后续关卡。按 Esc 打开暂停界面。",
+                          "autoShow":  true
+                      }
+                  ]
+}
