@@ -34,6 +34,9 @@ public class BF_BattleController : MonoBehaviour, IBF_EscapeHandler
     // 玩家阶段控制
     private bool _playerPhaseEnded;
 
+    // 入场门：Setup 完成初始化后保持 SetupPhase，等待剧情 / 标题卡放行。
+    private bool _introGateReleased;
+
     #endregion
 
     #region 对外接口
@@ -163,6 +166,20 @@ public class BF_BattleController : MonoBehaviour, IBF_EscapeHandler
         Debug.Log($"[BF] Battle Phase Changed: {CurrentPhase }");
 
         GameEventBus.Instance?.Publish(new BF_BattlePhaseChangeEvent(CurrentPhase, Round));
+    }
+
+    public bool IsIntroGateReleased => _introGateReleased;
+
+    /// <summary>战斗运行时初始化完成：发布 Ready 事实，SetupState 据此保持等待。</summary>
+    public void NotifyBattleRuntimeReady()
+    {
+        GameEventBus.Instance?.Publish(new BF_BattleRuntimeReadyEvent());
+    }
+
+    /// <summary>入场流程（对话 / 标题卡 / 安全回退）完成后放行进入 PlayerPhase；重复调用无副作用。</summary>
+    public void ReleaseIntroGate()
+    {
+        _introGateReleased = true;
     }
 
     public void StartPlayerRound()

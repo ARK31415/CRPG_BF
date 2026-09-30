@@ -37,6 +37,9 @@ public class BF_BattleService : Singleton<BF_BattleService>
     // 结算状态
     private bool _isResultActive;
 
+    // 挂起的战斗结果：等待结尾剧情放行后再一次性结算。
+    private BF_BattleResult _pendingResult = BF_BattleResult.None;
+
     #endregion
 
     #region 对外接口
@@ -134,6 +137,7 @@ public class BF_BattleService : Singleton<BF_BattleService>
         LastReward.Clear();
         _battlePartyUnitIds.Clear();
         _isResultActive = false;
+        _pendingResult = BF_BattleResult.None;
         sceneLoad.LoadBattlePrepare();
     }
 
@@ -159,6 +163,7 @@ public class BF_BattleService : Singleton<BF_BattleService>
         LastResult = BF_BattleResult.None;
         LastReward.Clear();
         _isResultActive = false;
+        _pendingResult = BF_BattleResult.None;
         sceneLoad.LoadBattle(battleAddress);
     }
 
@@ -397,23 +402,40 @@ public class BF_BattleService : Singleton<BF_BattleService>
 
     #region 结果处理与确认
 
+    // 战斗结果先挂起，等待结尾剧情（BF_BattleEndFlow）放行后再一次性结算。
     private void OnBattleResult(BF_BattleResultEvent gameEvent)
     {
-        if (_isResultActive || gameEvent.Result == BF_BattleResult.None)
+        if (_isResultActive || _pendingResult != BF_BattleResult.None || gameEvent.Result == BF_BattleResult.None)
         {
             return;
         }
 
+        _pendingResult = gameEvent.Result;
         LastResult = gameEvent.Result;
+    }
+
+    /// <summary>
+    /// 结尾剧情完成、跳过、失败回退或无结尾配置后调用；
+    /// 奖励、解锁、存档与 GameMode.Result 只执行一次。
+    /// </summary>
+    public void FinalizePendingResult()
+    {
+        if (_isResultActive || _pendingResult == BF_BattleResult.None)
+        {
+            return;
+        }
+
+        BF_BattleResult result = _pendingResult;
+        _pendingResult = BF_BattleResult.None;
         _isResultActive = true;
 
-        if (LastResult == BF_BattleResult.Victory)
+        if (result == BF_BattleResult.Victory)
         {
             GiveReward();
             _levelProgress.CompleteLevel(CurrentLevel);
         }
 
-        BF_Stinger stinger = LastResult == BF_BattleResult.Defeat
+        BF_Stinger stinger = result == BF_BattleResult.Defeat
             ? BF_Stinger.Defeat
             : CurrentLevel == 3 ? BF_Stinger.Complete : BF_Stinger.Victory;
         GameEventBus.Instance.Publish(new BF_PlayStingerEvent(stinger));

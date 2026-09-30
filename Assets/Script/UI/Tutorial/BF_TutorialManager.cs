@@ -22,9 +22,12 @@ public class BF_TutorialManager : Singleton<BF_TutorialManager>
     private readonly BF_TutorialService _service = new();
     private readonly HashSet<string> _shownTutorialIds = new();
     private IDisposable _contentSceneSubscription;
+    private IDisposable _introTutorialRequestSubscription;
+    private IDisposable _blockingPresentationSubscription;
     private string _currentSceneAddress = string.Empty;
     private string _currentTutorialId = string.Empty;
     private bool _bindErrorReported;
+    private bool _introTutorialPending;
 
     #endregion
 
@@ -61,12 +64,18 @@ public class BF_TutorialManager : Singleton<BF_TutorialManager>
         }
 
         _contentSceneSubscription = GameEventBus.Instance.Subscribe<BF_ContentSceneChangedEvent>(OnContentSceneChanged);
+        _introTutorialRequestSubscription = GameEventBus.Instance.Subscribe<BF_IntroTutorialRequestEvent>(OnIntroTutorialRequested);
+        _blockingPresentationSubscription = GameEventBus.Instance.Subscribe<BF_BlockingPresentationChangedEvent>(OnBlockingPresentationChanged);
     }
 
     private void OnDisable()
     {
         _contentSceneSubscription?.Dispose();
         _contentSceneSubscription = null;
+        _introTutorialRequestSubscription?.Dispose();
+        _introTutorialRequestSubscription = null;
+        _blockingPresentationSubscription?.Dispose();
+        _blockingPresentationSubscription = null;
     }
 
     #endregion
@@ -103,7 +112,10 @@ public class BF_TutorialManager : Singleton<BF_TutorialManager>
 
         _currentTutorialId = definition.tutorialId;
 
-        if (!definition.autoShow || _shownTutorialIds.Contains(definition.tutorialId))
+        // 战斗教程由 BF_BattleIntroFlow 在标题卡结束后显式请求，禁止在场景切换时抢跑。
+        if (IsBattleScene(sceneEvent.Address)
+            || !definition.autoShow
+            || _shownTutorialIds.Contains(definition.tutorialId))
         {
             return;
         }
@@ -113,6 +125,59 @@ public class BF_TutorialManager : Singleton<BF_TutorialManager>
             // 只有 UI 真正显示成功后才记录；失败保留后续重试机会。
             _shownTutorialIds.Add(definition.tutorialId);
         }
+    }
+
+    #endregion
+
+    #region 战斗入场教程
+
+    private void OnIntroTutorialRequested(BF_IntroTutorialRequestEvent requestEvent)
+    {
+        if (_introTutorialPending)
+        {
+            return;
+        }
+
+        if (!_service.TryGetById(_currentTutorialId, out BF_TutorialDefinition definition)
+            || !definition.autoShow
+            || _shownTutorialIds.Contains(definition.tutorialId))
+        {
+            PublishIntroTutorialCompleted();
+            return;
+        }
+
+        if (!TryShow(definition))
+        {
+            PublishIntroTutorialCompleted();
+            return;
+        }
+
+        _shownTutorialIds.Add(definition.tutorialId);
+        _introTutorialPending = true;
+    }
+
+    private void OnBlockingPresentationChanged(BF_BlockingPresentationChangedEvent presentationEvent)
+    {
+        if (!_introTutorialPending
+            || presentationEvent.Presentation != BF_BlockingPresentation.Tutorial
+            || presentationEvent.IsOpen)
+        {
+            return;
+        }
+
+        _introTutorialPending = false;
+        PublishIntroTutorialCompleted();
+    }
+
+    private static void PublishIntroTutorialCompleted()
+    {
+        GameEventBus.Instance.Publish(new BF_IntroTutorialCompletedEvent());
+    }
+
+    private static bool IsBattleScene(string sceneAddress)
+    {
+        return !string.IsNullOrEmpty(sceneAddress)
+            && sceneAddress.StartsWith("Battle_Level_", StringComparison.Ordinal);
     }
 
     #endregion

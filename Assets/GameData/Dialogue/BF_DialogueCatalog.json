@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "dialogues": [
+    {
+      "dialogueId": "dialogue_level01_intro",
+      "startNodeId": 0,
+      "participantUnitIds": ["Knight"],
+      "nodes": [
+        {
+          "nodeId": 0,
+          "speakerName": "旁白",
+          "text": "敌军已经在前方列阵，战斗一触即发。",
+          "nextNodeId": 1
+        },
+        {
+          "nodeId": 1,
+          "speakerUnitId": "Knight",
+          "text": "各就各位。注意行动力分配，先手很重要。",
+          "nextNodeId": -1
+        }
+      ]
+    },
+    {
+      "dialogueId": "dialogue_level01_victory",
+      "startNodeId": 0,
+      "nodes": [
+        {
+          "nodeId": 0,
+          "speakerName": "旁白",
+          "text": "敌人已被击退，战场恢复了平静。",
+          "nextNodeId": -1
+        }
+      ]
+    },
+    {
+      "dialogueId": "dialogue_level02_intro",
+      "startNodeId": 0,
+      "participantUnitIds": ["Wizard"],
+      "nodes": [
+        {
+          "nodeId": 0,
+          "speakerName": "旁白",
+          "text": "第二关的敌人更加谨慎，地形也更复杂。",
+          "nextNodeId": 1
+        },
+        {
+          "nodeId": 1,
+          "speakerUnitId": "Wizard",
+          "text": "利用地形，稳扎稳打。",
+          "nextNodeId": -1
+        }
+      ]
+    },
+    {
+      "dialogueId": "dialogue_level03_intro",
+      "startNodeId": 0,
+      "participantUnitIds": ["Knight", "Wizard"],
+      "nodes": [
+        {
+          "nodeId": 0,
+          "speakerUnitId": "Knight",
+          "text": "这是最后一关，敌人的数量会更多。",
+          "nextNodeId": 1
+        },
+        {
+          "nodeId": 1,
+          "speakerUnitId": "Wizard",
+          "text": "我会在后排提供火力，注意别冲得太深。",
+          "nextNodeId": 2
+        },
+        {
+          "nodeId": 2,
+          "speakerUnitId": "Knight",
+          "text": "明白，稳住阵型推进。",
+          "nextNodeId": -1
+        }
+      ]
+    }
+  ]
+}

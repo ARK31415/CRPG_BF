@@ -46,6 +46,16 @@ public class BF_LevelConfigSO : ScriptableObject
     [SerializeField]
     private BF_UnitRewardMode _rewardUnitMode;
 
+    [Header("Dialogue")]
+    [SerializeField]
+    private string _introDialogueId;
+
+    [SerializeField]
+    private string _victoryDialogueId;
+
+    [SerializeField]
+    private string _defeatDialogueId;
+
     public int Width => _width;
     public int Height => _height;
     public BF_TerrainRuleSetSO TerrainRules => _terrainRules;
@@ -58,4 +68,7 @@ public class BF_LevelConfigSO : ScriptableObject
     public IReadOnlyList<BF_RewardItem> RewardItems => _rewardItems;
     public BF_UnitConfigSO RewardUnit => _rewardUnit;
     public BF_UnitRewardMode RewardUnitMode => _rewardUnitMode;
+    public string IntroDialogueId => _introDialogueId;
+    public string VictoryDialogueId => _victoryDialogueId;
+    public string DefeatDialogueId => _defeatDialogueId;
 }

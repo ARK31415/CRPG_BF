@@ -42,3 +42,6 @@ MonoBehaviour:
     _quantity: 1
   _rewardUnit: {fileID: 11400000, guid: fbf9fd7f37173fd489d6408598d61ecb, type: 2}
   _rewardUnitMode: 0
+  _introDialogueId: dialogue_level01_intro
+  _victoryDialogueId: dialogue_level01_victory
+  _defeatDialogueId: 

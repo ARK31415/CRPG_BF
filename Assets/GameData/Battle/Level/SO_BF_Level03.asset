@@ -42,3 +42,6 @@ MonoBehaviour:
     _quantity: 3
   _rewardUnit: {fileID: 0}
   _rewardUnitMode: 0
+  _introDialogueId: dialogue_level03_intro
+  _victoryDialogueId: 
+  _defeatDialogueId: 

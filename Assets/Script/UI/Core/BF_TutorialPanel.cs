@@ -58,7 +58,12 @@ public class BF_TutorialPanel : MonoBehaviour
             _bodyText.text = data.Body;
         }
 
+        bool wasOpen = IsOpen;
         _panelRoot?.SetActive(true);
+        if (!wasOpen && IsOpen)
+        {
+            PublishBlockingState(true);
+        }
         Canvas.ForceUpdateCanvases();
         if (_scrollRect != null)
         {
@@ -68,6 +73,17 @@ public class BF_TutorialPanel : MonoBehaviour
 
     public void Close()
     {
+        bool wasOpen = IsOpen;
         _panelRoot?.SetActive(false);
+        if (wasOpen)
+        {
+            PublishBlockingState(false);
+        }
+    }
+
+    private static void PublishBlockingState(bool isOpen)
+    {
+        GameEventBus.Instance.Publish(
+            new BF_BlockingPresentationChangedEvent(BF_BlockingPresentation.Tutorial, isOpen));
     }
 }
