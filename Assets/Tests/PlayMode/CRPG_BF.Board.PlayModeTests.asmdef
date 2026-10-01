@@ -4,7 +4,9 @@
     "references": [
         "BF.Battle",
         "BF.Game",
-        "CRPG_BF.Shared"
+        "CRPG_BF.Shared",
+        "EventBus.Core",
+        "Singleton"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
